@@ -45,6 +45,9 @@ public partial class WidgetWindow : Window
             Top = -10_000;
         }
 
+        // Long coin lists scroll instead of running off the screen.
+        RowsScroller.MaxHeight = SystemParameters.WorkArea.Height * 0.75;
+
         vm.PropertyChanged += OnViewModelPropertyChanged;
         MouseLeftButtonDown += OnMouseLeftButtonDown;
         PreviewMouseWheel += OnPreviewMouseWheel;

@@ -8,15 +8,17 @@ namespace PricePin.ViewModels;
 /// <summary>One entry in the "Data source" menu.</summary>
 public sealed partial class DataSourceOption : ObservableObject
 {
-    public DataSourceOption(DataSource value, string label, Action<DataSourceOption> select)
+    public DataSourceOption(DataSource value, string label, string description, Action<DataSourceOption> select)
     {
         Value = value;
         Label = label;
+        Description = description;
         SelectCommand = new RelayCommand(() => select(this));
     }
 
     public DataSource Value { get; }
     public string Label { get; }
+    public string Description { get; }
     public ICommand SelectCommand { get; }
 
     [ObservableProperty]

@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using H.NotifyIcon;
 using H.NotifyIcon.Core;
+using PricePin.Core.Coins;
 using PricePin.Core.History;
 using PricePin.Core.Icons;
 using PricePin.Core.Market;
@@ -24,6 +25,10 @@ public partial class App : Application
     private EventWaitHandle? _showSignal;
     private SettingsService? _settings;
     private MarketDataService? _market;
+    private ThemeService? _theme;
+    private LogoProvider? _logos;
+    private CoinCatalogService? _catalog;
+    private SettingsWindow? _settingsWindow;
     private WidgetViewModel? _vm;
     private WidgetWindow? _widget;
     private TaskbarIcon? _tray;
@@ -53,12 +58,17 @@ public partial class App : Application
         ListenForShowSignal();
 
         _settings = new SettingsService();
+        _theme = new ThemeService(Resources);
+        _theme.Apply(_settings.Current.Theme, _settings.Current.Accent);
+
         _market = new MarketDataService();
-        var iconCache = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PricePin", "icons");
-        _vm = new WidgetViewModel(_settings, _market, new PriceHistoryService(), new CoinIconService(iconCache));
+        var localData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PricePin");
+        _logos = new LogoProvider(new CoinIconService(Path.Combine(localData, "icons")));
+        _catalog = new CoinCatalogService(Path.Combine(localData, "catalog"));
+        _vm = new WidgetViewModel(_settings, _market, new PriceHistoryService(), _logos);
         _vm.ExitRequested += (_, _) => ExitApp();
         _vm.ToggleVisibilityRequested += (_, _) => SetWidgetVisible(!_vm.IsWidgetVisible);
+        _vm.SettingsRequested += (_, _) => ShowSettings();
         _vm.PropertyChanged += OnViewModelPropertyChanged;
 
         CreateTrayIcon();
@@ -71,6 +81,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _vm?.Dispose();
+        _theme?.Dispose();
         // Close sockets politely, but never let shutdown hang on the network.
         _market?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(2));
         _settings?.SaveNow();
@@ -97,6 +108,27 @@ public partial class App : Application
         _tray.SetBinding(TaskbarIcon.ToolTipTextProperty, new Binding(nameof(WidgetViewModel.TrayToolTip)));
         // false = don't put the process in Windows "efficiency mode"; prices must stay real-time.
         _tray.ForceCreate(false);
+    }
+
+    private void ShowSettings()
+    {
+        if (_settingsWindow is { IsLoaded: true })
+        {
+            if (_settingsWindow.WindowState == WindowState.Minimized)
+                _settingsWindow.WindowState = WindowState.Normal;
+            _settingsWindow.Activate();
+            return;
+        }
+
+        var vm = new SettingsViewModel(_vm!, _settings!, _catalog!, _logos!, _theme!);
+        _settingsWindow = new SettingsWindow(vm);
+        _settingsWindow.Closed += (_, _) =>
+        {
+            vm.Dispose();
+            _settingsWindow = null;
+        };
+        _settingsWindow.Show();
+        _settingsWindow.Activate();
     }
 
     private void SetWidgetVisible(bool visible)
@@ -154,6 +186,7 @@ public partial class App : Application
     private void ExitApp()
     {
         _settings?.SaveNow();
+        _settingsWindow?.Close();
         _widget?.CloseForExit();
         Shutdown();
     }

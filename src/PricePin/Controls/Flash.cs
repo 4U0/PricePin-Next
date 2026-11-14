@@ -36,17 +36,21 @@ public static class Flash
         if (d is not FrameworkElement { DataContext: CoinRowViewModel row } element || !element.IsLoaded)
             return;
 
-        var color = row.LastMoveUp ? Up : Down;
+        var color = Lookup(element, row.LastMoveUp ? "UpColor" : "DownColor", row.LastMoveUp ? Up : Down);
         switch (element)
         {
             case Border border:
                 border.Background = Animate(Color.FromArgb(46, color.R, color.G, color.B), Color.FromArgb(0, color.R, color.G, color.B), BackgroundDuration);
                 break;
             case TextBlock text:
-                text.Foreground = Animate(color, GetRestingColor(text), TextDuration);
+                text.Foreground = Animate(color, Lookup(text, "TextPrimaryColor", GetRestingColor(text)), TextDuration);
                 break;
         }
     }
+
+    /// <summary>Theme colour if the current theme defines it, so flashes match light and dark themes.</summary>
+    private static Color Lookup(FrameworkElement element, string key, Color fallback) =>
+        element.TryFindResource(key) is Color c ? c : fallback;
 
     private static SolidColorBrush Animate(Color from, Color to, Duration duration)
     {

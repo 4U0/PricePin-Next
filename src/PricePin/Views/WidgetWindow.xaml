@@ -14,7 +14,7 @@
         WindowStartupLocation="Manual"
         UseLayoutRounding="True"
         FontFamily="{StaticResource UiFont}"
-        Foreground="{StaticResource TextPrimaryBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
         Topmost="{Binding Topmost}"
         Opacity="{Binding Opacity}"
         ContextMenu="{StaticResource AppMenu}">
@@ -44,14 +44,17 @@
     </Window.Resources>
 
     <!-- The outer margin leaves room for the soft shadow around the card. -->
-    <Grid x:Name="Card" Margin="{x:Static vm:WidgetMetrics.ShadowMargin}" Width="320">
-        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="16">
+    <Grid x:Name="Card" Margin="{x:Static vm:WidgetMetrics.ShadowMargin}" Width="{Binding CardWidth}">
+        <Grid.LayoutTransform>
+            <ScaleTransform ScaleX="{Binding Scale}" ScaleY="{Binding Scale}" />
+        </Grid.LayoutTransform>
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="16">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="20" ShadowDepth="4" Direction="270" Opacity="0.55" />
+                <DropShadowEffect BlurRadius="20" ShadowDepth="4" Direction="270" Opacity="{DynamicResource ShadowOpacity}" />
             </Border.Effect>
         </Border>
 
-        <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource CardBorderBrush}"
+        <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
                 BorderThickness="1" CornerRadius="16" Padding="0,10,0,8">
             <StackPanel>
                 <!-- Header: brand, live status, and controls that fade in on hover. -->
@@ -65,13 +68,15 @@
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Topmost}" Value="True">
                                             <Setter Property="Content" Value="&#xE840;" />
-                                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
                                             <Setter Property="ToolTip" Value="Stay on top: on" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Button.Style>
                         </Button>
+                        <Button Style="{StaticResource IconButton}" Content="&#xE713;" ToolTip="Settings"
+                                Command="{Binding OpenSettingsCommand}" Margin="2,0,0,0" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE712;" ToolTip="Options"
                                 Click="MenuButton_Click" Margin="2,0,0,0" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE921;" ToolTip="Hide to tray"
@@ -82,7 +87,7 @@
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
                                 Background="Transparent" ToolTip="{Binding StatusDetail}">
                         <TextBlock Text="{Binding StatusSource}" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center"
-                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                         <Border x:Name="Pill" Style="{StaticResource StatusPill}" CornerRadius="9" Padding="7,2,8,2">
                             <StackPanel Orientation="Horizontal">
                                 <Grid Width="10" Height="10" VerticalAlignment="Center">
@@ -99,23 +104,27 @@
                         <Image Source="/Assets/PricePin.ico" Width="16" Height="16"
                                RenderOptions.BitmapScalingMode="HighQuality" />
                         <TextBlock Text="PricePin" Margin="7,0,0,0" FontSize="12.5" FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                 </DockPanel>
 
                 <!-- Column headings -->
-                <Grid Margin="16,2,16,4" TextElement.FontSize="10" TextElement.Foreground="{StaticResource TextTertiaryBrush}">
+                <Grid Margin="16,2,16,4" TextElement.FontSize="10" TextElement.Foreground="{DynamicResource TextTertiaryBrush}"
+                      Visibility="{Binding ShowColumnHeadings, Converter={StaticResource BoolToVisibility}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="64" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="104" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="ASSET" />
-                    <TextBlock Grid.Column="1" Text="24H" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="24H" Width="64" TextAlignment="Center"
+                               Visibility="{Binding ShowSparklines, Converter={StaticResource BoolToVisibility}}" />
                     <TextBlock Grid.Column="2" Text="PRICE" HorizontalAlignment="Right" />
                 </Grid>
 
-                <!-- Coin rows -->
+                <!-- Coin rows; scrolls if the list is taller than most of the screen. -->
+                <ScrollViewer x:Name="RowsScroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                              Focusable="False">
                 <ItemsControl ItemsSource="{Binding Coins}" Focusable="False">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:CoinRowViewModel}">
@@ -128,7 +137,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="64" />
+                                            <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="104" />
                                         </Grid.ColumnDefinitions>
 
@@ -146,41 +155,59 @@
                                         <StackPanel Grid.Column="1" Margin="10,0,6,0" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Symbol}" FontSize="13.5" FontWeight="SemiBold" />
                                             <TextBlock Text="{Binding Name}" FontSize="11" TextTrimming="CharacterEllipsis"
-                                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       Visibility="{Binding DataContext.ShowNames, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
                                         </StackPanel>
 
-                                        <ctl:Sparkline x:Name="Spark" Grid.Column="2" Height="26" Margin="2,0"
-                                                       Values="{Binding Sparkline}" LineColor="{StaticResource UpColor}" />
+                                        <ctl:Sparkline x:Name="Spark" Grid.Column="2" Width="60" Height="26" Margin="2,0"
+                                                       Visibility="{Binding DataContext.ShowSparklines, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}"
+                                                       Values="{Binding Sparkline}" LineColor="{DynamicResource UpColor}" />
 
                                         <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right">
                                             <TextBlock Text="{Binding PriceText}" HorizontalAlignment="Right"
                                                        FontFamily="{StaticResource DisplayFont}" FontSize="14.5" FontWeight="SemiBold"
                                                        Typography.NumeralAlignment="Tabular"
-                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                                        ctl:Flash.Pulse="{Binding FlashPulse}" />
                                             <TextBlock x:Name="Change" Text="{Binding ChangeText}" HorizontalAlignment="Right"
                                                        FontSize="11" FontWeight="SemiBold" Margin="0,1,0,0"
                                                        Typography.NumeralAlignment="Tabular"
-                                                       Foreground="{StaticResource UpBrush}" />
+                                                       Foreground="{DynamicResource UpBrush}" />
                                         </StackPanel>
                                     </Grid>
                                 </Border>
                             </Grid>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsUp}" Value="False">
-                                    <Setter TargetName="Change" Property="Foreground" Value="{StaticResource DownBrush}" />
-                                    <Setter TargetName="Spark" Property="LineColor" Value="{StaticResource DownColor}" />
+                                    <Setter TargetName="Change" Property="Foreground" Value="{DynamicResource DownBrush}" />
+                                    <Setter TargetName="Spark" Property="LineColor" Value="{DynamicResource DownColor}" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding HasLogo}" Value="True">
                                     <Setter TargetName="Badge" Property="Visibility" Value="Collapsed" />
                                 </DataTrigger>
                                 <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Row" Property="Background" Value="{StaticResource HoverBrush}" />
+                                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource HoverBrush}" />
                                 </Trigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Empty state -->
+                <TextBlock Text="No coins yet. Open Settings to add some." Margin="16,8" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Coins.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </StackPanel>
         </Border>
     </Grid>

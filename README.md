@@ -2,7 +2,7 @@
 
 A fast, good-looking crypto price widget for Windows. It floats on your desktop, stays on top if you want it to, and shows live prices that update the moment they change.
 
-> **Status:** early development. Live prices work; the settings window, coin picker and ticker bar layout are next. See the [roadmap](#roadmap).
+> **Status:** early development (v0.3). Live prices, settings and the coin picker work; the ticker bar layout is next. See the [roadmap](#roadmap).
 
 ## Features
 
@@ -13,6 +13,8 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Live status pill (LIVE, RECONNECTING, DELAYED, OFFLINE); hover it for details
 - Real coin logos, 24h sparklines, green/red flashes on every price move, and 24h change that moves with the price
 - Hover a coin for its 24h high, low and volume
+- Settings window: pick any coin from Binance, Coinbase and Kraken's lists (search by name or symbol), drag to reorder, and show prices in USD, USDT, EUR, TRY or GBP
+- Dark, light or follow-Windows theme, eight accent colours, three sizes, and options to hide names, sparklines or headings
 - Borderless dark "glass" widget you can drag anywhere
 - Snaps to screen edges (hold <kbd>Shift</kbd> while dragging to place it freely)
 - Stay on top, opacity slider (20–100%), and <kbd>Ctrl</kbd> + mouse wheel to change opacity
@@ -25,10 +27,11 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Only one copy runs at a time; launching it again shows the existing widget
 
 **Planned**
-- Any coin, searchable, with drag to reorder, and a choice of quote currency
-- Horizontal scrolling ticker bar layout, docked to the top or bottom of the screen
-- Settings window, installer and auto-update
-- Later: price alerts, charts, portfolio view, themes
+- Horizontal scrolling ticker bar, multiple widgets, hotkeys (v0.4)
+- Installer, auto-update, winget, Turkish and English (v1.0)
+- Price alerts and live price on the tray icon (v1.1)
+- Portfolio with privacy blur (v1.2)
+- Coin detail charts and market overview (v1.3)
 
 ## Download
 
@@ -75,16 +78,18 @@ dotnet run --project tools/FeedProbe -- 15 BTC ETH SOL
 
 ## Where settings live
 
-`%AppData%\PricePin\settings.json`. Delete it to reset everything. Unexpected errors are written to `crash.log` in the same folder. Downloaded logos are cached in `%LocalAppData%\PricePin\icons`.
+`%AppData%\PricePin\settings.json`. Delete it to reset everything. Unexpected errors are written to `crash.log` in the same folder. Downloaded logos and the coin list are cached in `%LocalAppData%\PricePin`.
 
 ## Roadmap
 
 1. **Foundation**: widget window, stay on top, opacity, click-through, tray, saved position ✅
 2. **Live data**: Binance, Coinbase and Kraken feeds, failover, REST fallback, logos, sparklines, design refresh ✅
-3. **Layouts**: horizontal ticker bar, compact mode, more themes
-4. **Settings**: settings window, coin picker, quote currency
-5. **Release**: installer, auto-update, GitHub Releases
-6. **Version 2**: alerts, charts, portfolio, themes
+3. **v0.3 Settings**: settings window, coin picker, display currency, themes, sizes ✅
+4. **v0.4 Layouts**: ticker bar, multiple widgets, hotkeys
+5. **v1.0 Launch**: installer, auto-update, winget, code signing, Turkish and English
+6. **v1.1**: price alerts, live price on the tray icon
+7. **v1.2**: portfolio and privacy blur
+8. **v1.3**: coin detail charts, market overview (Fear & Greed, BTC dominance)
 
 ## Tech
 
