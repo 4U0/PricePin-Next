@@ -66,6 +66,15 @@ public sealed partial class CoinRowViewModel : ObservableObject
     [ObservableProperty]
     private IReadOnlyList<double> _sparkline = [];
 
+    /// <summary>"0.5 · $48,120.00" when the user holds this coin (or a mask in privacy mode).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHolding))]
+    private string? _holdingText;
+
+    public bool HasHolding => HoldingText is not null;
+
+    public void SetHolding(string? text) => HoldingText = text;
+
     /// <summary>Changes on every price move; the view starts a flash animation when it does.</summary>
     [ObservableProperty]
     private int _flashPulse;

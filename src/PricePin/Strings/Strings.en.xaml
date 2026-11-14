@@ -224,4 +224,28 @@
     <sys:String x:Key="Tray.Title">TRAY ICON</sys:String>
     <sys:String x:Key="Tray.Logo">PricePin logo</sys:String>
     <sys:String x:Key="Tray.Hint">Show a coin's price in the taskbar's notification area: green when it's up over 24h, red when it's down.</sys:String>
+
+    <!-- Portfolio and privacy (v1.2) -->
+    <sys:String x:Key="Nav.Portfolio">Portfolio</sys:String>
+    <sys:String x:Key="Menu.Privacy">Hide amounts</sys:String>
+    <sys:String x:Key="General.TogglePrivacy">Hide or show portfolio amounts</sys:String>
+    <sys:String x:Key="Portfolio.Total">TOTAL VALUE</sys:String>
+    <sys:String x:Key="Portfolio.Today">24h</sys:String>
+    <sys:String x:Key="Portfolio.Profit">Profit / loss</sys:String>
+    <sys:String x:Key="Portfolio.Add">ADD A HOLDING</sys:String>
+    <sys:String x:Key="Portfolio.Amount">Amount</sys:String>
+    <sys:String x:Key="Portfolio.Cost">Avg. buy price</sys:String>
+    <sys:String x:Key="Portfolio.Optional">optional, in {0}</sys:String>
+    <sys:String x:Key="Portfolio.AddButton">Add</sys:String>
+    <sys:String x:Key="Portfolio.Yours">YOUR HOLDINGS</sys:String>
+    <sys:String x:Key="Portfolio.Empty">Nothing here yet. Add what you own to see its value live in your widgets.</sys:String>
+    <sys:String x:Key="Portfolio.Privacy">Privacy mode: hide amounts and values</sys:String>
+    <sys:String x:Key="Portfolio.PrivacyHint">For screen sharing and streaming. Prices stay visible. Toggle it any time with {0}.</sys:String>
+    <sys:String x:Key="Portfolio.LocalNote">Your holdings are saved only on this PC, in the settings file. Nothing is sent anywhere.</sys:String>
+    <sys:String x:Key="Portfolio.BadAmount">Type an amount greater than zero.</sys:String>
+    <sys:String x:Key="Portfolio.TooMany">You can track up to {0} coins.</sys:String>
+    <sys:String x:Key="Portfolio.Summary">Portfolio {0} {1}</sys:String>
+    <sys:String x:Key="Portfolio.Widget">PORTFOLIO</sys:String>
+    <sys:String x:Key="Widgets.ShowHoldings">Show my holdings and portfolio total</sys:String>
+    <sys:String x:Key="Portfolio.ValueColumn">Value</sys:String>
 </ResourceDictionary>

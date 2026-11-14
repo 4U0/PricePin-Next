@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using PricePin.Core.Alerts;
 using PricePin.Core.Coins;
+using PricePin.Core.Portfolio;
 using PricePin.Core.Market;
 
 namespace PricePin.Core.Settings;
@@ -72,6 +73,9 @@ public sealed class WidgetSettings
     public bool ShowSparklines { get; set; } = true;
     public bool ShowColumnHeadings { get; set; } = true;
 
+    /// <summary>Show what the user holds of each coin, and the portfolio total, in a list widget.</summary>
+    public bool ShowHoldings { get; set; } = true;
+
     // Ticker bar
     public BarDock Dock { get; set; } = BarDock.Top;
 
@@ -115,6 +119,9 @@ public sealed class HotkeySettings
 
     /// <summary>Turns click-through on or off for every widget.</summary>
     public string ToggleClickThrough { get; set; } = "Ctrl+Alt+T";
+
+    /// <summary>Hides or shows portfolio amounts.</summary>
+    public string TogglePrivacy { get; set; } = "Ctrl+Alt+H";
 }
 
 /// <summary>
@@ -158,6 +165,13 @@ public sealed class AppSettings
 
     /// <summary>Play the Windows notification sound when an alert fires.</summary>
     public bool AlertSound { get; set; } = true;
+
+    public const int MaxHoldings = 100;
+
+    public List<Holding> Holdings { get; set; } = [];
+
+    /// <summary>Hide holding amounts and values (for screen sharing and streaming).</summary>
+    public bool PrivacyMode { get; set; }
 
     /// <summary>Coin whose price is drawn in the tray icon; empty shows the PricePin logo.</summary>
     public string TrayCoin { get; set; } = "";
@@ -205,8 +219,29 @@ public sealed class AppSettings
         foreach (var dup in Alerts.GroupBy(x => x.Id).SelectMany(g => g.Skip(1)))
             dup.Id = Guid.NewGuid().ToString("N")[..8];
         TrayCoin = (TrayCoin ?? "").Trim().ToUpperInvariant();
+        Holdings = (Holdings ?? []).Where(h => h is not null && h.IsValid).Take(MaxHoldings).ToList();
+        foreach (var h in Holdings)
+        {
+            h.Symbol = h.Symbol.Trim().ToUpperInvariant();
+            h.CostQuote = string.IsNullOrWhiteSpace(h.CostQuote) ? QuoteCurrency : h.CostQuote.Trim().ToUpperInvariant();
+        }
+        // One entry per coin: merge duplicates (amounts add up, cost becomes the weighted average).
+        Holdings = Holdings.GroupBy(h => h.Symbol).Select(MergeHoldings).ToList();
         Language = string.IsNullOrWhiteSpace(Language) ? SystemLanguage : Language.Trim().ToLowerInvariant();
         SchemaVersion = CurrentSchemaVersion;
+    }
+
+    private static Holding MergeHoldings(IGrouping<string, Holding> group)
+    {
+        var first = group.First();
+        if (!group.Skip(1).Any())
+            return first;
+        var amount = group.Sum(h => h.Amount);
+        var costed = group.Where(h => h.AverageCost is not null && h.CostQuote == first.CostQuote).ToList();
+        decimal? cost = costed.Count == group.Count() && amount > 0
+            ? costed.Sum(h => h.AverageCost!.Value * h.Amount) / amount
+            : null;
+        return new Holding { Symbol = first.Symbol, Amount = amount, AverageCost = cost, CostQuote = first.CostQuote };
     }
 
     private WidgetSettings MigrateV1Widget()

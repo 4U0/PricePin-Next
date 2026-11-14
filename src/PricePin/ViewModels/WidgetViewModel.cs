@@ -31,6 +31,7 @@ public sealed partial class WidgetViewModel : ObservableObject
         _snapToEdges = settings.SnapToEdges;
         _size = settings.Size;
         _showNames = settings.ShowNames;
+        _showHoldings = settings.ShowHoldings;
         _showSparklines = settings.ShowSparklines;
         _showColumnHeadings = settings.ShowColumnHeadings;
         _dock = settings.Dock;
@@ -64,6 +65,7 @@ public sealed partial class WidgetViewModel : ObservableObject
     [ObservableProperty] private bool _snapToEdges;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(Scale))] private WidgetSize _size;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(CardWidth))] private bool _showNames;
+    [ObservableProperty] private bool _showHoldings;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(CardWidth))] private bool _showSparklines;
     [ObservableProperty] private bool _showColumnHeadings;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsFloating))] private BarDock _dock;
@@ -132,6 +134,7 @@ public sealed partial class WidgetViewModel : ObservableObject
     partial void OnSnapToEdgesChanged(bool value) => Save(s => s.SnapToEdges = value);
     partial void OnSizeChanged(WidgetSize value) => Save(s => s.Size = value);
     partial void OnShowNamesChanged(bool value) => Save(s => s.ShowNames = value);
+    partial void OnShowHoldingsChanged(bool value) => Save(s => s.ShowHoldings = value);
     partial void OnShowSparklinesChanged(bool value) => Save(s => s.ShowSparklines = value);
     partial void OnShowColumnHeadingsChanged(bool value) => Save(s => s.ShowColumnHeadings = value);
     partial void OnScrollChanged(bool value) => Save(s => s.Scroll = value);

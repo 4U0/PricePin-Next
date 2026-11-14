@@ -224,4 +224,28 @@
     <sys:String x:Key="Tray.Title">TEPSİ SİMGESİ</sys:String>
     <sys:String x:Key="Tray.Logo">PricePin logosu</sys:String>
     <sys:String x:Key="Tray.Hint">Bir coinin fiyatını görev çubuğunun bildirim alanında gösterin: 24 saatte yükselişteyse yeşil, düşüşteyse kırmızı.</sys:String>
+
+    <!-- Portfolio and privacy (v1.2) -->
+    <sys:String x:Key="Nav.Portfolio">Portföy</sys:String>
+    <sys:String x:Key="Menu.Privacy">Tutarları gizle</sys:String>
+    <sys:String x:Key="General.TogglePrivacy">Portföy tutarlarını gizle veya göster</sys:String>
+    <sys:String x:Key="Portfolio.Total">TOPLAM DEĞER</sys:String>
+    <sys:String x:Key="Portfolio.Today">24s</sys:String>
+    <sys:String x:Key="Portfolio.Profit">Kâr / zarar</sys:String>
+    <sys:String x:Key="Portfolio.Add">VARLIK EKLE</sys:String>
+    <sys:String x:Key="Portfolio.Amount">Miktar</sys:String>
+    <sys:String x:Key="Portfolio.Cost">Ort. alış fiyatı</sys:String>
+    <sys:String x:Key="Portfolio.Optional">isteğe bağlı, {0} cinsinden</sys:String>
+    <sys:String x:Key="Portfolio.AddButton">Ekle</sys:String>
+    <sys:String x:Key="Portfolio.Yours">VARLIKLARINIZ</sys:String>
+    <sys:String x:Key="Portfolio.Empty">Henüz bir şey yok. Sahip olduklarınızı ekleyin, değerleri widget'larınızda canlı görünsün.</sys:String>
+    <sys:String x:Key="Portfolio.Privacy">Gizlilik modu: miktarları ve değerleri gizle</sys:String>
+    <sys:String x:Key="Portfolio.PrivacyHint">Ekran paylaşımı ve yayın için. Fiyatlar görünür kalır. İstediğiniz an {0} ile açıp kapatın.</sys:String>
+    <sys:String x:Key="Portfolio.LocalNote">Varlıklarınız yalnızca bu bilgisayarda, ayarlar dosyasında saklanır. Hiçbir yere gönderilmez.</sys:String>
+    <sys:String x:Key="Portfolio.BadAmount">Sıfırdan büyük bir miktar yazın.</sys:String>
+    <sys:String x:Key="Portfolio.TooMany">En fazla {0} coin izleyebilirsiniz.</sys:String>
+    <sys:String x:Key="Portfolio.Summary">Portföy {0} {1}</sys:String>
+    <sys:String x:Key="Portfolio.Widget">PORTFÖY</sys:String>
+    <sys:String x:Key="Widgets.ShowHoldings">Varlıklarımı ve portföy toplamını göster</sys:String>
+    <sys:String x:Key="Portfolio.ValueColumn">Değer</sys:String>
 </ResourceDictionary>

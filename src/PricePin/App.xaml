@@ -47,6 +47,7 @@
                       InputGestureText="{DynamicResource Menu.ClickThroughGesture}"
                       ToolTip="{DynamicResource Menu.ClickThroughTip}" />
             <MenuItem Header="{DynamicResource Common.Lock}" Tag="&#xE72E;" IsCheckable="True" IsChecked="{Binding LockPosition}" />
+            <MenuItem Header="{DynamicResource Menu.Privacy}" Tag="&#xED1A;" IsCheckable="True" IsChecked="{Binding App.Portfolio.PrivacyMode}" />
             <MenuItem Header="{DynamicResource Common.Snap}" Tag="&#xE8A9;" IsCheckable="True" IsChecked="{Binding SnapToEdges}"
                       ToolTip="{DynamicResource Common.SnapTip}" />
             <Separator />
@@ -71,6 +72,7 @@
                       Command="{Binding ToggleClickThroughAllCommand}" />
             <MenuItem Header="{DynamicResource Menu.Settings}" Tag="&#xE713;" Command="{Binding OpenSettingsCommand}" />
             <MenuItem Header="{DynamicResource Menu.Alerts}" Tag="&#xEA8F;" Command="{Binding OpenAlertsCommand}" />
+            <MenuItem Header="{DynamicResource Menu.Privacy}" Tag="&#xED1A;" IsCheckable="True" IsChecked="{Binding Portfolio.PrivacyMode}" />
             <Separator />
             <MenuItem Header="{DynamicResource Menu.DataSource}" Tag="&#xE774;" ItemsSource="{Binding DataSourceOptions}">
                 <MenuItem.ItemContainerStyle>
