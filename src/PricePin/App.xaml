@@ -12,29 +12,29 @@
 
         <!-- Right-click menu of a widget. DataContext: WidgetViewModel. x:Shared="False": one copy per widget. -->
         <ContextMenu x:Key="WidgetMenu" x:Shared="False">
-            <MenuItem Header="Hide this widget" Tag="&#xE7B3;" Command="{Binding ToggleVisibilityCommand}" />
-            <MenuItem Header="Settings…" Tag="&#xE713;" Command="{Binding App.OpenSettingsCommand}" />
+            <MenuItem Header="{DynamicResource Menu.HideWidget}" Tag="&#xE7B3;" Command="{Binding ToggleVisibilityCommand}" />
+            <MenuItem Header="{DynamicResource Menu.Settings}" Tag="&#xE713;" Command="{Binding App.OpenSettingsCommand}" />
             <Separator />
             <MenuItem Tag="&#xE8A9;" Command="{Binding SwitchLayoutCommand}">
                 <MenuItem.Style>
                     <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                        <Setter Property="Header" Value="Switch to ticker bar" />
+                        <Setter Property="Header" Value="{DynamicResource Menu.SwitchToBar}" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsTickerBar}" Value="True">
-                                <Setter Property="Header" Value="Switch to list" />
+                                <Setter Property="Header" Value="{DynamicResource Menu.SwitchToList}" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </MenuItem.Style>
             </MenuItem>
-            <MenuItem Header="Stay on top" Tag="&#xE718;" IsCheckable="True" IsChecked="{Binding Topmost}" />
+            <MenuItem Header="{DynamicResource Menu.Topmost}" Tag="&#xE718;" IsCheckable="True" IsChecked="{Binding Topmost}" />
             <MenuItem StaysOpenOnClick="True" Tag="&#xE793;">
                 <MenuItem.Header>
                     <StackPanel Width="170">
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Right" Text="{Binding OpacityText}"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Text="Opacity" />
+                            <TextBlock Text="{DynamicResource Common.Opacity}" />
                         </DockPanel>
                         <Slider Minimum="{Binding OpacityMin}" Maximum="{Binding OpacityMax}"
                                 SmallChange="0.05" LargeChange="0.1"
@@ -42,14 +42,14 @@
                     </StackPanel>
                 </MenuItem.Header>
             </MenuItem>
-            <MenuItem Header="Click-through" Tag="&#xE8B0;" IsCheckable="True" IsChecked="{Binding ClickThrough}"
-                      InputGestureText="off via tray"
-                      ToolTip="The mouse passes through the widget. Turn it off from the tray icon or with Ctrl+Alt+T." />
-            <MenuItem Header="Lock position" Tag="&#xE72E;" IsCheckable="True" IsChecked="{Binding LockPosition}" />
-            <MenuItem Header="Snap to screen edges" Tag="&#xE8A9;" IsCheckable="True" IsChecked="{Binding SnapToEdges}"
-                      ToolTip="Hold Shift while dragging to place the widget freely." />
+            <MenuItem Header="{DynamicResource Menu.ClickThrough}" Tag="&#xE8B0;" IsCheckable="True" IsChecked="{Binding ClickThrough}"
+                      InputGestureText="{DynamicResource Menu.ClickThroughGesture}"
+                      ToolTip="{DynamicResource Menu.ClickThroughTip}" />
+            <MenuItem Header="{DynamicResource Common.Lock}" Tag="&#xE72E;" IsCheckable="True" IsChecked="{Binding LockPosition}" />
+            <MenuItem Header="{DynamicResource Common.Snap}" Tag="&#xE8A9;" IsCheckable="True" IsChecked="{Binding SnapToEdges}"
+                      ToolTip="{DynamicResource Common.SnapTip}" />
             <Separator />
-            <MenuItem Header="Exit PricePin" Tag="&#xE711;" Command="{Binding App.ExitCommand}" />
+            <MenuItem Header="{DynamicResource Menu.Exit}" Tag="&#xE711;" Command="{Binding App.ExitCommand}" />
         </ContextMenu>
 
         <!-- Tray icon menu. DataContext: AppViewModel. -->
@@ -57,20 +57,20 @@
             <MenuItem Tag="&#xE7B3;" Command="{Binding ToggleAllWidgetsCommand}">
                 <MenuItem.Style>
                     <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                        <Setter Property="Header" Value="Hide widgets" />
+                        <Setter Property="Header" Value="{DynamicResource Menu.HideWidgets}" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding AnyWidgetVisible}" Value="False">
-                                <Setter Property="Header" Value="Show widgets" />
+                                <Setter Property="Header" Value="{DynamicResource Menu.ShowWidgets}" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </MenuItem.Style>
             </MenuItem>
-            <MenuItem Header="Click-through" Tag="&#xE8B0;" IsCheckable="True" IsChecked="{Binding AnyClickThrough, Mode=OneWay}"
+            <MenuItem Header="{DynamicResource Menu.ClickThrough}" Tag="&#xE8B0;" IsCheckable="True" IsChecked="{Binding AnyClickThrough, Mode=OneWay}"
                       Command="{Binding ToggleClickThroughAllCommand}" />
-            <MenuItem Header="Settings…" Tag="&#xE713;" Command="{Binding OpenSettingsCommand}" />
+            <MenuItem Header="{DynamicResource Menu.Settings}" Tag="&#xE713;" Command="{Binding OpenSettingsCommand}" />
             <Separator />
-            <MenuItem Header="Data source" Tag="&#xE774;" ItemsSource="{Binding DataSourceOptions}">
+            <MenuItem Header="{DynamicResource Menu.DataSource}" Tag="&#xE774;" ItemsSource="{Binding DataSourceOptions}">
                 <MenuItem.ItemContainerStyle>
                     <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
                         <Setter Property="Header" Value="{Binding Label}" />
@@ -79,11 +79,24 @@
                     </Style>
                 </MenuItem.ItemContainerStyle>
             </MenuItem>
-            <MenuItem Header="Reconnect" Tag="&#xE72C;" Command="{Binding ReconnectCommand}" />
+            <MenuItem Header="{DynamicResource Common.Reconnect}" Tag="&#xE72C;" Command="{Binding ReconnectCommand}" />
+            <MenuItem Tag="&#xE777;" Header="{Binding Updates.RestartMenuText}" Command="{Binding Updates.RestartCommand}">
+                <MenuItem.Style>
+                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Updates.IsReady}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </MenuItem.Style>
+            </MenuItem>
             <Separator />
-            <MenuItem Header="Start with Windows" Tag="&#xE7E8;" IsCheckable="True" IsChecked="{Binding StartWithWindows}" />
+            <MenuItem Header="{DynamicResource Menu.StartWithWindows}" Tag="&#xE7E8;" IsCheckable="True" IsChecked="{Binding StartWithWindows}" />
             <Separator />
-            <MenuItem Header="Exit PricePin" Tag="&#xE711;" Command="{Binding ExitCommand}" />
+            <MenuItem Header="{DynamicResource Menu.Exit}" Tag="&#xE711;" Command="{Binding ExitCommand}" />
         </ContextMenu>
         </ResourceDictionary>
     </Application.Resources>

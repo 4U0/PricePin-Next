@@ -2,7 +2,7 @@
 
 A fast, good-looking crypto price widget for Windows. It floats on your desktop, stays on top if you want it to, and shows live prices that update the moment they change.
 
-> **Status:** early development (v0.4). Live prices, settings, the coin picker, the ticker bar and multiple widgets work; the installer and auto-update are next. See the [roadmap](#roadmap).
+> **Status:** v1.0. Installer with automatic updates, English and Turkish. Price alerts are next. See the [roadmap](#roadmap).
 
 ## Features
 
@@ -19,6 +19,8 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Run several widgets at once (up to 8), each with its own coins, layout, size, opacity and position
 - Global hotkeys: <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd> shows or hides all widgets, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> toggles click-through (both can be changed in Settings)
 - The ticker bar pauses while you hover it, and steps out of the way of full-screen apps
+- Installer with automatic background updates from GitHub Releases (or a portable zip if you'd rather not install)
+- English and Turkish (Türkçe), following your Windows language or picked in Settings
 - Borderless dark "glass" widget you can drag anywhere
 - Snaps to screen edges (hold <kbd>Shift</kbd> while dragging to place it freely)
 - Stay on top, opacity slider (20–100%), and <kbd>Ctrl</kbd> + mouse wheel to change opacity
@@ -31,20 +33,28 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Only one copy runs at a time; launching it again shows the existing widget
 
 **Planned**
-- Installer, auto-update, winget, Turkish and English (v1.0)
 - Price alerts and live price on the tray icon (v1.1)
 - Portfolio with privacy blur (v1.2)
 - Coin detail charts and market overview (v1.3)
 
 ## Download
 
-Grab `PricePin.exe` from the latest build:
+Get it from the [latest release](../../releases/latest):
 
-1. Open the [Actions tab](../../actions/workflows/build.yml) and pick the newest successful run.
-2. Download **PricePin-win-x64** (or **PricePin-win-arm64** for ARM PCs) under *Artifacts*.
-3. Unzip and run `PricePin.exe`. No install needed.
+- **PricePin-win-x64-Setup.exe**: installs for your user only (no admin rights), adds a Start menu shortcut and keeps itself up to date. Use **PricePin-win-arm64-Setup.exe** on ARM PCs.
+- **PricePin-win-x64-Portable.zip**: unzip anywhere and run `PricePin.exe`. The portable copy doesn't update itself.
 
-The exe isn't code-signed yet, so Windows SmartScreen may warn the first time. Click **More info → Run anyway**.
+Or with the Windows Package Manager, once it's listed there:
+
+```powershell
+winget install PricePin
+```
+
+Uninstall from *Settings → Apps* like any other app. Your settings stay in `%AppData%\PricePin` in case you come back; delete that folder to remove them too.
+
+The installer isn't code-signed yet, so Windows SmartScreen may warn the first time. Click **More info → Run anyway**.
+
+Want to try unreleased changes? Every build on the [Actions tab](../../actions/workflows/build.yml) has a test installer and a single-file exe under *Artifacts*.
 
 ## Build from source
 
@@ -89,14 +99,22 @@ dotnet run --project tools/FeedProbe -- 15 BTC ETH SOL
 2. **Live data**: Binance, Coinbase and Kraken feeds, failover, REST fallback, logos, sparklines, design refresh ✅
 3. **v0.3 Settings**: settings window, coin picker, display currency, themes, sizes ✅
 4. **v0.4 Layouts**: ticker bar, multiple widgets, hotkeys ✅
-5. **v1.0 Launch**: installer, auto-update, winget, code signing, Turkish and English
+5. **v1.0 Launch**: installer, auto-update, Turkish and English ✅ (winget listing and code signing are set up and switch on after the first release; see [RELEASING.md](docs/RELEASING.md))
 6. **v1.1**: price alerts, live price on the tray icon
 7. **v1.2**: portfolio and privacy blur
 8. **v1.3**: coin detail charts, market overview (Fear & Greed, BTC dominance)
 
+## Translating
+
+PricePin's text lives in [`src/PricePin/Strings`](src/PricePin/Strings). To add a language, copy `Strings.en.xaml` to `Strings.<code>.xaml` (for example `Strings.de.xaml`), translate the text between the tags, keep `{0}`-style placeholders, and add the language to `Loc.Languages` in [`Services/Loc.cs`](src/PricePin/Services/Loc.cs). The tests check that every translation has the same keys and placeholders as English.
+
+## Releasing
+
+See [docs/RELEASING.md](docs/RELEASING.md).
+
 ## Tech
 
-C# · .NET 10 · WPF · [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) · [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon)
+C# · .NET 10 · WPF · [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) · [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon) · [Velopack](https://velopack.io) (installer and updates)
 
 ## License
 

@@ -31,6 +31,7 @@ public partial class App : Application
     private LogoProvider? _logos;
     private CoinCatalogService? _catalog;
     private HotkeyService? _hotkeys;
+    private UpdatesViewModel? _updates;
     private AppViewModel? _vm;
     private TaskbarIcon? _tray;
     private SettingsWindow? _settingsWindow;
@@ -63,6 +64,7 @@ public partial class App : Application
         _settings = new SettingsService();
         _theme = new ThemeService(Resources);
         _theme.Apply(_settings.Current.Theme, _settings.Current.Accent);
+        Loc.Apply(_settings.Current.Language);
 
         _market = new MarketDataService();
         var localData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PricePin");
@@ -75,6 +77,12 @@ public partial class App : Application
         _vm.HotkeysChanged += (_, _) => RegisterHotkeys();
         _vm.Widgets.CollectionChanged += OnWidgetsChanged;
 
+        _updates = new UpdatesViewModel(new UpdateService(), _vm);
+        _updates.ReadyToRestart += (_, _) => _tray?.ShowNotification(
+            Loc.F("Update.NotifyTitle", _updates.NewVersion), Loc.T("Update.NotifyBody"), NotificationIcon.Info);
+        _updates.RestartRequested += (_, _) => RestartForUpdate();
+        _vm.Updates = _updates;
+
         CreateTrayIcon();
 
         _hotkeys = new HotkeyService();
@@ -84,11 +92,13 @@ public partial class App : Application
             Attach(widget);
 
         _vm.Start();
+        _updates.Start();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _vm?.Dispose();
+        _updates?.Dispose();
         _hotkeys?.Dispose();
         _theme?.Dispose();
         // Close sockets politely, but never let shutdown hang on the network.
@@ -143,8 +153,8 @@ public partial class App : Application
                 // Click-through makes the widget ignore the mouse, so point people to the way back once.
                 _clickThroughHintShown = true;
                 _tray?.ShowNotification(
-                    "Click-through is on",
-                    $"The mouse now passes through the widget. Turn it off from the PricePin tray icon or with {_vm!.HotkeyToggleClickThrough}.",
+                    Loc.T("Notify.ClickThroughTitle"),
+                    Loc.F("Notify.ClickThroughBody", _vm!.HotkeyToggleClickThrough),
                     NotificationIcon.Info);
                 break;
         }
@@ -216,7 +226,7 @@ public partial class App : Application
 
         _vm.HotkeyWarning = failed.Count == 0
             ? null
-            : $"{string.Join(" and ", failed)} couldn't be set. Another app may already use it; try a different combination.";
+            : Loc.F("Hotkey.Failed", string.Join(Loc.T("Hotkey.And"), failed));
     }
 
     private void ShowSettings()
@@ -266,6 +276,36 @@ public partial class App : Application
             Name = "PricePin single-instance listener",
         };
         thread.Start();
+    }
+
+    /// <summary>Tidies up like a normal exit, then hands over to Velopack to install and restart.</summary>
+    private void RestartForUpdate()
+    {
+        if (_exiting)
+            return;
+        _exiting = true;
+        _settings?.SaveNow();
+        _settingsWindow?.Close();
+        foreach (var widget in _windows.Keys.ToList())
+            CloseWindowFor(widget); // also gives back any reserved ticker-bar space
+        _hotkeys?.Dispose();
+        _tray?.Dispose();
+        try
+        {
+            _instanceMutex?.ReleaseMutex();
+        }
+        catch (ApplicationException)
+        {
+        }
+        try
+        {
+            _updates?.ApplyAndRestart(); // exits the process
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write(ex);
+        }
+        Shutdown();
     }
 
     private void ExitApp()

@@ -51,14 +51,24 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
 
         DataSourceOptions =
         [
-            new(DataSource.Auto, "Automatic (best available)",
-                "Tries Binance, then Coinbase, then Kraken, and switches by itself if one is down or blocked where you are.", SelectDataSource),
-            new(DataSource.Binance, "Binance", "Largest choice of coins. Not available in some countries.", SelectDataSource),
-            new(DataSource.Coinbase, "Coinbase", "Real USD prices. Available almost everywhere.", SelectDataSource),
-            new(DataSource.Kraken, "Kraken", "Real USD and EUR prices. Available almost everywhere.", SelectDataSource),
+            new(DataSource.Auto, "Auto", "Source.Auto", "Source.AutoDesc", SelectDataSource),
+            new(DataSource.Binance, "Binance", null, "Source.BinanceDesc", SelectDataSource),
+            new(DataSource.Coinbase, "Coinbase", null, "Source.CoinbaseDesc", SelectDataSource),
+            new(DataSource.Kraken, "Kraken", null, "Source.KrakenDesc", SelectDataSource),
         ];
         foreach (var o in DataSourceOptions)
             o.IsSelected = o.Value == s.DataSource;
+
+        LanguageOptions =
+        [
+            new(AppSettings.SystemLanguage, null, SelectLanguage),
+            .. Loc.Languages.Select(l => new LanguageOption(l.Code, l.NativeName, SelectLanguage)),
+        ];
+        foreach (var o in LanguageOptions)
+            o.IsSelected = o.Code == s.Language;
+        if (!LanguageOptions.Any(o => o.IsSelected))
+            LanguageOptions[0].IsSelected = true;
+        Loc.Changed += OnLanguageChanged;
 
         _hotkeyToggleWidgets = s.Hotkeys.ToggleWidgets;
         _hotkeyToggleClickThrough = s.Hotkeys.ToggleClickThrough;
@@ -85,6 +95,14 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     public AppSettings Settings => _settings.Current;
     public ObservableCollection<WidgetViewModel> Widgets { get; }
     public IReadOnlyList<DataSourceOption> DataSourceOptions { get; }
+    public IReadOnlyList<LanguageOption> LanguageOptions { get; }
+
+    /// <summary>Background updates; set by the app at startup.</summary>
+    public UpdatesViewModel? Updates { get; set; }
+
+    /// <summary>"Turn it off again here, from the tray icon, or with Ctrl+Alt+T."</summary>
+    public string ClickThroughOffHint =>
+        Loc.F("Widgets.ClickThroughHint", string.IsNullOrWhiteSpace(HotkeyToggleClickThrough) ? "—" : HotkeyToggleClickThrough);
 
     [ObservableProperty]
     private bool _startWithWindows;
@@ -114,6 +132,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     partial void OnHotkeyToggleClickThroughChanged(string value)
     {
         Settings.Hotkeys.ToggleClickThrough = value;
+        OnPropertyChanged(nameof(ClickThroughOffHint));
         Save();
         HotkeysChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -122,13 +141,13 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     private FeedState _statusState = FeedState.Connecting;
 
     [ObservableProperty]
-    private string _statusLabel = "CONNECTING";
+    private string _statusLabel = "";
 
     [ObservableProperty]
     private string _statusSource = "";
 
     [ObservableProperty]
-    private string _statusDetail = "Connecting…";
+    private string _statusDetail = "";
 
     [ObservableProperty]
     private string _trayToolTip = "PricePin";
@@ -141,6 +160,8 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
 
     public void Start()
     {
+        ApplyStatusLabel();
+        RefreshStatusText();
         _flushTimer.Start();
         _clockTimer.Start();
         foreach (var w in Widgets)
@@ -220,7 +241,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
 
         var cfg = new WidgetSettings
         {
-            Name = layout == WidgetLayout.TickerBar ? "Ticker bar" : $"Widget {Widgets.Count + 1}",
+            Name = layout == WidgetLayout.TickerBar ? Loc.T("Widgets.Bar") : Loc.F("Widget.DefaultName", Widgets.Count + 1),
             Layout = layout,
             Coins = Widgets.FirstOrDefault()?.Settings.Coins.ToList() ?? [.. Core.Coins.CoinCatalog.Defaults],
         };
@@ -252,6 +273,29 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         Settings.DataSource = option.Value;
         Save();
         RestartFeed();
+    }
+
+    private void SelectLanguage(LanguageOption option)
+    {
+        foreach (var o in LanguageOptions)
+            o.IsSelected = o == option;
+        Settings.Language = option.Code;
+        Save();
+        Loc.Apply(option.Code);
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        foreach (var o in DataSourceOptions)
+            o.RefreshText();
+        foreach (var o in LanguageOptions)
+            o.RefreshText();
+        OnPropertyChanged(nameof(ClickThroughOffHint));
+        ApplyStatusLabel();
+        RefreshStatusText();
+        foreach (var w in Widgets)
+            w.RefreshText();
+        Updates?.RefreshText();
     }
 
     private void RestartFeed()
@@ -305,38 +349,48 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
             _status = status;
             StatusState = status.State;
             StatusSource = status.State is FeedState.Offline ? "" : status.Source;
-            StatusLabel = status.State switch
-            {
-                FeedState.Live => "LIVE",
-                FeedState.Polling => "DELAYED",
-                FeedState.Connecting => "CONNECTING",
-                FeedState.Reconnecting => "RECONNECTING",
-                _ => "OFFLINE",
-            };
+            ApplyStatusLabel();
             RefreshStatusText();
+        });
+
+    private void ApplyStatusLabel() =>
+        StatusLabel = Loc.T(_status.State switch
+        {
+            FeedState.Live => "Status.Live",
+            FeedState.Polling => "Status.Delayed",
+            FeedState.Connecting => "Status.Connecting",
+            FeedState.Reconnecting => "Status.Reconnecting",
+            _ => "Status.Offline",
         });
 
     private void RefreshStatusText()
     {
         var now = DateTimeOffset.UtcNow;
-        var retry = _status.RetryAt is { } at && at > now ? $" Retrying in {Math.Ceiling((at - now).TotalSeconds):0}s." : "";
-        var age = _lastTickAt == default ? "" : $" Last update {FormatAge(now - _lastTickAt)} ago.";
+        var retry = _status.RetryAt is { } at && at > now ? Loc.F("Status.Retry", FormatAge(at - now)) : "";
+        var age = _lastTickAt == default ? "" : Loc.F("Status.Age", FormatAge(now - _lastTickAt));
 
-        StatusDetail = _status.State switch
+        var detail = _status.State switch
         {
-            FeedState.Live => $"Streaming live from {_status.Source}.{age}",
-            FeedState.Polling => $"Streaming isn't available right now, so prices are fetched from {_status.Source} every few seconds.{age}",
-            FeedState.Connecting => $"Connecting to {_status.Source}…",
-            FeedState.Reconnecting => $"{_status.Detail ?? "Connection lost"}.{retry}",
-            _ => $"{_status.Detail ?? "Offline"}.{retry} Check your internet connection.",
+            FeedState.Live => Loc.F("Status.LiveDetail", _status.Source, age),
+            FeedState.Polling => Loc.F("Status.PollingDetail", _status.Source, age),
+            FeedState.Connecting => Loc.F("Status.ConnectingDetail", _status.Source),
+            FeedState.Reconnecting => Loc.F("Status.ReconnectingDetail", _status.Source, retry),
+            _ when !Widgets.Any(w => w.Settings.Coins.Count > 0) => Loc.T("Status.NoCoins"),
+            _ => Loc.F("Status.OfflineDetail", retry),
         };
+        // The exchange's own error text (technical, in English) helps when reporting problems.
+        if (_status.State is FeedState.Reconnecting && !string.IsNullOrWhiteSpace(_status.Detail))
+            detail += "\n" + _status.Detail;
+        StatusDetail = detail;
 
         if (Widgets.SelectMany(w => w.Coins).FirstOrDefault() is { HasPrice: true } first)
             TrayToolTip = $"PricePin · {first.Symbol} {first.PriceText} {first.ChangeText}";
     }
 
     private static string FormatAge(TimeSpan t) =>
-        t.TotalSeconds < 1 ? "<1s" : t.TotalMinutes < 1 ? $"{t.TotalSeconds:0}s" : $"{t.TotalMinutes:0}m";
+        t.TotalSeconds < 1 ? Loc.T("Time.UnderSecond")
+        : t.TotalMinutes < 1 ? Loc.F("Time.Seconds", Math.Ceiling(t.TotalSeconds))
+        : Loc.F("Time.Minutes", Math.Floor(t.TotalMinutes));
 
     // ---- Logos and history (shared by every widget) -------------------------------------
 
@@ -408,6 +462,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _restartTimer.Stop();
         _market.TickReceived -= OnTickReceived;
         _market.StatusChanged -= OnStatusChanged;
+        Loc.Changed -= OnLanguageChanged;
     }
 
     internal static string Percent(double value) => Math.Round(value * 100).ToString(CultureInfo.InvariantCulture) + "%";

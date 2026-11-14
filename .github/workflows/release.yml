@@ -1,0 +1,108 @@
+name: Release
+
+# Push a tag like v1.0.0 (matching <Version> in Directory.Build.props) to publish a release.
+# Builds the installer and portable zip for x64 and ARM64 with Velopack and uploads them to
+# GitHub Releases, where installed copies of PricePin find them and update themselves.
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, e.g. 1.0.0 (a v-prefixed tag is created)
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Work out version
+        shell: pwsh
+        run: |
+          $raw = '${{ inputs.version }}'
+          if (-not $raw) { $raw = '${{ github.ref_name }}' }
+          $version = $raw.TrimStart('v')
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "Not a version: $raw" }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+          # Release notes: the matching "## <version>" section of CHANGELOG.md.
+          $log = Get-Content CHANGELOG.md -Raw
+          $m = [regex]::Match($log, "(?ms)^## \[?v?$([regex]::Escape($version))\]?[^\r\n]*\r?\n(.*?)(?=^## |\z)")
+          $notes = if ($m.Success) { $m.Groups[1].Value.Trim() } else { "PricePin $version" }
+          Set-Content -Path release-notes.md -Value $notes -Encoding utf8
+
+      - name: Test
+        run: dotnet test tests/PricePin.Core.Tests -c Release
+
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk --version 1.2.161
+
+      - name: Build packages
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Optional code signing, e.g. a SignPath or signtool command; {{file}} is the file to sign.
+          SIGN_TEMPLATE: ${{ vars.VPK_SIGN_TEMPLATE }}
+        run: |
+          $repo = "${{ github.server_url }}/${{ github.repository }}"
+          foreach ($rid in 'win-x64', 'win-arm64') {
+            dotnet publish src/PricePin/PricePin.csproj -c Release -r $rid --self-contained `
+              -p:Version=$env:VERSION -p:DebugType=none -o "publish/$rid"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+            # Previous release, so small delta updates can be made. Missing on the first release.
+            vpk download github --repoUrl $repo --channel $rid --token $env:GH_TOKEN -o releases
+            if ($LASTEXITCODE -ne 0) { Write-Host "No earlier $rid release to diff against." }
+
+            $sign = @()
+            if ($env:SIGN_TEMPLATE) { $sign = @('--signTemplate', $env:SIGN_TEMPLATE) }
+            vpk pack -u PricePin -v $env:VERSION -p "publish/$rid" -e PricePin.exe -r $rid --channel $rid `
+              -i src/PricePin/Assets/PricePin.ico --packTitle PricePin --packAuthors "PricePin contributors" `
+              --releaseNotes release-notes.md -o releases @sign
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          Get-ChildItem releases
+
+      - name: Publish to GitHub Releases
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $repo = "${{ github.server_url }}/${{ github.repository }}"
+          $pre = @()
+          if ($env:VERSION -like '*-*') { $pre = @('--pre') }
+          foreach ($rid in 'win-x64', 'win-arm64') {
+            vpk upload github --repoUrl $repo --channel $rid --token $env:GH_TOKEN -o releases `
+              --tag "v$env:VERSION" --releaseName "PricePin $env:VERSION" --targetCommitish ${{ github.sha }} `
+              --publish --merge @pre
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+  winget:
+    # Sends the new version to the Windows Package Manager. Off until the first version has
+    # been submitted by hand and the WINGET_TOKEN secret exists; see docs/RELEASING.md.
+    name: Update winget
+    needs: release
+    if: vars.WINGET_ENABLED == 'true' && !contains(github.ref_name, '-')
+    runs-on: windows-latest
+    steps:
+      - uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: ${{ vars.WINGET_ID || '4U0.PricePin' }}
+          installers-regex: '-Setup\.exe$'
+          release-tag: ${{ inputs.version && format('v{0}', inputs.version) || github.ref_name }}
+          token: ${{ secrets.WINGET_TOKEN }}

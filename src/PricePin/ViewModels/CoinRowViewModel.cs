@@ -3,6 +3,7 @@ using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PricePin.Core.Coins;
 using PricePin.Core.Market;
+using PricePin.Services;
 
 namespace PricePin.ViewModels;
 
@@ -86,9 +87,19 @@ public sealed partial class CoinRowViewModel : ObservableObject
         {
             string F(decimal? v) => v is { } d ? _currencyPrefix + FormatNumber(d) + _currencySuffix : "—";
             var vol = Volume24h is { } v ? FormatCompact(v) + " " + Symbol : "—";
-            return $"{Name} ({Symbol})\n24h high   {F(High24h)}\n24h low    {F(Low24h)}\n24h volume {vol}\nSource     {Source ?? "—"}";
+            (string Label, string Value)[] lines =
+            [
+                (Loc.T("Coin.High"), F(High24h)),
+                (Loc.T("Coin.Low"), F(Low24h)),
+                (Loc.T("Coin.Volume"), vol),
+                (Loc.T("Coin.Source"), Source ?? "—"),
+            ];
+            var width = lines.Max(l => l.Label.Length) + 2;
+            return $"{Name} ({Symbol})\n" + string.Join("\n", lines.Select(l => l.Label.PadRight(width) + l.Value));
         }
     }
+
+    public void RefreshText() => OnPropertyChanged(nameof(DetailsText));
 
     /// <summary>Applies one merged update from the feed.</summary>
     public void Apply(Ticker t)

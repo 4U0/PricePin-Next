@@ -144,6 +144,14 @@ public sealed class AppSettings
 
     public HotkeySettings Hotkeys { get; set; } = new();
 
+    /// <summary>UI language code ("en", "tr", ...) or "system" to follow Windows.</summary>
+    public string Language { get; set; } = SystemLanguage;
+
+    /// <summary>Check GitHub Releases for new versions and download them in the background.</summary>
+    public bool AutoUpdate { get; set; } = true;
+
+    public const string SystemLanguage = "system";
+
     // ---- Version 1 fields, read once to migrate and never written again ----
     [JsonPropertyName("Topmost"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public bool? V1Topmost { get; set; }
     [JsonPropertyName("Opacity"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public double? V1Opacity { get; set; }
@@ -178,6 +186,7 @@ public sealed class AppSettings
         if (!Enum.IsDefined(Theme)) Theme = AppTheme.Dark;
         if (!AccentPresets.IsValid(Accent)) Accent = AccentPresets.Default;
         Hotkeys ??= new HotkeySettings();
+        Language = string.IsNullOrWhiteSpace(Language) ? SystemLanguage : Language.Trim().ToLowerInvariant();
         SchemaVersion = CurrentSchemaVersion;
     }
 
