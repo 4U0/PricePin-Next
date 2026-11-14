@@ -27,7 +27,7 @@ public sealed partial class CatalogItemViewModel(CatalogCoin coin, ImageSource? 
 {
     public string Symbol { get; } = coin.Symbol;
     public string Name { get; } = coin.Name;
-    public string Exchanges { get; } = coin.Exchanges.Count > 0 ? string.Join(" · ", coin.Exchanges) : "Not listed on supported exchanges";
+    public string Exchanges => coin.Exchanges.Count > 0 ? string.Join(" · ", coin.Exchanges) : Loc.T("Coins.NotListed");
     public ImageSource? Logo { get; } = logo;
     public string Initial => Symbol[..1];
 
@@ -86,7 +86,15 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         foreach (var a in AccentOptions)
             a.IsSelected = string.Equals(a.Hex, s.Accent, StringComparison.OrdinalIgnoreCase);
 
+        Loc.Changed += OnLanguageChanged;
         _ = LoadCatalogAsync();
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(CatalogStatus));
+        OnPropertyChanged(nameof(CoinCountText));
+        OnPropertyChanged(nameof(AddCustomText));
     }
 
     public AppViewModel App { get; }
@@ -153,7 +161,20 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
         ?? "dev";
 
-    public string CoinCountText => $"{SelectedCoins.Count} of {MaxCoins}";
+    public string CoinCountText => Loc.F("Coins.Count", SelectedCoins.Count, MaxCoins);
+
+    /// <summary>"Add XYZ anyway" for a symbol that isn't in any exchange's list.</summary>
+    public string AddCustomText => CustomSymbol is null ? "" : Loc.F("Coins.AddAnyway", CustomSymbol);
+
+    /// <summary>Coins in the loaded list: null while loading, 0 if loading failed.</summary>
+    private int? _catalogCount;
+
+    public string CatalogStatus => _catalogCount switch
+    {
+        null => Loc.T("Coins.Loading"),
+        0 => Loc.T("Coins.LoadFailed"),
+        var n => Loc.F("Coins.Loaded", n, QuoteCurrency),
+    };
 
     [ObservableProperty]
     private string _page = "General";
@@ -161,11 +182,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _searchText = "";
 
-    [ObservableProperty]
-    private string _catalogStatus = "Loading coin list…";
 
     /// <summary>Shown under the search box when the typed symbol isn't in any exchange list.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AddCustomText))]
     private string? _customSymbol;
 
     [ObservableProperty]
@@ -292,16 +312,16 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private async Task LoadCatalogAsync()
     {
         var request = ++_catalogRequest;
-        CatalogStatus = "Loading coin list…";
+        _catalogCount = null;
+        OnPropertyChanged(nameof(CatalogStatus));
         try
         {
             var coins = await _catalog.GetCoinsAsync(QuoteCurrency, _lifetime.Token);
             if (request != _catalogRequest)
                 return; // currency changed while loading
             _allCoins = coins;
-            CatalogStatus = coins.Count > 0
-                ? $"{coins.Count:N0} coins available in {QuoteCurrency}"
-                : "Couldn't load the coin list. You can still add a coin by typing its symbol.";
+            _catalogCount = coins.Count;
+            OnPropertyChanged(nameof(CatalogStatus));
             RefreshSearch();
         }
         catch (OperationCanceledException)
@@ -361,5 +381,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private void OpenProjectPage() =>
         Process.Start(new ProcessStartInfo("https://github.com/4U0/PricePin-Next") { UseShellExecute = true });
 
-    public void Dispose() => _lifetime.Cancel();
+    public void Dispose()
+    {
+        Loc.Changed -= OnLanguageChanged;
+        _lifetime.Cancel();
+    }
 }

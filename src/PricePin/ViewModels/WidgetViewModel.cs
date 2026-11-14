@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using PricePin.Core.Coins;
 using PricePin.Core.Market;
 using PricePin.Core.Settings;
+using PricePin.Services;
 
 namespace PricePin.ViewModels;
 
@@ -73,7 +74,15 @@ public sealed partial class WidgetViewModel : ObservableObject
 
     public bool IsTickerBar => Layout == WidgetLayout.TickerBar;
     public bool IsFloating => Dock == BarDock.Floating;
-    public string LayoutLabel => IsTickerBar ? "Ticker bar" : "List";
+    public string LayoutLabel => Loc.T(IsTickerBar ? "Widgets.Bar" : "Widgets.List");
+
+    /// <summary>Re-reads text after the UI language changes.</summary>
+    public void RefreshText()
+    {
+        OnPropertyChanged(nameof(LayoutLabel));
+        foreach (var c in Coins)
+            c.RefreshText();
+    }
 
     /// <summary>Zoom applied to the whole widget.</summary>
     public double Scale => Size switch
@@ -86,7 +95,7 @@ public sealed partial class WidgetViewModel : ObservableObject
     /// <summary>List card width before scaling; narrower when columns are hidden.</summary>
     public double CardWidth => 320 - (ShowSparklines ? 0 : 64) - (ShowNames ? 0 : 36);
 
-    partial void OnNameChanged(string value) => Save(s => s.Name = string.IsNullOrWhiteSpace(value) ? "Widget" : value.Trim());
+    partial void OnNameChanged(string value) => Save(s => s.Name = string.IsNullOrWhiteSpace(value) ? Loc.T("Widget.FallbackName") : value.Trim());
 
     partial void OnLayoutChanged(WidgetLayout value)
     {

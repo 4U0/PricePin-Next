@@ -1,0 +1,191 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <!-- PricePin UI text: Türkçe (Turkish). Keep {0}, {1} placeholders. Keys missing here fall back to English. -->
+
+    <!-- Menu -->
+    <sys:String x:Key="Menu.HideWidget">Bu widget'ı gizle</sys:String>
+    <sys:String x:Key="Menu.Settings">Ayarlar…</sys:String>
+    <sys:String x:Key="Menu.SwitchToBar">Kayan şeride geç</sys:String>
+    <sys:String x:Key="Menu.SwitchToList">Listeye geç</sys:String>
+    <sys:String x:Key="Menu.Topmost">Her zaman üstte</sys:String>
+    <sys:String x:Key="Menu.ClickThrough">Tıklamaları geçir</sys:String>
+    <sys:String x:Key="Menu.ClickThroughGesture">tepsiden kapatın</sys:String>
+    <sys:String x:Key="Menu.ClickThroughTip">Fare widget'ın içinden geçer. Tepsi simgesinden veya tıklama geçirme kısayoluyla kapatın.</sys:String>
+    <sys:String x:Key="Menu.Exit">PricePin'den çık</sys:String>
+    <sys:String x:Key="Menu.HideWidgets">Widget'ları gizle</sys:String>
+    <sys:String x:Key="Menu.ShowWidgets">Widget'ları göster</sys:String>
+    <sys:String x:Key="Menu.DataSource">Veri kaynağı</sys:String>
+    <sys:String x:Key="Menu.StartWithWindows">Windows ile başlat</sys:String>
+    <sys:String x:Key="Menu.RestartToUpdate">{0} sürümüne güncellemek için yeniden başlat</sys:String>
+
+    <!-- Common -->
+    <sys:String x:Key="Common.Opacity">Opaklık</sys:String>
+    <sys:String x:Key="Common.Lock">Konumu kilitle</sys:String>
+    <sys:String x:Key="Common.Snap">Ekran kenarlarına yapıştır</sys:String>
+    <sys:String x:Key="Common.SnapTip">Serbestçe yerleştirmek için sürüklerken Shift tuşunu basılı tutun.</sys:String>
+    <sys:String x:Key="Common.Reconnect">Yeniden bağlan</sys:String>
+    <sys:String x:Key="Common.Remove">Kaldır</sys:String>
+    <sys:String x:Key="Common.Add">Ekle</sys:String>
+    <sys:String x:Key="Common.Minimize">Küçült</sys:String>
+    <sys:String x:Key="Common.Close">Kapat</sys:String>
+    <sys:String x:Key="Common.Settings">Ayarlar</sys:String>
+    <sys:String x:Key="Common.Options">Seçenekler</sys:String>
+    <sys:String x:Key="Common.HideToTray">Tepsiye gizle</sys:String>
+    <sys:String x:Key="Common.MoveUp">Yukarı taşı</sys:String>
+    <sys:String x:Key="Common.MoveDown">Aşağı taşı</sys:String>
+
+    <!-- Widget -->
+    <sys:String x:Key="Widget.Asset">VARLIK</sys:String>
+    <sys:String x:Key="Widget.Change">24S</sys:String>
+    <sys:String x:Key="Widget.Price">FİYAT</sys:String>
+    <sys:String x:Key="Widget.Empty">Henüz coin yok. Eklemek için Ayarlar'ı açın.</sys:String>
+    <sys:String x:Key="Widget.DefaultName">Widget {0}</sys:String>
+    <sys:String x:Key="Widget.FallbackName">Widget</sys:String>
+
+    <!-- Status -->
+    <sys:String x:Key="Status.Live">CANLI</sys:String>
+    <sys:String x:Key="Status.Delayed">GECİKMELİ</sys:String>
+    <sys:String x:Key="Status.Connecting">BAĞLANIYOR</sys:String>
+    <sys:String x:Key="Status.Reconnecting">BAĞLANIYOR</sys:String>
+    <sys:String x:Key="Status.Offline">ÇEVRİMDIŞI</sys:String>
+    <sys:String x:Key="Status.LiveDetail">{0} üzerinden canlı yayın.{1}</sys:String>
+    <sys:String x:Key="Status.PollingDetail">Canlı yayın şu an kullanılamıyor, bu yüzden fiyatlar birkaç saniyede bir {0} üzerinden alınıyor.{1}</sys:String>
+    <sys:String x:Key="Status.ConnectingDetail">{0} bağlantısı kuruluyor…</sys:String>
+    <sys:String x:Key="Status.ReconnectingDetail">{0} bağlantısı kesildi.{1}</sys:String>
+    <sys:String x:Key="Status.OfflineDetail">Hiçbir borsaya ulaşılamıyor.{0} İnternet bağlantınızı kontrol edin.</sys:String>
+    <sys:String x:Key="Status.NoCoins">Hiç coin seçilmedi.</sys:String>
+    <sys:String x:Key="Status.Retry" xml:space="preserve"> {0} içinde yeniden denenecek.</sys:String>
+    <sys:String x:Key="Status.Age" xml:space="preserve"> Son güncelleme {0} önce.</sys:String>
+
+    <!-- Time -->
+    <sys:String x:Key="Time.UnderSecond">&lt;1 sn</sys:String>
+    <sys:String x:Key="Time.Seconds">{0} sn</sys:String>
+    <sys:String x:Key="Time.Minutes">{0} dk</sys:String>
+
+    <!-- Source -->
+    <sys:String x:Key="Source.Auto">Otomatik (en iyisi)</sys:String>
+    <sys:String x:Key="Source.AutoDesc">Önce Binance'i, sonra Coinbase'i, sonra Kraken'ı dener; biri çalışmıyorsa veya bulunduğunuz yerde engelliyse kendiliğinden geçiş yapar.</sys:String>
+    <sys:String x:Key="Source.BinanceDesc">En geniş coin seçeneği. Bazı ülkelerde kullanılamaz.</sys:String>
+    <sys:String x:Key="Source.CoinbaseDesc">Gerçek USD fiyatları. Neredeyse her yerde kullanılabilir.</sys:String>
+    <sys:String x:Key="Source.KrakenDesc">Gerçek USD ve EUR fiyatları. Neredeyse her yerde kullanılabilir.</sys:String>
+
+    <!-- Coin -->
+    <sys:String x:Key="Coin.High">24s en yüksek</sys:String>
+    <sys:String x:Key="Coin.Low">24s en düşük</sys:String>
+    <sys:String x:Key="Coin.Volume">24s hacim</sys:String>
+    <sys:String x:Key="Coin.Source">Kaynak</sys:String>
+
+    <!-- Notify -->
+    <sys:String x:Key="Notify.ClickThroughTitle">Tıklama geçirme açık</sys:String>
+    <sys:String x:Key="Notify.ClickThroughBody">Fare artık widget'ın içinden geçiyor. PricePin tepsi simgesinden veya {0} ile kapatın.</sys:String>
+
+    <!-- Hotkey -->
+    <sys:String x:Key="Hotkey.And" xml:space="preserve"> ve </sys:String>
+    <sys:String x:Key="Hotkey.Failed">{0} ayarlanamadı. Başka bir uygulama kullanıyor olabilir; farklı bir kombinasyon deneyin.</sys:String>
+
+    <!-- Settings -->
+    <sys:String x:Key="Settings.Title">PricePin Ayarları</sys:String>
+    <sys:String x:Key="Settings.Version">Sürüm</sys:String>
+
+    <!-- Nav -->
+    <sys:String x:Key="Nav.General">Genel</sys:String>
+    <sys:String x:Key="Nav.Widgets">Widget'lar</sys:String>
+    <sys:String x:Key="Nav.Coins">Coinler</sys:String>
+    <sys:String x:Key="Nav.Appearance">Görünüm</sys:String>
+    <sys:String x:Key="Nav.Data">Veri ve hakkında</sys:String>
+
+    <!-- Picker -->
+    <sys:String x:Key="Picker.AddList">+ Liste</sys:String>
+    <sys:String x:Key="Picker.AddBar">+ Kayan şerit</sys:String>
+
+    <!-- General -->
+    <sys:String x:Key="General.Startup">BAŞLANGIÇ</sys:String>
+    <sys:String x:Key="General.StartWithWindows">Windows açıldığında PricePin'i başlat</sys:String>
+    <sys:String x:Key="General.Language">DİL</sys:String>
+    <sys:String x:Key="General.LanguageSystem">Windows ile aynı</sys:String>
+    <sys:String x:Key="General.LanguageHint">PricePin'i kendi dilinizde mi görmek istiyorsunuz? Çevirilere GitHub'da katkıda bulunabilirsiniz.</sys:String>
+    <sys:String x:Key="General.Shortcuts">KLAVYE KISAYOLLARI</sys:String>
+    <sys:String x:Key="General.PressShortcut">Kısayola basın</sys:String>
+    <sys:String x:Key="General.ToggleWidgets">Tüm widget'ları göster veya gizle</sys:String>
+    <sys:String x:Key="General.ToggleClickThrough">Tıklama geçirmeyi aç veya kapat</sys:String>
+    <sys:String x:Key="General.ShortcutHint">Bir kutuya tıklayıp tuşlara basın (Ctrl, Alt, Shift veya Win ile bir tuş). Geri tuşu kısayolu siler.</sys:String>
+    <sys:String x:Key="General.Updates">GÜNCELLEMELER</sys:String>
+    <sys:String x:Key="General.AutoUpdate">Güncellemeleri otomatik indir</sys:String>
+
+    <!-- Update -->
+    <sys:String x:Key="Update.CheckNow">Şimdi denetle</sys:String>
+    <sys:String x:Key="Update.Download">İndir</sys:String>
+    <sys:String x:Key="Update.Restart">Güncellemek için yeniden başlat</sys:String>
+    <sys:String x:Key="Update.Portable">Otomatik güncellemeler kurulu sürümde çalışır. Kurulum dosyasını GitHub Releases sayfasından indirin.</sys:String>
+    <sys:String x:Key="Update.Idle">PricePin birkaç saatte bir güncellemeleri denetler.</sys:String>
+    <sys:String x:Key="Update.Checking">Güncellemeler denetleniyor…</sys:String>
+    <sys:String x:Key="Update.UpToDate">En son sürümü kullanıyorsunuz ({0}).</sys:String>
+    <sys:String x:Key="Update.Available">{0} sürümü mevcut.</sys:String>
+    <sys:String x:Key="Update.Downloading">{0} sürümü indiriliyor… %{1}</sys:String>
+    <sys:String x:Key="Update.Ready">{0} sürümü hazır. Güncellemeyi bitirmek için PricePin'i yeniden başlatın.</sys:String>
+    <sys:String x:Key="Update.Failed">Güncellemeler denetlenemedi. {0}</sys:String>
+    <sys:String x:Key="Update.NotifyTitle">PricePin {0} hazır</sys:String>
+    <sys:String x:Key="Update.NotifyBody">Şimdi güncellemek için tepsi menüsünden yeniden başlatın; aksi halde PricePin bir sonraki açılışta güncellenir.</sys:String>
+
+    <!-- Widgets -->
+    <sys:String x:Key="Widgets.Intro">En fazla sekiz tane ekleyin: örneğin bir ekranda liste, diğerinin üstünde kayan şerit.</sys:String>
+    <sys:String x:Key="Widgets.This">BU WIDGET</sys:String>
+    <sys:String x:Key="Widgets.Name">Ad</sys:String>
+    <sys:String x:Key="Widgets.Layout">Düzen</sys:String>
+    <sys:String x:Key="Widgets.List">Liste</sys:String>
+    <sys:String x:Key="Widgets.Bar">Kayan şerit</sys:String>
+    <sys:String x:Key="Widgets.Size">Boyut</sys:String>
+    <sys:String x:Key="Widgets.Small">Küçük</sys:String>
+    <sys:String x:Key="Widgets.Medium">Orta</sys:String>
+    <sys:String x:Key="Widgets.Large">Büyük</sys:String>
+    <sys:String x:Key="Widgets.Show">Bu widget'ı göster</sys:String>
+    <sys:String x:Key="Widgets.BarSection">KAYAN ŞERİT</sys:String>
+    <sys:String x:Key="Widgets.Position">Konum</sys:String>
+    <sys:String x:Key="Widgets.Top">Ekranın üstü</sys:String>
+    <sys:String x:Key="Widgets.Bottom">Altı</sys:String>
+    <sys:String x:Key="Widgets.Floating">Serbest</sys:String>
+    <sys:String x:Key="Widgets.Reserve">Ekran alanı ayır (diğer pencereler üstünü kapatmaz)</sys:String>
+    <sys:String x:Key="Widgets.Width">Genişlik</sys:String>
+    <sys:String x:Key="Widgets.Scroll">Coinleri kaydır</sys:String>
+    <sys:String x:Key="Widgets.Speed">Hız</sys:String>
+    <sys:String x:Key="Widgets.ScrollHint">Fareyle üzerine gelince şerit durur, böylece okuyabilir veya tıklayabilirsiniz.</sys:String>
+    <sys:String x:Key="Widgets.ListSection">LİSTE</sys:String>
+    <sys:String x:Key="Widgets.ShowNames">Coin adlarını göster</sys:String>
+    <sys:String x:Key="Widgets.ShowSparklines">24 saatlik mini grafikleri göster</sys:String>
+    <sys:String x:Key="Widgets.ShowHeadings">Sütun başlıklarını göster</sys:String>
+    <sys:String x:Key="Widgets.Window">PENCERE</sys:String>
+    <sys:String x:Key="Widgets.Topmost">Diğer pencerelerin üstünde kal</sys:String>
+    <sys:String x:Key="Widgets.ClickThrough">Tıklamaları geçir (fare içinden geçer)</sys:String>
+    <sys:String x:Key="Widgets.ClickThroughHint">Buradan, tepsi simgesinden veya {0} ile tekrar kapatın.</sys:String>
+
+    <!-- Coins -->
+    <sys:String x:Key="Coins.ShowIn">FİYAT PARA BİRİMİ</sys:String>
+    <sys:String x:Key="Coins.QuoteHint">Binance'te USD çiftleri yoktur, bu yüzden oradaki USD fiyatları USDT'den gelir. Her coin her para biriminde işlem görmez.</sys:String>
+    <sys:String x:Key="Coins.Reset">Varsayılanlara dön</sys:String>
+    <sys:String x:Key="Coins.Yours">COİNLERİNİZ</sys:String>
+    <sys:String x:Key="Coins.DragHint">Sıralamak için sürükleyin. Her widget'ın kendi listesi vardır.</sys:String>
+    <sys:String x:Key="Coins.Add">COİN EKLE</sys:String>
+    <sys:String x:Key="Coins.Search">Ad veya sembolle arayın</sys:String>
+    <sys:String x:Key="Coins.Already">Zaten eklendi</sys:String>
+    <sys:String x:Key="Coins.AddAnyway">Yine de {0} ekle</sys:String>
+    <sys:String x:Key="Coins.Count">{0} / {1}</sys:String>
+    <sys:String x:Key="Coins.Loading">Coin listesi yükleniyor…</sys:String>
+    <sys:String x:Key="Coins.Loaded">{1} cinsinden {0:N0} coin mevcut</sys:String>
+    <sys:String x:Key="Coins.LoadFailed">Coin listesi yüklenemedi. Sembolünü yazarak yine de coin ekleyebilirsiniz.</sys:String>
+    <sys:String x:Key="Coins.NotListed">Desteklenen borsalarda listelenmiyor</sys:String>
+
+    <!-- Appearance -->
+    <sys:String x:Key="Appearance.Theme">TEMA</sys:String>
+    <sys:String x:Key="Appearance.System">Windows'u izle</sys:String>
+    <sys:String x:Key="Appearance.Dark">Koyu</sys:String>
+    <sys:String x:Key="Appearance.Light">Açık</sys:String>
+    <sys:String x:Key="Appearance.Accent">Vurgu rengi</sys:String>
+
+    <!-- Data -->
+    <sys:String x:Key="Data.Source">VERİ KAYNAĞI</sys:String>
+    <sys:String x:Key="Data.About">HAKKINDA</sys:String>
+    <sys:String x:Key="Data.AboutText">Ücretsiz ve açık kaynak (MIT). Hesap yok, izleme yok: fiyatlar doğrudan herkese açık borsa akışlarından gelir. Coin logoları cryptocurrency-icons (CC0) ve CoinGecko'dan.</sys:String>
+    <sys:String x:Key="Data.Project">GitHub'daki proje sayfası</sys:String>
+    <sys:String x:Key="Data.OpenFolder">Ayarlar klasörünü aç</sys:String>
+</ResourceDictionary>
