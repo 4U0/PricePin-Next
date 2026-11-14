@@ -1,24 +1,51 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
+using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PricePin.Core.Coins;
+using PricePin.Core.History;
+using PricePin.Core.Icons;
+using PricePin.Core.Market;
 using PricePin.Models;
 using PricePin.Services;
 
 namespace PricePin.ViewModels;
 
 /// <summary>
-/// State behind the widget, its right-click menu and the tray menu. Every change is
-/// written back to <see cref="AppSettings"/> and saved.
+/// State behind the widget, its right-click menu and the tray menu. Prices arrive on a
+/// background thread and are applied to the rows in batches about ten times a second,
+/// which looks instant but keeps CPU use low even when a coin trades hundreds of times a second.
 /// </summary>
-public sealed partial class WidgetViewModel : ObservableObject
+public sealed partial class WidgetViewModel : ObservableObject, IDisposable
 {
-    private readonly SettingsService _settings;
+    private static readonly TimeSpan UiFlushInterval = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan HistoryRefreshInterval = TimeSpan.FromMinutes(15);
 
-    public WidgetViewModel(SettingsService settings)
+    private readonly SettingsService _settings;
+    private readonly MarketDataService _market;
+    private readonly PriceHistoryService _history;
+    private readonly CoinIconService _icons;
+    private readonly Dispatcher _dispatcher;
+    private readonly DispatcherTimer _flushTimer;
+    private readonly DispatcherTimer _clockTimer;
+    private readonly Dictionary<string, Ticker> _pending = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, CoinRowViewModel> _rowsBySymbol = new(StringComparer.OrdinalIgnoreCase);
+    private readonly CancellationTokenSource _lifetime = new();
+    private FeedStatus _status = new(FeedState.Connecting, "—");
+    private DateTimeOffset _lastTickAt;
+
+    public WidgetViewModel(SettingsService settings, MarketDataService market, PriceHistoryService history, CoinIconService icons)
     {
         _settings = settings;
+        _market = market;
+        _history = history;
+        _icons = icons;
+        _dispatcher = Dispatcher.CurrentDispatcher;
         var s = settings.Current;
 
         _topmost = s.Topmost;
@@ -34,7 +61,29 @@ public sealed partial class WidgetViewModel : ObservableObject
             StartupService.SetEnabled(true);
         s.StartWithWindows = _startWithWindows;
 
-        Coins = new ObservableCollection<CoinRowViewModel>(DemoData.Create(s.Coins));
+        Coins = [];
+        foreach (var symbol in s.Coins)
+        {
+            var row = new CoinRowViewModel(CoinCatalog.Get(symbol), s.QuoteCurrency);
+            Coins.Add(row);
+            _rowsBySymbol[symbol] = row;
+        }
+
+        DataSourceOptions =
+        [
+            new(DataSource.Auto, "Automatic (best available)", SelectDataSource),
+            new(DataSource.Binance, "Binance", SelectDataSource),
+            new(DataSource.Coinbase, "Coinbase", SelectDataSource),
+            new(DataSource.Kraken, "Kraken", SelectDataSource),
+        ];
+        foreach (var o in DataSourceOptions)
+            o.IsSelected = o.Value == s.DataSource;
+
+        _market.TickReceived += OnTickReceived;
+        _market.StatusChanged += OnStatusChanged;
+
+        _flushTimer = new DispatcherTimer(UiFlushInterval, DispatcherPriority.Render, (_, _) => FlushTicks(), _dispatcher);
+        _clockTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => RefreshStatusText(), _dispatcher);
     }
 
     /// <summary>Raised when the user picks Exit.</summary>
@@ -45,8 +94,7 @@ public sealed partial class WidgetViewModel : ObservableObject
 
     public ObservableCollection<CoinRowViewModel> Coins { get; }
 
-    /// <summary>Phase 1 shows sample prices; live feeds replace this in phase 2.</summary>
-    public string StatusText => "Sample prices · live data coming next";
+    public IReadOnlyList<DataSourceOption> DataSourceOptions { get; }
 
     public double OpacityMin => OpacityLimits.Min;
     public double OpacityMax => OpacityLimits.Max;
@@ -74,6 +122,45 @@ public sealed partial class WidgetViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isWidgetVisible = true;
+
+    /// <summary>Connection state for the status pill.</summary>
+    [ObservableProperty]
+    private FeedState _statusState = FeedState.Connecting;
+
+    /// <summary>Short pill text, e.g. "LIVE".</summary>
+    [ObservableProperty]
+    private string _statusLabel = "CONNECTING";
+
+    /// <summary>Feed name next to the pill, e.g. "Binance".</summary>
+    [ObservableProperty]
+    private string _statusSource = "";
+
+    /// <summary>Longer explanation shown on hover.</summary>
+    [ObservableProperty]
+    private string _statusDetail = "Connecting…";
+
+    /// <summary>Tray icon tooltip, e.g. "PricePin · BTC $97,412.35".</summary>
+    [ObservableProperty]
+    private string _trayToolTip = "PricePin";
+
+    /// <summary>Starts live prices, logos and history. Call once the UI is up.</summary>
+    public void Start()
+    {
+        _flushTimer.Start();
+        _clockTimer.Start();
+        RestartFeed();
+        _ = LoadLogosAsync(_lifetime.Token);
+        _ = RefreshHistoryLoopAsync(_lifetime.Token);
+    }
+
+    public void Dispose()
+    {
+        _lifetime.Cancel();
+        _flushTimer.Stop();
+        _clockTimer.Stop();
+        _market.TickReceived -= OnTickReceived;
+        _market.StatusChanged -= OnStatusChanged;
+    }
 
     partial void OnTopmostChanged(bool value) => Save(s => s.Topmost = value);
 
@@ -111,12 +198,16 @@ public sealed partial class WidgetViewModel : ObservableObject
         s.Top = top;
     });
 
-    [RelayCommand]
-    private void SetOpacityPercent(string? percent)
+    private void SelectDataSource(DataSourceOption option)
     {
-        if (double.TryParse(percent, NumberStyles.Float, CultureInfo.InvariantCulture, out var p))
-            Opacity = p / 100.0;
+        foreach (var o in DataSourceOptions)
+            o.IsSelected = o == option;
+        Save(s => s.DataSource = option.Value);
+        RestartFeed();
     }
+
+    [RelayCommand]
+    private void Reconnect() => RestartFeed();
 
     [RelayCommand]
     private void ToggleVisibility() => ToggleVisibilityRequested?.Invoke(this, EventArgs.Empty);
@@ -124,39 +215,175 @@ public sealed partial class WidgetViewModel : ObservableObject
     [RelayCommand]
     private void Exit() => ExitRequested?.Invoke(this, EventArgs.Empty);
 
+    private void RestartFeed()
+    {
+        var s = _settings.Current;
+        var symbols = s.Coins.Select(c => new MarketSymbol(c, s.QuoteCurrency)).ToList();
+        _market.Start(symbols, s.DataSource);
+    }
+
     private void Save(Action<AppSettings> apply)
     {
         apply(_settings.Current);
         _settings.ScheduleSave();
     }
 
-    /// <summary>Placeholder prices so the layout can be judged before live data exists.</summary>
-    private static class DemoData
+    // ---- Live data ---------------------------------------------------------------------
+
+    /// <summary>Background thread. Merges updates so each coin gets at most one per UI flush.</summary>
+    private void OnTickReceived(Ticker t)
     {
-        private static readonly Dictionary<string, (string Name, string Color, decimal Price, decimal Change)> Known = new()
+        lock (_pending)
+            _pending[t.Base] = _pending.TryGetValue(t.Base, out var prev) ? Merge(prev, t) : t;
+    }
+
+    /// <summary>Newest price wins; 24h stats are kept from whichever update had them.</summary>
+    internal static Ticker Merge(Ticker older, Ticker newer) => newer with
+    {
+        Open24h = newer.Open24h ?? older.Open24h,
+        High24h = newer.High24h ?? older.High24h,
+        Low24h = newer.Low24h ?? older.Low24h,
+        Volume24h = newer.Volume24h ?? older.Volume24h,
+        ChangePercent24h = newer.ChangePercent24h ?? older.ChangePercent24h,
+    };
+
+    private void FlushTicks()
+    {
+        Ticker[] batch;
+        lock (_pending)
         {
-            ["BTC"] = ("Bitcoin", "#F7931A", 97_412.35m, 2.14m),
-            ["ETH"] = ("Ethereum", "#627EEA", 3_481.07m, -0.82m),
-            ["SOL"] = ("Solana", "#14F195", 214.66m, 5.37m),
-            ["BNB"] = ("BNB", "#F3BA2F", 662.40m, 0.41m),
-            ["XRP"] = ("XRP", "#8FA3B8", 1.1243m, -1.95m),
-            ["DOGE"] = ("Dogecoin", "#C2A633", 0.38712m, 3.08m),
-            ["ADA"] = ("Cardano", "#3468D1", 0.8125m, -0.33m),
+            if (_pending.Count == 0)
+                return;
+            batch = [.. _pending.Values];
+            _pending.Clear();
+        }
+
+        foreach (var t in batch)
+        {
+            if (_rowsBySymbol.TryGetValue(t.Base, out var row))
+                row.Apply(t);
+        }
+        _lastTickAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>Background thread.</summary>
+    private void OnStatusChanged(FeedStatus status) =>
+        _dispatcher.BeginInvoke(() =>
+        {
+            _status = status;
+            StatusState = status.State;
+            StatusSource = status.State is FeedState.Offline ? "" : status.Source;
+            StatusLabel = status.State switch
+            {
+                FeedState.Live => "LIVE",
+                FeedState.Polling => "DELAYED",
+                FeedState.Connecting => "CONNECTING",
+                FeedState.Reconnecting => "RECONNECTING",
+                _ => "OFFLINE",
+            };
+            RefreshStatusText();
+        });
+
+    /// <summary>Runs every second: tooltip countdowns, freshness and the tray tooltip.</summary>
+    private void RefreshStatusText()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var retry = _status.RetryAt is { } at && at > now ? $" Retrying in {Math.Ceiling((at - now).TotalSeconds):0}s." : "";
+        var age = _lastTickAt == default ? "" : $" Last update {FormatAge(now - _lastTickAt)} ago.";
+
+        StatusDetail = _status.State switch
+        {
+            FeedState.Live => $"Streaming live from {_status.Source}.{age}",
+            FeedState.Polling => $"Streaming isn't available right now, so prices are fetched from {_status.Source} every few seconds.{age}",
+            FeedState.Connecting => $"Connecting to {_status.Source}…",
+            FeedState.Reconnecting => $"{_status.Detail ?? "Connection lost"}.{retry}",
+            _ => $"{_status.Detail ?? "Offline"}.{retry} Check your internet connection.",
         };
 
-        public static IEnumerable<CoinRowViewModel> Create(IEnumerable<string> symbols)
+        if (Coins.FirstOrDefault() is { HasPrice: true } first)
+            TrayToolTip = $"PricePin · {first.Symbol} {first.PriceText} {first.ChangeText}";
+    }
+
+    private static string FormatAge(TimeSpan t) =>
+        t.TotalSeconds < 1 ? "<1s" : t.TotalMinutes < 1 ? $"{t.TotalSeconds:0}s" : $"{t.TotalMinutes:0}m";
+
+    // ---- Logos and history -------------------------------------------------------------
+
+    private async Task LoadLogosAsync(CancellationToken ct)
+    {
+        foreach (var row in Coins.ToList())
         {
-            foreach (var symbol in symbols)
+            if (TryLoadBundledLogo(row.Symbol) is { } bundled)
             {
-                var (name, color, price, change) = Known.TryGetValue(symbol, out var k)
-                    ? k
-                    : (symbol, "#64748B", 0m, 0m);
-                yield return new CoinRowViewModel(symbol, name, (Color)ColorConverter.ConvertFromString(color))
-                {
-                    Price = price,
-                    ChangePercent24h = change,
-                };
+                row.Logo = bundled;
+                continue;
             }
+
+            try
+            {
+                var path = await _icons.GetIconPathAsync(row.Symbol, ct);
+                if (path is not null)
+                    row.Logo = LoadImage(new Uri(path));
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+    }
+
+    private static ImageSource? TryLoadBundledLogo(string symbol)
+    {
+        var uri = new Uri($"pack://application:,,,/Assets/Coins/{symbol.ToLowerInvariant()}.png");
+        try
+        {
+            using var stream = Application.GetResourceStream(uri)?.Stream;
+            return stream is null ? null : LoadImage(uri);
+        }
+        catch (IOException)
+        {
+            return null; // not bundled
+        }
+    }
+
+    private static ImageSource? LoadImage(Uri uri)
+    {
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.UriSource = uri;
+            image.DecodePixelWidth = 64; // shown at 28px; 64 stays sharp up to ~225% scaling
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+        catch (Exception ex) when (ex is IOException or NotSupportedException or InvalidOperationException or FileFormatException)
+        {
+            return null;
+        }
+    }
+
+    private async Task RefreshHistoryLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                var quote = _settings.Current.QuoteCurrency;
+                foreach (var row in Coins.ToList())
+                {
+                    var closes = await _history.GetLast24hAsync(new MarketSymbol(row.Symbol, quote), ct);
+                    if (closes.Count > 0)
+                        row.SetHistory(closes);
+                }
+                await Task.Delay(HistoryRefreshInterval, ct);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Shutting down.
         }
     }
 }

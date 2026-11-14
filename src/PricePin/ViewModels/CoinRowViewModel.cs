@@ -1,37 +1,138 @@
 using System.Globalization;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using PricePin.Core.Coins;
+using PricePin.Core.Market;
 
 namespace PricePin.ViewModels;
 
-/// <summary>One coin row in the widget.</summary>
-public sealed partial class CoinRowViewModel(string symbol, string name, Color accent) : ObservableObject
+/// <summary>One coin row: live price, 24h stats, sparkline and logo.</summary>
+public sealed partial class CoinRowViewModel : ObservableObject
 {
-    public string Symbol { get; } = symbol;
-    public string Name { get; } = name;
+    private readonly string _currencyPrefix;
+    private readonly string _currencySuffix;
+    private decimal? _open24h;
+    private double[] _history = [];
 
-    /// <summary>Colour of the round badge behind the symbol's first letter.</summary>
-    public Brush AccentBrush { get; } = Freeze(new SolidColorBrush(accent));
+    public CoinRowViewModel(CoinInfo info, string quoteCurrency)
+    {
+        Symbol = info.Symbol;
+        Name = info.Name;
+        BadgeBrush = Frozen(new SolidColorBrush((Color)ColorConverter.ConvertFromString(info.BrandColor)));
+        (_currencyPrefix, _currencySuffix) = CurrencyAffixes(quoteCurrency);
+    }
 
+    public string Symbol { get; }
+    public string Name { get; }
     public string Initial => Symbol[..1];
 
+    /// <summary>Badge colour shown until (or instead of) a logo.</summary>
+    public Brush BadgeBrush { get; }
+
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(PriceText))]
-    private decimal _price;
+    [NotifyPropertyChangedFor(nameof(HasLogo))]
+    private ImageSource? _logo;
+
+    public bool HasLogo => Logo is not null;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PriceText), nameof(HasPrice))]
+    private decimal? _price;
+
+    public bool HasPrice => Price is not null;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ChangeText), nameof(IsUp))]
-    private decimal _changePercent24h;
+    private decimal? _changePercent24h;
 
-    public bool IsUp => ChangePercent24h >= 0;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailsText))]
+    private decimal? _high24h;
 
-    public string PriceText => FormatPrice(Price);
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailsText))]
+    private decimal? _low24h;
 
-    public string ChangeText =>
-        (ChangePercent24h >= 0 ? "+" : "") + ChangePercent24h.ToString("0.00", CultureInfo.InvariantCulture) + "%";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailsText))]
+    private decimal? _volume24h;
 
-    /// <summary>Shows enough decimals to be useful for both $90,000 coins and $0.0000123 coins.</summary>
-    public static string FormatPrice(decimal price)
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailsText))]
+    private string? _source;
+
+    /// <summary>24h closes plus the live price as the last point, for the sparkline.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<double> _sparkline = [];
+
+    /// <summary>Changes on every price move; the view starts a flash animation when it does.</summary>
+    [ObservableProperty]
+    private int _flashPulse;
+
+    /// <summary>Direction of the last price move, read by the flash animation.</summary>
+    public bool LastMoveUp { get; private set; }
+
+    public bool IsUp => (ChangePercent24h ?? 0) >= 0;
+
+    public string PriceText => Price is { } p ? _currencyPrefix + FormatNumber(p) + _currencySuffix : "—";
+
+    public string ChangeText => ChangePercent24h is { } c
+        ? (c >= 0 ? "▲ " : "▼ ") + Math.Abs(c).ToString("0.00", CultureInfo.InvariantCulture) + "%"
+        : "";
+
+    public string DetailsText
+    {
+        get
+        {
+            string F(decimal? v) => v is { } d ? _currencyPrefix + FormatNumber(d) + _currencySuffix : "—";
+            var vol = Volume24h is { } v ? FormatCompact(v) + " " + Symbol : "—";
+            return $"{Name} ({Symbol})\n24h high   {F(High24h)}\n24h low    {F(Low24h)}\n24h volume {vol}\nSource     {Source ?? "—"}";
+        }
+    }
+
+    /// <summary>Applies one merged update from the feed.</summary>
+    public void Apply(Ticker t)
+    {
+        if (Price is { } previous && t.Last != previous)
+        {
+            LastMoveUp = t.Last > previous;
+            FlashPulse++;
+        }
+        Price = t.Last;
+
+        if (t.Open24h is > 0)
+            _open24h = t.Open24h;
+        if (t.High24h is { } h) High24h = Math.Max(h, t.Last);
+        if (t.Low24h is { } l) Low24h = Math.Min(l, t.Last);
+        if (t.Volume24h is { } v) Volume24h = v;
+        Source = t.Source;
+
+        // Recompute the 24h change from the live price so it moves with every trade.
+        ChangePercent24h = _open24h is { } open
+            ? Math.Round((t.Last - open) / open * 100m, 2)
+            : t.ChangePercent24h ?? ChangePercent24h;
+
+        UpdateSparklineTail();
+    }
+
+    public void SetHistory(IReadOnlyList<decimal> closes)
+    {
+        _history = closes.Select(c => (double)c).ToArray();
+        UpdateSparklineTail();
+    }
+
+    private void UpdateSparklineTail()
+    {
+        if (_history.Length == 0)
+            return;
+        var points = (double[])_history.Clone();
+        if (Price is { } p)
+            points[^1] = (double)p;
+        Sparkline = points;
+    }
+
+    /// <summary>Enough decimals for $90,000 coins and $0.0000123 coins alike.</summary>
+    public static string FormatNumber(decimal price)
     {
         var abs = Math.Abs(price);
         var format = abs switch
@@ -42,10 +143,28 @@ public sealed partial class CoinRowViewModel(string symbol, string name, Color a
             0m => "0.00",
             _ => "0.00000000",
         };
-        return "$" + price.ToString(format, CultureInfo.InvariantCulture);
+        return price.ToString(format, CultureInfo.InvariantCulture);
     }
 
-    private static Brush Freeze(Brush b)
+    public static string FormatCompact(decimal value) => Math.Abs(value) switch
+    {
+        >= 1_000_000_000m => (value / 1_000_000_000m).ToString("0.##", CultureInfo.InvariantCulture) + "B",
+        >= 1_000_000m => (value / 1_000_000m).ToString("0.##", CultureInfo.InvariantCulture) + "M",
+        >= 1_000m => (value / 1_000m).ToString("0.##", CultureInfo.InvariantCulture) + "K",
+        _ => value.ToString("0.##", CultureInfo.InvariantCulture),
+    };
+
+    private static (string Prefix, string Suffix) CurrencyAffixes(string quote) => quote switch
+    {
+        "USD" or "USDT" or "USDC" => ("$", ""),
+        "EUR" => ("€", ""),
+        "GBP" => ("£", ""),
+        "TRY" => ("₺", ""),
+        "JPY" => ("¥", ""),
+        _ => ("", " " + quote),
+    };
+
+    private static Brush Frozen(Brush b)
     {
         b.Freeze();
         return b;

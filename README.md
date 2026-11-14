@@ -2,11 +2,17 @@
 
 A fast, good-looking crypto price widget for Windows. It floats on your desktop, stays on top if you want it to, and shows live prices that update the moment they change.
 
-> **Status:** early development. Phase 1 (the widget window itself) is in place and shows sample prices. Live exchange data comes next. See the [roadmap](#roadmap).
+> **Status:** early development. Live prices work; the settings window, coin picker and ticker bar layout are next. See the [roadmap](#roadmap).
 
 ## Features
 
 **Now**
+- Live prices over WebSocket from Binance, Coinbase or Kraken, updating on every trade
+- Automatic failover: if an exchange is down or blocked in your region, PricePin switches to the next one, and falls back to REST polling if no stream works
+- Reconnects on its own with growing waits, and notices silent connections within 20 seconds
+- Live status pill (LIVE, RECONNECTING, DELAYED, OFFLINE); hover it for details
+- Real coin logos, 24h sparklines, green/red flashes on every price move, and 24h change that moves with the price
+- Hover a coin for its 24h high, low and volume
 - Borderless dark "glass" widget you can drag anywhere
 - Snaps to screen edges (hold <kbd>Shift</kbd> while dragging to place it freely)
 - Stay on top, opacity slider (20–100%), and <kbd>Ctrl</kbd> + mouse wheel to change opacity
@@ -19,10 +25,8 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Only one copy runs at a time; launching it again shows the existing widget
 
 **Planned**
-- Live prices over WebSocket from Binance, Coinbase and Kraken, with automatic failover when an exchange is unreachable or blocked in your region
 - Any coin, searchable, with drag to reorder, and a choice of quote currency
 - Horizontal scrolling ticker bar layout, docked to the top or bottom of the screen
-- 24h sparklines and price-change flashes
 - Settings window, installer and auto-update
 - Later: price alerts, charts, portfolio view, themes
 
@@ -51,19 +55,36 @@ dotnet publish src/PricePin -c Release -r win-x64 --self-contained `
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
 ```
 
+## Data sources
+
+| Source | Used for | Notes |
+| --- | --- | --- |
+| Binance | Live prices (WebSocket), 24h history | USD is shown using USDT pairs. Not available in some regions; PricePin moves on automatically. |
+| Coinbase | Live prices (WebSocket), REST fallback, 24h history | |
+| Kraken | Live prices (WebSocket), 24h history | |
+| [cryptocurrency-icons](https://github.com/spothq/cryptocurrency-icons) (CC0) | Coin logos | Popular coins are bundled; others download once and are cached. |
+| CoinGecko | Logos for newer coins | Only asked when a logo isn't in the set above. |
+
+All of these are public endpoints. No account or API key is needed.
+
+To check which sources work from your network:
+
+```powershell
+dotnet run --project tools/FeedProbe -- 15 BTC ETH SOL
+```
+
 ## Where settings live
 
-`%AppData%\PricePin\settings.json`. Delete it to reset everything. Unexpected errors are written to `crash.log` in the same folder.
+`%AppData%\PricePin\settings.json`. Delete it to reset everything. Unexpected errors are written to `crash.log` in the same folder. Downloaded logos are cached in `%LocalAppData%\PricePin\icons`.
 
 ## Roadmap
 
 1. **Foundation**: widget window, stay on top, opacity, click-through, tray, saved position ✅
-2. **Live data**: Binance WebSocket feed, reconnects, connection status
-3. **Polish**: tick flashes, sparklines, coin icons, ticker bar layout
+2. **Live data**: Binance, Coinbase and Kraken feeds, failover, REST fallback, logos, sparklines, design refresh ✅
+3. **Layouts**: horizontal ticker bar, compact mode, more themes
 4. **Settings**: settings window, coin picker, quote currency
-5. **Resilience**: Coinbase and Kraken feeds, failover, REST fallback
-6. **Release**: installer, auto-update, GitHub Releases
-7. **Version 2**: alerts, charts, portfolio, themes
+5. **Release**: installer, auto-update, GitHub Releases
+6. **Version 2**: alerts, charts, portfolio, themes
 
 ## Tech
 

@@ -26,6 +26,17 @@
                 </MenuItem.Style>
             </MenuItem>
             <Separator />
+            <MenuItem Header="Data source" Tag="&#xE774;" ItemsSource="{Binding DataSourceOptions}">
+                <MenuItem.ItemContainerStyle>
+                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                        <Setter Property="Header" Value="{Binding Label}" />
+                        <Setter Property="IsChecked" Value="{Binding IsSelected, Mode=OneWay}" />
+                        <Setter Property="Command" Value="{Binding SelectCommand}" />
+                    </Style>
+                </MenuItem.ItemContainerStyle>
+            </MenuItem>
+            <MenuItem Header="Reconnect" Tag="&#xE72C;" Command="{Binding ReconnectCommand}" />
+            <Separator />
             <MenuItem Header="Stay on top" Tag="&#xE718;" IsCheckable="True" IsChecked="{Binding Topmost}" />
             <MenuItem StaysOpenOnClick="True" Tag="&#xE793;">
                 <MenuItem.Header>
