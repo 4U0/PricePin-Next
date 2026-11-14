@@ -49,6 +49,33 @@ public partial class SettingsWindow : Window
             _vm.QuoteCurrency = quote;
     }
 
+    // ---- Hotkey capture ----------------------------------------------------------------
+
+    private void Hotkey_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        e.Handled = true;
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        var modifiers = Keyboard.Modifiers;
+
+        string? gesture;
+        if (modifiers == ModifierKeys.None && key is Key.Back or Key.Delete)
+            gesture = string.Empty; // clear the shortcut
+        else if (modifiers == ModifierKeys.None && key is Key.Tab or Key.Escape)
+        {
+            e.Handled = false; // let focus move / window handle Esc
+            return;
+        }
+        else
+            gesture = Services.HotkeyService.Format(modifiers, key);
+
+        if (gesture is null) return; // modifier only so far, or not a valid combination
+
+        if (ReferenceEquals(sender, HotkeyWidgets))
+            _vm.App.HotkeyToggleWidgets = gesture;
+        else if (ReferenceEquals(sender, HotkeyClickThrough))
+            _vm.App.HotkeyToggleClickThrough = gesture;
+    }
+
     // ---- Add by double-click -----------------------------------------------------------
 
     private void SearchResults_MouseDoubleClick(object sender, MouseButtonEventArgs e)

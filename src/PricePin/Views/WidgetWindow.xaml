@@ -17,7 +17,7 @@
         Foreground="{DynamicResource TextPrimaryBrush}"
         Topmost="{Binding Topmost}"
         Opacity="{Binding Opacity}"
-        ContextMenu="{StaticResource AppMenu}">
+        ContextMenu="{StaticResource WidgetMenu}">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
@@ -27,15 +27,15 @@
             <Setter Property="Background" Value="#26F59E0B" />
             <Setter Property="Tag" Value="#F59E0B" />
             <Style.Triggers>
-                <DataTrigger Binding="{Binding StatusState}" Value="Live">
+                <DataTrigger Binding="{Binding App.StatusState}" Value="Live">
                     <Setter Property="Background" Value="#2622D399" />
                     <Setter Property="Tag" Value="#22D399" />
                 </DataTrigger>
-                <DataTrigger Binding="{Binding StatusState}" Value="Polling">
+                <DataTrigger Binding="{Binding App.StatusState}" Value="Polling">
                     <Setter Property="Background" Value="#2638BDF8" />
                     <Setter Property="Tag" Value="#38BDF8" />
                 </DataTrigger>
-                <DataTrigger Binding="{Binding StatusState}" Value="Offline">
+                <DataTrigger Binding="{Binding App.StatusState}" Value="Offline">
                     <Setter Property="Background" Value="#26F43F5E" />
                     <Setter Property="Tag" Value="#F43F5E" />
                 </DataTrigger>
@@ -76,7 +76,7 @@
                             </Button.Style>
                         </Button>
                         <Button Style="{StaticResource IconButton}" Content="&#xE713;" ToolTip="Settings"
-                                Command="{Binding OpenSettingsCommand}" Margin="2,0,0,0" />
+                                Command="{Binding App.OpenSettingsCommand}" Margin="2,0,0,0" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE712;" ToolTip="Options"
                                 Click="MenuButton_Click" Margin="2,0,0,0" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE921;" ToolTip="Hide to tray"
@@ -85,8 +85,8 @@
 
                     <!-- Live status: coloured pill + feed name. Hover for details. -->
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
-                                Background="Transparent" ToolTip="{Binding StatusDetail}">
-                        <TextBlock Text="{Binding StatusSource}" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center"
+                                Background="Transparent" ToolTip="{Binding App.StatusDetail}">
+                        <TextBlock Text="{Binding App.StatusSource}" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextTertiaryBrush}" />
                         <Border x:Name="Pill" Style="{StaticResource StatusPill}" CornerRadius="9" Padding="7,2,8,2">
                             <StackPanel Orientation="Horizontal">
@@ -94,7 +94,7 @@
                                     <Ellipse Fill="{Binding Tag, ElementName=Pill}" Opacity="0.35" />
                                     <Ellipse Width="6" Height="6" Fill="{Binding Tag, ElementName=Pill}" />
                                 </Grid>
-                                <TextBlock Text="{Binding StatusLabel}" Margin="5,0,0,0" FontSize="10" FontWeight="Bold"
+                                <TextBlock Text="{Binding App.StatusLabel}" Margin="5,0,0,0" FontSize="10" FontWeight="Bold"
                                            Foreground="{Binding Tag, ElementName=Pill}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Border>

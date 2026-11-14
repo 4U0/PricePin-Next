@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows.Threading;
-using PricePin.Models;
+using PricePin.Core.Settings;
 
 namespace PricePin.Services;
 
@@ -18,6 +18,7 @@ public sealed class SettingsService
         WriteIndented = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
     };
 
     private readonly string _path;

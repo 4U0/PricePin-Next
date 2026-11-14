@@ -6,7 +6,7 @@ using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PricePin.Core.Coins;
-using PricePin.Models;
+using PricePin.Core.Settings;
 using PricePin.Services;
 
 namespace PricePin.ViewModels;
@@ -52,8 +52,8 @@ public sealed partial class AccentOption(string name, string hex) : ObservableOb
 }
 
 /// <summary>
-/// The Settings window. Every change applies immediately (no Save button), and the
-/// widget-related toggles bind straight to <see cref="Widget"/> so both stay in sync.
+/// The Settings window. Every change applies immediately (no Save button). Per-widget
+/// settings bind straight to <see cref="SelectedWidget"/>, app-wide ones to <see cref="App"/>.
 /// </summary>
 public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 {
@@ -68,9 +68,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private IReadOnlyList<CatalogCoin> _allCoins = [];
     private int _catalogRequest;
 
-    public SettingsViewModel(WidgetViewModel widget, SettingsService settings, CoinCatalogService catalog, LogoProvider logos, ThemeService theme)
+    public SettingsViewModel(AppViewModel app, SettingsService settings, CoinCatalogService catalog, LogoProvider logos, ThemeService theme)
     {
-        Widget = widget;
+        App = app;
+        _selectedWidget = app.Widgets[0];
         _settings = settings;
         _catalog = catalog;
         _logos = logos;
@@ -80,7 +81,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _quoteCurrency = s.QuoteCurrency;
         _selectedTheme = s.Theme;
 
-        SelectedCoins = new(s.Coins.Select(CreateEntry));
+        SelectedCoins = new(_selectedWidget.Settings.Coins.Select(CreateEntry));
         AccentOptions = AccentPresets.All.Select(a => new AccentOption(a.Name, a.Hex)).ToList();
         foreach (var a in AccentOptions)
             a.IsSelected = string.Equals(a.Hex, s.Accent, StringComparison.OrdinalIgnoreCase);
@@ -88,7 +89,61 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _ = LoadCatalogAsync();
     }
 
-    public WidgetViewModel Widget { get; }
+    public AppViewModel App { get; }
+
+    /// <summary>The widget being edited on the Widgets and Coins pages.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRemoveWidget))]
+    private WidgetViewModel _selectedWidget;
+
+    public bool CanRemoveWidget => App.Widgets.Count > 1;
+    public bool CanAddWidget => App.Widgets.Count < AppSettings.MaxWidgets;
+
+    partial void OnSelectedWidgetChanged(WidgetViewModel value)
+    {
+        if (value is null)
+        {
+            SelectedWidget = App.Widgets[0];
+            return;
+        }
+        SelectedCoins.Clear();
+        foreach (var symbol in value.Settings.Coins)
+            SelectedCoins.Add(CreateEntry(symbol));
+        OnPropertyChanged(nameof(CoinCountText));
+        foreach (var r in SearchResults)
+            r.IsAdded = SelectedCoins.Any(c => c.Symbol == r.Symbol);
+        UpdateCustomSymbol();
+    }
+
+    [RelayCommand]
+    private void AddListWidget() => AddWidget(WidgetLayout.List);
+
+    [RelayCommand]
+    private void AddTickerBar() => AddWidget(WidgetLayout.TickerBar);
+
+    [RelayCommand]
+    private void RemoveWidget()
+    {
+        var doomed = SelectedWidget;
+        if (App.Widgets.Count <= 1)
+            return;
+        SelectedWidget = App.Widgets.First(w => w != doomed);
+        App.RemoveWidget(doomed);
+        RefreshWidgetButtons();
+    }
+
+    private void AddWidget(WidgetLayout layout)
+    {
+        if (App.AddWidget(layout) is { } added)
+            SelectedWidget = added;
+        RefreshWidgetButtons();
+    }
+
+    private void RefreshWidgetButtons()
+    {
+        OnPropertyChanged(nameof(CanRemoveWidget));
+        OnPropertyChanged(nameof(CanAddWidget));
+    }
 
     public ObservableCollection<CoinEntryViewModel> SelectedCoins { get; }
     public ObservableCollection<CatalogItemViewModel> SearchResults { get; } = [];
@@ -130,7 +185,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     {
         _settings.Current.QuoteCurrency = value;
         _settings.ScheduleSave();
-        Widget.ApplyCoinSettings();
+        App.ApplyQuoteCurrency();
         _ = LoadCatalogAsync();
     }
 
@@ -204,9 +259,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void CommitCoins()
     {
-        _settings.Current.Coins = SelectedCoins.Select(c => c.Symbol).ToList();
+        SelectedWidget.Settings.Coins = SelectedCoins.Select(c => c.Symbol).ToList();
         _settings.ScheduleSave();
-        Widget.ApplyCoinSettings();
+        SelectedWidget.ApplyCoinSettings();
+        App.RequestFeedRestart();
         OnPropertyChanged(nameof(CoinCountText));
         foreach (var r in SearchResults)
             r.IsAdded = SelectedCoins.Any(c => c.Symbol == r.Symbol);

@@ -22,15 +22,20 @@ public partial class WidgetWindow : Window
     private readonly WidgetViewModel _vm;
     private readonly double? _savedLeft;
     private readonly double? _savedTop;
+    private readonly double _cascade;
     private nint _hwnd;
     private bool _allowClose;
 
-    public WidgetWindow(WidgetViewModel vm, double? savedLeft, double? savedTop)
+    /// <param name="cascade">Offset for a new widget's default spot, so several don't stack exactly.</param>
+    public WidgetWindow(WidgetViewModel vm, double cascade = 0)
     {
         InitializeComponent();
         _vm = vm;
-        _savedLeft = savedLeft;
-        _savedTop = savedTop;
+        _savedLeft = vm.Settings.Left;
+        _savedTop = vm.Settings.Top;
+        _cascade = cascade;
+        var savedLeft = _savedLeft;
+        var savedTop = _savedTop;
         DataContext = vm;
 
         if (savedLeft is { } l && savedTop is { } t)
@@ -86,7 +91,7 @@ public partial class WidgetWindow : Window
         if (!_allowClose)
         {
             e.Cancel = true;
-            _vm.ToggleVisibilityCommand.Execute(null);
+            _vm.IsWidgetVisible = false;
         }
         base.OnClosing(e);
     }
@@ -212,8 +217,8 @@ public partial class WidgetWindow : Window
     {
         var work = SystemParameters.WorkArea;
         var gap = WidgetMetrics.DefaultEdgeGap - WidgetMetrics.ShadowSize;
-        Left = work.Right - ActualWidth - gap;
-        Top = work.Top + gap;
+        Left = work.Right - ActualWidth - gap - _cascade;
+        Top = work.Top + gap + _cascade;
         _vm.SavePosition(Left, Top);
     }
 

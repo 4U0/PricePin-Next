@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.Win32;
-using PricePin.Models;
+using PricePin.Core.Settings;
 
 namespace PricePin.Services;
 
