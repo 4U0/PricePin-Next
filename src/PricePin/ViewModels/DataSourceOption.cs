@@ -62,3 +62,25 @@ public sealed partial class LanguageOption : ObservableObject
 
     public void RefreshText() => OnPropertyChanged(nameof(Label));
 }
+
+/// <summary>A choice in a small picker, such as the tray icon coin.</summary>
+public sealed partial class ChoiceOption : ObservableObject
+{
+    private readonly Func<string> _label;
+
+    public ChoiceOption(string value, Func<string> label, Action<ChoiceOption> select)
+    {
+        Value = value;
+        _label = label;
+        SelectCommand = new RelayCommand(() => select(this));
+    }
+
+    public string Value { get; }
+    public string Label => _label();
+    public ICommand SelectCommand { get; }
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    public void RefreshText() => OnPropertyChanged(nameof(Label));
+}

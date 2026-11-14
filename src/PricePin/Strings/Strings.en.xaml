@@ -188,4 +188,40 @@
     <sys:String x:Key="Data.AboutText">Free and open source (MIT). No account, no tracking: prices come straight from public exchange feeds. Coin logos from cryptocurrency-icons (CC0) and CoinGecko.</sys:String>
     <sys:String x:Key="Data.Project">Project page on GitHub</sys:String>
     <sys:String x:Key="Data.OpenFolder">Open settings folder</sys:String>
+
+    <!-- Alerts and tray icon (v1.1) -->
+    <sys:String x:Key="Nav.Alerts">Alerts</sys:String>
+    <sys:String x:Key="Menu.Alerts">Price alerts…</sys:String>
+    <sys:String x:Key="Alerts.New">NEW ALERT</sys:String>
+    <sys:String x:Key="Alerts.Coin">Coin</sys:String>
+    <sys:String x:Key="Alerts.When">When it</sys:String>
+    <sys:String x:Key="Alerts.Above">Goes above</sys:String>
+    <sys:String x:Key="Alerts.Below">Goes below</sys:String>
+    <sys:String x:Key="Alerts.Rises">Rises by (24h)</sys:String>
+    <sys:String x:Key="Alerts.Falls">Falls by (24h)</sys:String>
+    <sys:String x:Key="Alerts.Value">Value</sys:String>
+    <sys:String x:Key="Alerts.RepeatLabel">Repeat every time (otherwise the alert turns off after it fires)</sys:String>
+    <sys:String x:Key="Alerts.AddButton">Add alert</sys:String>
+    <sys:String x:Key="Alerts.Yours">YOUR ALERTS</sys:String>
+    <sys:String x:Key="Alerts.Empty">No alerts yet. Add one above and PricePin will let you know, as long as it's running.</sys:String>
+    <sys:String x:Key="Alerts.Sound">Play a sound</sys:String>
+    <sys:String x:Key="Alerts.Hint">Alerts appear as Windows notifications. Do not disturb can hold them back.</sys:String>
+    <sys:String x:Key="Alerts.Paused">Paused: prices are showing in {0}</sys:String>
+    <sys:String x:Key="Alerts.Repeats">Repeats</sys:String>
+    <sys:String x:Key="Alerts.Once">Once</sys:String>
+    <sys:String x:Key="Alerts.LastFired">last alert {0}</sys:String>
+    <sys:String x:Key="Alerts.Now">Now {0}</sys:String>
+    <sys:String x:Key="Alerts.BadSymbol">Type a coin symbol, like BTC.</sys:String>
+    <sys:String x:Key="Alerts.BadValue">Type a number greater than zero.</sys:String>
+    <sys:String x:Key="Alerts.TooMany">You can have up to {0} alerts.</sys:String>
+    <sys:String x:Key="Alerts.DescAbove">{0} above {1}</sys:String>
+    <sys:String x:Key="Alerts.DescBelow">{0} below {1}</sys:String>
+    <sys:String x:Key="Alerts.DescRises">{0} up {1}% in 24h</sys:String>
+    <sys:String x:Key="Alerts.DescFalls">{0} down {1}% in 24h</sys:String>
+    <sys:String x:Key="Alerts.NotifyLine">Now {0}</sys:String>
+    <sys:String x:Key="Alerts.NotifyLineChange">Now {0} · {1} (24h)</sys:String>
+    <sys:String x:Key="Alerts.NotifyMany">{0} price alerts</sys:String>
+    <sys:String x:Key="Tray.Title">TRAY ICON</sys:String>
+    <sys:String x:Key="Tray.Logo">PricePin logo</sys:String>
+    <sys:String x:Key="Tray.Hint">Show a coin's price in the taskbar's notification area: green when it's up over 24h, red when it's down.</sys:String>
 </ResourceDictionary>

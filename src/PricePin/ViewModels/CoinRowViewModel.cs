@@ -165,7 +165,14 @@ public sealed partial class CoinRowViewModel : ObservableObject
         _ => value.ToString("0.##", CultureInfo.InvariantCulture),
     };
 
-    private static (string Prefix, string Suffix) CurrencyAffixes(string quote) => quote switch
+    /// <summary>"$70,000.00", "₺2,912,000.00", "0.25 ADA".</summary>
+    public static string FormatPrice(decimal price, string quote)
+    {
+        var (prefix, suffix) = CurrencyAffixes(quote);
+        return prefix + FormatNumber(price) + suffix;
+    }
+
+    public static (string Prefix, string Suffix) CurrencyAffixes(string quote) => quote switch
     {
         "USD" or "USDT" or "USDC" => ("$", ""),
         "EUR" => ("€", ""),

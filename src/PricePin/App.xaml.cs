@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using H.NotifyIcon;
 using H.NotifyIcon.Core;
@@ -82,6 +83,12 @@ public partial class App : Application
             Loc.F("Update.NotifyTitle", _updates.NewVersion), Loc.T("Update.NotifyBody"), NotificationIcon.Info);
         _updates.RestartRequested += (_, _) => RestartForUpdate();
         _vm.Updates = _updates;
+        _vm.Alerts.Triggered += (_, hits) => ShowAlert(hits);
+        _vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(AppViewModel.TrayIconText) or nameof(AppViewModel.TrayIconUp))
+                UpdateTrayIcon();
+        };
 
         CreateTrayIcon();
 
@@ -212,6 +219,43 @@ public partial class App : Application
         _tray.ForceCreate(false);
     }
 
+    private ImageSource? _logoIcon;
+
+    private void UpdateTrayIcon()
+    {
+        if (_tray is null || _vm is null)
+            return;
+        try
+        {
+            _logoIcon ??= _tray.IconSource;
+            _tray.IconSource = _vm.TrayIconText is { } text ? TrayIconRenderer.Render(text, _vm.TrayIconUp) : _logoIcon;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Write(ex); // a drawing hiccup must never take the app down
+        }
+    }
+
+    private void ShowAlert(IReadOnlyList<Core.Alerts.AlertHit> hits)
+    {
+        if (_tray is null || _vm is null)
+            return;
+        var quote = _vm.Settings.QuoteCurrency;
+        string Line(Core.Alerts.AlertHit h)
+        {
+            var now = CoinRowViewModel.FormatPrice(h.Price, quote);
+            return h.ChangePercent is { } c
+                ? Loc.F("Alerts.NotifyLineChange", now, (c >= 0 ? "▲ " : "▼ ") + Math.Abs(c).ToString("0.00", System.Globalization.CultureInfo.CurrentCulture) + "%")
+                : Loc.F("Alerts.NotifyLine", now);
+        }
+
+        var title = hits.Count == 1 ? AlertsViewModel.Describe(hits[0].Alert) : Loc.F("Alerts.NotifyMany", hits.Count);
+        var body = hits.Count == 1
+            ? Line(hits[0])
+            : string.Join("\n", hits.Take(4).Select(h => AlertsViewModel.Describe(h.Alert)));
+        _tray.ShowNotification(title, body, NotificationIcon.Info, sound: _vm.Alerts.AlertSound);
+    }
+
     private void RegisterHotkeys()
     {
         if (_hotkeys is null || _vm is null)
@@ -233,6 +277,9 @@ public partial class App : Application
     {
         if (_settingsWindow is { IsLoaded: true })
         {
+            if (_vm!.PendingSettingsPage is { } openPage && _settingsWindow.DataContext is SettingsViewModel open)
+                open.Page = openPage;
+            _vm.PendingSettingsPage = null;
             if (_settingsWindow.WindowState == WindowState.Minimized)
                 _settingsWindow.WindowState = WindowState.Normal;
             _settingsWindow.Activate();
@@ -240,6 +287,9 @@ public partial class App : Application
         }
 
         var vm = new SettingsViewModel(_vm!, _settings!, _catalog!, _logos!, _theme!);
+        if (_vm!.PendingSettingsPage is { } page)
+            vm.Page = page;
+        _vm.PendingSettingsPage = null;
         _settingsWindow = new SettingsWindow(vm);
         _settingsWindow.Closed += (_, _) =>
         {

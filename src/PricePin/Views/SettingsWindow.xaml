@@ -117,6 +117,8 @@
                                  IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter=Widgets}" />
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE8EC;" Content="{DynamicResource Nav.Coins}"
                                  IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter=Coins}" />
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xEA8F;" Content="{DynamicResource Nav.Alerts}"
+                                 IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter=Alerts}" />
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE790;" Content="{DynamicResource Nav.Appearance}"
                                  IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter=Appearance}" />
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE774;" Content="{DynamicResource Nav.Data}"
@@ -523,6 +525,120 @@
                     </DockPanel>
                 </Grid>
 
+                <!-- ============ Alerts ============ -->
+                <ScrollViewer>
+                    <ScrollViewer.Style>
+                        <Style TargetType="ScrollViewer" BasedOn="{StaticResource PageHost}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Page}" Value="Alerts">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ScrollViewer.Style>
+                    <StackPanel DataContext="{Binding App.Alerts}">
+                        <TextBlock Text="{DynamicResource Nav.Alerts}" FontSize="22" FontWeight="SemiBold" Margin="0,4,0,18" />
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="{DynamicResource Alerts.New}" />
+                        <Border Style="{StaticResource Card}" Padding="16,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,4">
+                                    <TextBlock Text="{DynamicResource Alerts.Coin}" Width="90" FontSize="13" VerticalAlignment="Center" />
+                                    <TextBox Style="{StaticResource FieldBox}" Width="110" CharacterCasing="Upper" MaxLength="12"
+                                             Text="{Binding NewSymbol, UpdateSourceTrigger=PropertyChanged, Delay=250}" />
+                                    <ItemsControl ItemsSource="{Binding SymbolChoices}" Margin="8,0,0,0" VerticalAlignment="Center">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource TextButton}" Padding="7,2" Margin="0,2,4,2" FontSize="11"
+                                                        Content="{Binding}" CommandParameter="{Binding}"
+                                                        Command="{Binding DataContext.PickSymbolCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DockPanel>
+                                <DockPanel Margin="0,8,0,4">
+                                    <TextBlock Text="{DynamicResource Alerts.When}" Width="90" FontSize="13" VerticalAlignment="Center" />
+                                    <Border Style="{StaticResource SegmentedPanel}" HorizontalAlignment="Left">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton Style="{StaticResource Segment}" GroupName="AlertCondition" Content="{DynamicResource Alerts.Above}"
+                                                         IsChecked="{Binding NewCondition, Converter={StaticResource Equals}, ConverterParameter=Above}" />
+                                            <RadioButton Style="{StaticResource Segment}" GroupName="AlertCondition" Content="{DynamicResource Alerts.Below}"
+                                                         IsChecked="{Binding NewCondition, Converter={StaticResource Equals}, ConverterParameter=Below}" />
+                                            <RadioButton Style="{StaticResource Segment}" GroupName="AlertCondition" Content="{DynamicResource Alerts.Rises}"
+                                                         IsChecked="{Binding NewCondition, Converter={StaticResource Equals}, ConverterParameter=RisesBy}" />
+                                            <RadioButton Style="{StaticResource Segment}" GroupName="AlertCondition" Content="{DynamicResource Alerts.Falls}"
+                                                         IsChecked="{Binding NewCondition, Converter={StaticResource Equals}, ConverterParameter=FallsBy}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DockPanel>
+                                <DockPanel Margin="0,8,0,4">
+                                    <TextBlock Text="{DynamicResource Alerts.Value}" Width="90" FontSize="13" VerticalAlignment="Center" />
+                                    <TextBox Style="{StaticResource FieldBox}" Width="160" Text="{Binding NewValue, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="{Binding ValueSuffix}" Margin="8,0,0,0" FontSize="13" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock Text="{Binding CurrentPriceText}" Margin="14,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                                </DockPanel>
+                                <CheckBox Style="{StaticResource ToggleSwitch}" Margin="0,6,0,0" Content="{DynamicResource Alerts.RepeatLabel}"
+                                          IsChecked="{Binding NewRepeat}" />
+                                <DockPanel Margin="0,8,0,0">
+                                    <Button DockPanel.Dock="Left" Style="{StaticResource AccentButton}" Content="{DynamicResource Alerts.AddButton}"
+                                            Command="{Binding AddCommand}" />
+                                    <TextBlock Text="{Binding NewError}" Margin="12,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource DownBrush}" TextWrapping="Wrap" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="{DynamicResource Alerts.Yours}" />
+                        <Border Style="{StaticResource Card}" Padding="8,6">
+                            <StackPanel>
+                                <TextBlock Margin="8,8" Text="{DynamicResource Alerts.Empty}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource Hint}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasAlerts}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <ItemsControl ItemsSource="{Binding Items}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:AlertItemViewModel}">
+                                            <DockPanel Margin="4,5">
+                                                <Button DockPanel.Dock="Right" Style="{StaticResource RowButton}" Content="&#xE74D;"
+                                                        ToolTip="{DynamicResource Common.Remove}" Command="{Binding RemoveCommand}" VerticalAlignment="Center" />
+                                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}" IsChecked="{Binding Enabled}"
+                                                          VerticalAlignment="Center" Margin="8,0" />
+                                                <ContentPresenter ContentTemplate="{StaticResource LogoTemplate}" Content="{Binding}" VerticalAlignment="Center" />
+                                                <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Description}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Details}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                            <StackPanel>
+                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Alerts.Sound}" IsChecked="{Binding AlertSound}" />
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,2,0,6" Text="{DynamicResource Alerts.Hint}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
                 <!-- ============ Appearance ============ -->
                 <ScrollViewer>
                     <ScrollViewer.Style>
@@ -567,6 +683,26 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="{DynamicResource Tray.Title}" />
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel Margin="0,6">
+                                <ItemsControl ItemsSource="{Binding App.TrayCoinOptions}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <RadioButton Style="{StaticResource ChoiceCard}" GroupName="TrayCoin" Margin="0,0,6,6" Padding="10,5"
+                                                         Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=OneWay}" Command="{Binding SelectCommand}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,2,0,0" Text="{DynamicResource Tray.Hint}" />
                             </StackPanel>
                         </Border>
 
