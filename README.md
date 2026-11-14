@@ -2,7 +2,7 @@
 
 A fast, good-looking crypto price widget for Windows. It floats on your desktop, stays on top if you want it to, and shows live prices that update the moment they change.
 
-> **Status:** early development (v0.3). Live prices, settings and the coin picker work; the ticker bar layout is next. See the [roadmap](#roadmap).
+> **Status:** early development (v0.4). Live prices, settings, the coin picker, the ticker bar and multiple widgets work; the installer and auto-update are next. See the [roadmap](#roadmap).
 
 ## Features
 
@@ -15,6 +15,10 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Hover a coin for its 24h high, low and volume
 - Settings window: pick any coin from Binance, Coinbase and Kraken's lists (search by name or symbol), drag to reorder, and show prices in USD, USDT, EUR, TRY or GBP
 - Dark, light or follow-Windows theme, eight accent colours, three sizes, and options to hide names, sparklines or headings
+- Two layouts: a vertical card list, or a horizontal scrolling ticker bar docked to the top or bottom of the screen (optionally reserving the space so maximised windows don't cover it) or floating anywhere
+- Run several widgets at once (up to 8), each with its own coins, layout, size, opacity and position
+- Global hotkeys: <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd> shows or hides all widgets, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> toggles click-through (both can be changed in Settings)
+- The ticker bar pauses while you hover it, and steps out of the way of full-screen apps
 - Borderless dark "glass" widget you can drag anywhere
 - Snaps to screen edges (hold <kbd>Shift</kbd> while dragging to place it freely)
 - Stay on top, opacity slider (20–100%), and <kbd>Ctrl</kbd> + mouse wheel to change opacity
@@ -27,7 +31,6 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Only one copy runs at a time; launching it again shows the existing widget
 
 **Planned**
-- Horizontal scrolling ticker bar, multiple widgets, hotkeys (v0.4)
 - Installer, auto-update, winget, Turkish and English (v1.0)
 - Price alerts and live price on the tray icon (v1.1)
 - Portfolio with privacy blur (v1.2)
@@ -85,7 +88,7 @@ dotnet run --project tools/FeedProbe -- 15 BTC ETH SOL
 1. **Foundation**: widget window, stay on top, opacity, click-through, tray, saved position ✅
 2. **Live data**: Binance, Coinbase and Kraken feeds, failover, REST fallback, logos, sparklines, design refresh ✅
 3. **v0.3 Settings**: settings window, coin picker, display currency, themes, sizes ✅
-4. **v0.4 Layouts**: ticker bar, multiple widgets, hotkeys
+4. **v0.4 Layouts**: ticker bar, multiple widgets, hotkeys ✅
 5. **v1.0 Launch**: installer, auto-update, winget, code signing, Turkish and English
 6. **v1.1**: price alerts, live price on the tray icon
 7. **v1.2**: portfolio and privacy blur

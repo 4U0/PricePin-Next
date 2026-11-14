@@ -44,6 +44,36 @@
             <Setter Property="FontSize" Value="10" />
         </Style>
 
+        <!-- Which widget is being edited, plus add/remove. DataContext: SettingsViewModel. -->
+        <DataTemplate x:Key="WidgetPicker">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Button Style="{StaticResource TextButton}" Padding="10,5" FontSize="11.5" Margin="6,0,0,0"
+                            Command="{Binding AddListWidgetCommand}" IsEnabled="{Binding CanAddWidget}" Content="+ List" />
+                    <Button Style="{StaticResource TextButton}" Padding="10,5" FontSize="11.5" Margin="6,0,0,0"
+                            Command="{Binding AddTickerBarCommand}" IsEnabled="{Binding CanAddWidget}" Content="+ Ticker bar" />
+                    <Button Style="{StaticResource TextButton}" Padding="10,5" FontSize="11.5" Margin="6,0,0,0"
+                            Command="{Binding RemoveWidgetCommand}" IsEnabled="{Binding CanRemoveWidget}" Content="Remove" />
+                </StackPanel>
+                <ListBox Style="{StaticResource ChipList}" ItemsSource="{Binding App.Widgets}" SelectedItem="{Binding SelectedWidget}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:WidgetViewModel}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="Icon" Text="&#xE8FD;" FontFamily="{StaticResource IconFont}" FontSize="11"
+                                           VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsTickerBar}" Value="True">
+                                    <Setter TargetName="Icon" Property="Text" Value="&#xE8A0;" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </DataTemplate>
+
         <DataTemplate x:Key="LogoTemplate">
             <Grid Width="28" Height="28">
                 <Ellipse Fill="{DynamicResource TrackBrush}" />
@@ -83,6 +113,8 @@
                 <StackPanel>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE713;" Content="General"
                                  IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter=General}" />
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xE737;" Content="Widgets"
+                                 IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter=Widgets}" />
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE8EC;" Content="Coins"
                                  IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter=Coins}" />
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE790;" Content="Appearance"
@@ -108,30 +140,185 @@
                     <StackPanel>
                         <TextBlock Text="General" FontSize="22" FontWeight="SemiBold" Margin="0,4,0,18" />
 
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="WINDOW" />
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="STARTUP" />
                         <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Stay on top of other windows" IsChecked="{Binding Widget.Topmost}" />
-                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Lock position" IsChecked="{Binding Widget.LockPosition}" />
-                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Snap to screen edges" IsChecked="{Binding Widget.SnapToEdges}" />
-                                <TextBlock Style="{StaticResource Hint}" Text="Hold Shift while dragging to place the widget freely." Margin="0,-2,0,6" />
-                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Click-through (mouse passes through the widget)" IsChecked="{Binding Widget.ClickThrough}" />
-                                <TextBlock Style="{StaticResource Hint}" Text="Turn it off again from the tray icon or here." Margin="0,-2,0,6" />
+                            <CheckBox Style="{StaticResource ToggleSwitch}" Content="Start PricePin when Windows starts" IsChecked="{Binding App.StartWithWindows}" />
+                        </Border>
 
-                                <DockPanel Margin="0,8,0,6">
-                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Widget.OpacityText}" Width="40" TextAlignment="Right"
-                                               Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="Opacity" FontSize="13" VerticalAlignment="Center" Width="120" />
-                                    <Slider Minimum="{Binding Widget.OpacityMin}" Maximum="{Binding Widget.OpacityMax}"
-                                            SmallChange="0.05" LargeChange="0.1" Value="{Binding Widget.Opacity}" Margin="0,0,12,0" />
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="KEYBOARD SHORTCUTS" />
+                        <Border Style="{StaticResource Card}" Padding="16,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,4">
+                                    <TextBox x:Name="HotkeyWidgets" DockPanel.Dock="Right" Width="180" Style="{StaticResource FieldBox}" IsReadOnly="True"
+                                             Tag="Press a shortcut" Text="{Binding App.HotkeyToggleWidgets, Mode=OneWay}"
+                                             PreviewKeyDown="Hotkey_PreviewKeyDown" IsReadOnlyCaretVisible="False" />
+                                    <TextBlock Text="Show or hide all widgets" FontSize="13" VerticalAlignment="Center" />
                                 </DockPanel>
-                                <TextBlock Style="{StaticResource Hint}" Text="Tip: Ctrl + mouse wheel over the widget changes opacity too." Margin="0,0,0,6" />
+                                <DockPanel Margin="0,4">
+                                    <TextBox x:Name="HotkeyClickThrough" DockPanel.Dock="Right" Width="180" Style="{StaticResource FieldBox}" IsReadOnly="True"
+                                             Tag="Press a shortcut" Text="{Binding App.HotkeyToggleClickThrough, Mode=OneWay}"
+                                             PreviewKeyDown="Hotkey_PreviewKeyDown" IsReadOnlyCaretVisible="False" />
+                                    <TextBlock Text="Turn click-through on or off" FontSize="13" VerticalAlignment="Center" />
+                                </DockPanel>
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
+                                           Text="Click a box and press the keys (use Ctrl, Alt, Shift or Win plus a key). Backspace clears it." />
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0" Foreground="{DynamicResource DownBrush}"
+                                           Text="{Binding App.HotkeyWarning}">
+                                    <TextBlock.Visibility>
+                                        <Binding Path="App.HotkeyWarning">
+                                            <Binding.Converter>
+                                                <ctl:NotNullToVisibilityConverter />
+                                            </Binding.Converter>
+                                        </Binding>
+                                    </TextBlock.Visibility>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ============ Widgets ============ -->
+                <ScrollViewer>
+                    <ScrollViewer.Style>
+                        <Style TargetType="ScrollViewer" BasedOn="{StaticResource PageHost}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Page}" Value="Widgets">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ScrollViewer.Style>
+                    <StackPanel>
+                        <TextBlock Text="Widgets" FontSize="22" FontWeight="SemiBold" Margin="0,4,0,6" />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,16"
+                                   Text="Have as many as you like: for example a list on one screen and a ticker bar along the top of another." />
+
+                        <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetPicker}" Margin="0,0,0,14" />
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="THIS WIDGET" />
+                        <Border Style="{StaticResource Card}" Padding="16,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,4,0,8">
+                                    <TextBlock Text="Name" FontSize="13" VerticalAlignment="Center" Width="120" />
+                                    <TextBox Style="{StaticResource FieldBox}" MaxLength="40"
+                                             Text="{Binding SelectedWidget.Name, UpdateSourceTrigger=PropertyChanged, Delay=300}" />
+                                </DockPanel>
+                                <DockPanel Margin="0,4">
+                                    <TextBlock Text="Layout" FontSize="13" VerticalAlignment="Center" Width="120" />
+                                    <Border Style="{StaticResource SegmentedPanel}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton Style="{StaticResource Segment}" Content="List" GroupName="Layout"
+                                                         IsChecked="{Binding SelectedWidget.Layout, Converter={StaticResource Equals}, ConverterParameter=List}" />
+                                            <RadioButton Style="{StaticResource Segment}" Content="Ticker bar" GroupName="Layout"
+                                                         IsChecked="{Binding SelectedWidget.Layout, Converter={StaticResource Equals}, ConverterParameter=TickerBar}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DockPanel>
+                                <DockPanel Margin="0,8,0,4">
+                                    <TextBlock Text="Size" FontSize="13" VerticalAlignment="Center" Width="120" />
+                                    <Border Style="{StaticResource SegmentedPanel}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton Style="{StaticResource Segment}" Content="Small" GroupName="Size"
+                                                         IsChecked="{Binding SelectedWidget.Size, Converter={StaticResource Equals}, ConverterParameter=Small}" />
+                                            <RadioButton Style="{StaticResource Segment}" Content="Medium" GroupName="Size"
+                                                         IsChecked="{Binding SelectedWidget.Size, Converter={StaticResource Equals}, ConverterParameter=Medium}" />
+                                            <RadioButton Style="{StaticResource Segment}" Content="Large" GroupName="Size"
+                                                         IsChecked="{Binding SelectedWidget.Size, Converter={StaticResource Equals}, ConverterParameter=Large}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DockPanel>
+                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Show this widget" IsChecked="{Binding SelectedWidget.IsWidgetVisible}" />
                             </StackPanel>
                         </Border>
 
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="STARTUP" />
+                        <!-- Ticker bar options -->
+                        <StackPanel Visibility="{Binding SelectedWidget.IsTickerBar, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="TICKER BAR" />
+                            <Border Style="{StaticResource Card}" Padding="16,12">
+                                <StackPanel>
+                                    <DockPanel Margin="0,4,0,8">
+                                        <TextBlock Text="Position" FontSize="13" VerticalAlignment="Center" Width="120" />
+                                        <Border Style="{StaticResource SegmentedPanel}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <RadioButton Style="{StaticResource Segment}" Content="Top of screen" GroupName="Dock"
+                                                             IsChecked="{Binding SelectedWidget.Dock, Converter={StaticResource Equals}, ConverterParameter=Top}" />
+                                                <RadioButton Style="{StaticResource Segment}" Content="Bottom" GroupName="Dock"
+                                                             IsChecked="{Binding SelectedWidget.Dock, Converter={StaticResource Equals}, ConverterParameter=Bottom}" />
+                                                <RadioButton Style="{StaticResource Segment}" Content="Floating" GroupName="Dock"
+                                                             IsChecked="{Binding SelectedWidget.Dock, Converter={StaticResource Equals}, ConverterParameter=Floating}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DockPanel>
+                                    <CheckBox Content="Reserve screen space (other windows won't cover it)"
+                                              IsChecked="{Binding SelectedWidget.ReserveSpace}">
+                                        <CheckBox.Style>
+                                            <Style TargetType="CheckBox" BasedOn="{StaticResource ToggleSwitch}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedWidget.IsFloating}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </CheckBox.Style>
+                                    </CheckBox>
+                                    <DockPanel Margin="0,8,0,4" Visibility="{Binding SelectedWidget.IsFloating, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock DockPanel.Dock="Right" Width="56" TextAlignment="Right" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Text="{Binding SelectedWidget.FloatingWidth, StringFormat={}{0:0} px}" />
+                                        <TextBlock Text="Width" FontSize="13" VerticalAlignment="Center" Width="120" />
+                                        <Slider Minimum="320" Maximum="2400" SmallChange="20" LargeChange="100"
+                                                Value="{Binding SelectedWidget.FloatingWidth, Delay=250}" Margin="0,0,12,0" />
+                                    </DockPanel>
+                                    <CheckBox Style="{StaticResource ToggleSwitch}" Content="Scroll the coins" IsChecked="{Binding SelectedWidget.Scroll}" />
+                                    <DockPanel Margin="0,4" Visibility="{Binding SelectedWidget.Scroll, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="Speed" FontSize="13" VerticalAlignment="Center" Width="120" />
+                                        <Slider Minimum="10" Maximum="150" SmallChange="5" LargeChange="20" Value="{Binding SelectedWidget.ScrollSpeed}" Margin="0,0,12,0" />
+                                    </DockPanel>
+                                    <TextBlock Style="{StaticResource Hint}" Text="Hovering the bar pauses it so you can read or click." Margin="0,4,0,4" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- List options -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedWidget.IsTickerBar}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="LIST" />
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <CheckBox Style="{StaticResource ToggleSwitch}" Content="Show coin names" IsChecked="{Binding SelectedWidget.ShowNames}" />
+                                    <CheckBox Style="{StaticResource ToggleSwitch}" Content="Show 24h sparklines" IsChecked="{Binding SelectedWidget.ShowSparklines}" />
+                                    <CheckBox Style="{StaticResource ToggleSwitch}" Content="Show column headings" IsChecked="{Binding SelectedWidget.ShowColumnHeadings}" />
+                                    <CheckBox Style="{StaticResource ToggleSwitch}" Content="Snap to screen edges" IsChecked="{Binding SelectedWidget.SnapToEdges}" />
+                                    <TextBlock Style="{StaticResource Hint}" Text="Hold Shift while dragging to place the widget freely." Margin="0,-2,0,6" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="WINDOW" />
                         <Border Style="{StaticResource Card}">
-                            <CheckBox Style="{StaticResource ToggleSwitch}" Content="Start PricePin when Windows starts" IsChecked="{Binding Widget.StartWithWindows}" />
+                            <StackPanel>
+                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Stay on top of other windows" IsChecked="{Binding SelectedWidget.Topmost}" />
+                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Lock position" IsChecked="{Binding SelectedWidget.LockPosition}" />
+                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Click-through (mouse passes through)" IsChecked="{Binding SelectedWidget.ClickThrough}" />
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,-2,0,6">
+                                    <Run Text="Turn it off again here, from the tray icon, or with" /> <Run Text="{Binding App.HotkeyToggleClickThrough, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="." />
+                                </TextBlock>
+                                <DockPanel Margin="0,8,0,6">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding SelectedWidget.OpacityText}" Width="40" TextAlignment="Right"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Opacity" FontSize="13" VerticalAlignment="Center" Width="120" />
+                                    <Slider Minimum="{Binding SelectedWidget.OpacityMin}" Maximum="{Binding SelectedWidget.OpacityMax}"
+                                            SmallChange="0.05" LargeChange="0.1" Value="{Binding SelectedWidget.Opacity}" Margin="0,0,12,0" />
+                                </DockPanel>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
@@ -159,7 +346,10 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.ColumnSpan="3" Text="Coins" FontSize="22" FontWeight="SemiBold" Margin="0,4,0,14" />
+                    <StackPanel Grid.ColumnSpan="3" Margin="0,4,0,8">
+                        <TextBlock Text="Coins" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,12" />
+                        <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetPicker}" />
+                    </StackPanel>
 
                     <!-- Currency -->
                     <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,0,0,16">
@@ -193,7 +383,7 @@
                             </TextBlock>
                         </DockPanel>
                         <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Hint}" Margin="2,8,0,0"
-                                   Text="Drag to reorder. The first coin also shows in the tray tooltip." />
+                                   Text="Drag to reorder. Each widget has its own list." />
                         <Border Style="{StaticResource Card}" Padding="6" Margin="0">
                             <ListBox x:Name="CoinList" Style="{StaticResource PlainList}" ItemsSource="{Binding SelectedCoins}"
                                      AllowDrop="True"
@@ -338,27 +528,6 @@
                             </StackPanel>
                         </Border>
 
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="WIDGET" />
-                        <Border Style="{StaticResource Card}">
-                            <StackPanel>
-                                <DockPanel Margin="0,6,0,8">
-                                    <TextBlock Text="Size" FontSize="13" VerticalAlignment="Center" Width="120" />
-                                    <Border Style="{StaticResource SegmentedPanel}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <RadioButton Style="{StaticResource Segment}" Content="Small" GroupName="Size"
-                                                         IsChecked="{Binding Widget.Size, Converter={StaticResource Equals}, ConverterParameter=Small}" />
-                                            <RadioButton Style="{StaticResource Segment}" Content="Medium" GroupName="Size"
-                                                         IsChecked="{Binding Widget.Size, Converter={StaticResource Equals}, ConverterParameter=Medium}" />
-                                            <RadioButton Style="{StaticResource Segment}" Content="Large" GroupName="Size"
-                                                         IsChecked="{Binding Widget.Size, Converter={StaticResource Equals}, ConverterParameter=Large}" />
-                                        </StackPanel>
-                                    </Border>
-                                </DockPanel>
-                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Show coin names" IsChecked="{Binding Widget.ShowNames}" />
-                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Show 24h sparklines" IsChecked="{Binding Widget.ShowSparklines}" />
-                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="Show column headings" IsChecked="{Binding Widget.ShowColumnHeadings}" />
-                            </StackPanel>
-                        </Border>
                     </StackPanel>
                 </ScrollViewer>
 
@@ -379,7 +548,7 @@
                         <TextBlock Style="{StaticResource SectionTitle}" Text="DATA SOURCE" />
                         <Border Style="{StaticResource Card}" Padding="12">
                             <StackPanel>
-                                <ItemsControl ItemsSource="{Binding Widget.DataSourceOptions}">
+                                <ItemsControl ItemsSource="{Binding App.DataSourceOptions}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="{x:Type vm:DataSourceOption}">
                                             <RadioButton Style="{StaticResource ChoiceCard}" GroupName="Source"
@@ -393,11 +562,11 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <DockPanel Margin="0,6,0,0">
-                                    <Button DockPanel.Dock="Right" Style="{StaticResource TextButton}" Content="Reconnect" Command="{Binding Widget.ReconnectCommand}" />
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource TextButton}" Content="Reconnect" Command="{Binding App.ReconnectCommand}" />
                                     <TextBlock Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="2,0,12,0">
-                                        <Run Text="{Binding Widget.StatusLabel, Mode=OneWay}" FontWeight="SemiBold" />
+                                        <Run Text="{Binding App.StatusLabel, Mode=OneWay}" FontWeight="SemiBold" />
                                         <Run Text="·" />
-                                        <Run Text="{Binding Widget.StatusDetail, Mode=OneWay}" />
+                                        <Run Text="{Binding App.StatusDetail, Mode=OneWay}" />
                                     </TextBlock>
                                 </DockPanel>
                             </StackPanel>

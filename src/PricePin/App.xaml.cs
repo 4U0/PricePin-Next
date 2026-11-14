@@ -1,8 +1,8 @@
-using System.ComponentModel;
+using System.Collections.Specialized;
 using System.IO;
 using System.Windows;
-using System.Windows.Data;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media.Imaging;
 using H.NotifyIcon;
 using H.NotifyIcon.Core;
@@ -10,6 +10,7 @@ using PricePin.Core.Coins;
 using PricePin.Core.History;
 using PricePin.Core.Icons;
 using PricePin.Core.Market;
+using PricePin.Core.Settings;
 using PricePin.Services;
 using PricePin.ViewModels;
 using PricePin.Views;
@@ -21,6 +22,7 @@ public partial class App : Application
     // Unique per user session; a second launch signals the first one to show itself and quits.
     private const string InstanceId = "PricePin.SingleInstance.5B0E4D8C";
 
+    private readonly Dictionary<WidgetViewModel, Window> _windows = [];
     private Mutex? _instanceMutex;
     private EventWaitHandle? _showSignal;
     private SettingsService? _settings;
@@ -28,11 +30,12 @@ public partial class App : Application
     private ThemeService? _theme;
     private LogoProvider? _logos;
     private CoinCatalogService? _catalog;
-    private SettingsWindow? _settingsWindow;
-    private WidgetViewModel? _vm;
-    private WidgetWindow? _widget;
+    private HotkeyService? _hotkeys;
+    private AppViewModel? _vm;
     private TaskbarIcon? _tray;
+    private SettingsWindow? _settingsWindow;
     private bool _clickThroughHintShown;
+    private bool _exiting;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -65,22 +68,28 @@ public partial class App : Application
         var localData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PricePin");
         _logos = new LogoProvider(new CoinIconService(Path.Combine(localData, "icons")));
         _catalog = new CoinCatalogService(Path.Combine(localData, "catalog"));
-        _vm = new WidgetViewModel(_settings, _market, new PriceHistoryService(), _logos);
+
+        _vm = new AppViewModel(_settings, _market, new PriceHistoryService(), _logos);
         _vm.ExitRequested += (_, _) => ExitApp();
-        _vm.ToggleVisibilityRequested += (_, _) => SetWidgetVisible(!_vm.IsWidgetVisible);
         _vm.SettingsRequested += (_, _) => ShowSettings();
-        _vm.PropertyChanged += OnViewModelPropertyChanged;
+        _vm.HotkeysChanged += (_, _) => RegisterHotkeys();
+        _vm.Widgets.CollectionChanged += OnWidgetsChanged;
 
         CreateTrayIcon();
 
-        _widget = new WidgetWindow(_vm, _settings.Current.Left, _settings.Current.Top);
-        _widget.Show();
+        _hotkeys = new HotkeyService();
+        RegisterHotkeys();
+
+        foreach (var widget in _vm.Widgets)
+            Attach(widget);
+
         _vm.Start();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _vm?.Dispose();
+        _hotkeys?.Dispose();
         _theme?.Dispose();
         // Close sockets politely, but never let shutdown hang on the network.
         _market?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(2));
@@ -91,9 +100,92 @@ public partial class App : Application
         base.OnExit(e);
     }
 
+    // ---- Widget windows ----------------------------------------------------------------
+
+    private void Attach(WidgetViewModel widget)
+    {
+        widget.PropertyChanged += OnWidgetPropertyChanged;
+        widget.LayoutChanged += OnWidgetLayoutChanged;
+        if (widget.IsWidgetVisible)
+            ShowWindowFor(widget);
+    }
+
+    private void Detach(WidgetViewModel widget)
+    {
+        widget.PropertyChanged -= OnWidgetPropertyChanged;
+        widget.LayoutChanged -= OnWidgetLayoutChanged;
+        CloseWindowFor(widget);
+    }
+
+    private void OnWidgetsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        foreach (WidgetViewModel w in e.OldItems ?? Array.Empty<WidgetViewModel>())
+            Detach(w);
+        foreach (WidgetViewModel w in e.NewItems ?? Array.Empty<WidgetViewModel>())
+            Attach(w);
+    }
+
+    private void OnWidgetPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (sender is not WidgetViewModel widget)
+            return;
+
+        switch (e.PropertyName)
+        {
+            case nameof(WidgetViewModel.IsWidgetVisible):
+                if (widget.IsWidgetVisible)
+                    ShowWindowFor(widget);
+                else if (_windows.TryGetValue(widget, out var window))
+                    window.Hide();
+                break;
+
+            case nameof(WidgetViewModel.ClickThrough) when widget.ClickThrough && !_clickThroughHintShown:
+                // Click-through makes the widget ignore the mouse, so point people to the way back once.
+                _clickThroughHintShown = true;
+                _tray?.ShowNotification(
+                    "Click-through is on",
+                    $"The mouse now passes through the widget. Turn it off from the PricePin tray icon or with {_vm!.HotkeyToggleClickThrough}.",
+                    NotificationIcon.Info);
+                break;
+        }
+    }
+
+    private void OnWidgetLayoutChanged(object? sender, EventArgs e)
+    {
+        if (sender is not WidgetViewModel widget)
+            return;
+        CloseWindowFor(widget);
+        if (widget.IsWidgetVisible)
+            ShowWindowFor(widget);
+    }
+
+    private void ShowWindowFor(WidgetViewModel widget)
+    {
+        if (!_windows.TryGetValue(widget, out var window))
+        {
+            var cascade = 24.0 * _vm!.Widgets.IndexOf(widget);
+            window = widget.IsTickerBar ? new TickerBarWindow(widget) : new WidgetWindow(widget, cascade);
+            _windows[widget] = window;
+        }
+        window.Show();
+    }
+
+    private void CloseWindowFor(WidgetViewModel widget)
+    {
+        if (!_windows.Remove(widget, out var window))
+            return;
+        switch (window)
+        {
+            case WidgetWindow w: w.CloseForExit(); break;
+            case TickerBarWindow t: t.CloseForExit(); break;
+        }
+    }
+
+    // ---- Tray, settings, hotkeys -------------------------------------------------------
+
     private void CreateTrayIcon()
     {
-        var menu = (ContextMenu)FindResource("AppMenu");
+        var menu = (ContextMenu)FindResource("TrayMenu");
         menu.DataContext = _vm;
 
         _tray = new TaskbarIcon
@@ -102,12 +194,29 @@ public partial class App : Application
             IconSource = BitmapFrame.Create(new Uri("pack://application:,,,/Assets/PricePin.ico")),
             ContextMenu = menu,
             DataContext = _vm,
-            LeftClickCommand = _vm!.ToggleVisibilityCommand,
+            LeftClickCommand = _vm!.ToggleAllWidgetsCommand,
             NoLeftClickDelay = true,
         };
-        _tray.SetBinding(TaskbarIcon.ToolTipTextProperty, new Binding(nameof(WidgetViewModel.TrayToolTip)));
+        _tray.SetBinding(TaskbarIcon.ToolTipTextProperty, new Binding(nameof(AppViewModel.TrayToolTip)));
         // false = don't put the process in Windows "efficiency mode"; prices must stay real-time.
         _tray.ForceCreate(false);
+    }
+
+    private void RegisterHotkeys()
+    {
+        if (_hotkeys is null || _vm is null)
+            return;
+        _hotkeys.UnregisterAll();
+
+        var failed = new List<string>();
+        if (!string.IsNullOrWhiteSpace(_vm.HotkeyToggleWidgets) && !_hotkeys.Register(_vm.HotkeyToggleWidgets, _vm.ToggleAllWidgets))
+            failed.Add(_vm.HotkeyToggleWidgets);
+        if (!string.IsNullOrWhiteSpace(_vm.HotkeyToggleClickThrough) && !_hotkeys.Register(_vm.HotkeyToggleClickThrough, _vm.ToggleClickThroughAll))
+            failed.Add(_vm.HotkeyToggleClickThrough);
+
+        _vm.HotkeyWarning = failed.Count == 0
+            ? null
+            : $"{string.Join(" and ", failed)} couldn't be set. Another app may already use it; try a different combination.";
     }
 
     private void ShowSettings()
@@ -131,36 +240,6 @@ public partial class App : Application
         _settingsWindow.Activate();
     }
 
-    private void SetWidgetVisible(bool visible)
-    {
-        if (_widget is null || _vm is null)
-            return;
-
-        if (visible)
-        {
-            _widget.Show();
-            _widget.Activate();
-        }
-        else
-        {
-            _widget.Hide();
-        }
-        _vm.IsWidgetVisible = visible;
-    }
-
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        // Click-through makes the widget ignore the mouse, so point people to the tray icon once.
-        if (e.PropertyName == nameof(WidgetViewModel.ClickThrough) && _vm!.ClickThrough && !_clickThroughHintShown)
-        {
-            _clickThroughHintShown = true;
-            _tray?.ShowNotification(
-                "Click-through is on",
-                "The mouse now passes through the widget. Right-click the PricePin tray icon to turn it off.",
-                NotificationIcon.Info);
-        }
-    }
-
     private void ListenForShowSignal()
     {
         _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\" + InstanceId + ".Show");
@@ -169,7 +248,13 @@ public partial class App : Application
             try
             {
                 while (_showSignal.WaitOne())
-                    Dispatcher.BeginInvoke(() => SetWidgetVisible(true));
+                {
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        foreach (var w in _vm?.Widgets ?? [])
+                            w.IsWidgetVisible = true;
+                    });
+                }
             }
             catch (ObjectDisposedException)
             {
@@ -185,9 +270,13 @@ public partial class App : Application
 
     private void ExitApp()
     {
+        if (_exiting)
+            return;
+        _exiting = true;
         _settings?.SaveNow();
         _settingsWindow?.Close();
-        _widget?.CloseForExit();
+        foreach (var widget in _windows.Keys.ToList())
+            CloseWindowFor(widget);
         Shutdown();
     }
 }

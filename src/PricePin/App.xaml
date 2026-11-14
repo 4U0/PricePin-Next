@@ -10,37 +10,23 @@
                 <ResourceDictionary Source="Themes/Forms.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-        <!--
-            The menu shown when right-clicking the widget or the tray icon.
-            x:Shared="False" gives each owner its own copy. DataContext is the WidgetViewModel.
-        -->
-        <ContextMenu x:Key="AppMenu" x:Shared="False">
-            <MenuItem Command="{Binding ToggleVisibilityCommand}" Tag="&#xE7B3;">
+        <!-- Right-click menu of a widget. DataContext: WidgetViewModel. x:Shared="False": one copy per widget. -->
+        <ContextMenu x:Key="WidgetMenu" x:Shared="False">
+            <MenuItem Header="Hide this widget" Tag="&#xE7B3;" Command="{Binding ToggleVisibilityCommand}" />
+            <MenuItem Header="Settings…" Tag="&#xE713;" Command="{Binding App.OpenSettingsCommand}" />
+            <Separator />
+            <MenuItem Tag="&#xE8A9;" Command="{Binding SwitchLayoutCommand}">
                 <MenuItem.Style>
                     <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                        <Setter Property="Header" Value="Hide widget" />
+                        <Setter Property="Header" Value="Switch to ticker bar" />
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsWidgetVisible}" Value="False">
-                                <Setter Property="Header" Value="Show widget" />
+                            <DataTrigger Binding="{Binding IsTickerBar}" Value="True">
+                                <Setter Property="Header" Value="Switch to list" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </MenuItem.Style>
             </MenuItem>
-            <Separator />
-            <MenuItem Header="Settings…" Tag="&#xE713;" Command="{Binding OpenSettingsCommand}" />
-            <Separator />
-            <MenuItem Header="Data source" Tag="&#xE774;" ItemsSource="{Binding DataSourceOptions}">
-                <MenuItem.ItemContainerStyle>
-                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                        <Setter Property="Header" Value="{Binding Label}" />
-                        <Setter Property="IsChecked" Value="{Binding IsSelected, Mode=OneWay}" />
-                        <Setter Property="Command" Value="{Binding SelectCommand}" />
-                    </Style>
-                </MenuItem.ItemContainerStyle>
-            </MenuItem>
-            <MenuItem Header="Reconnect" Tag="&#xE72C;" Command="{Binding ReconnectCommand}" />
-            <Separator />
             <MenuItem Header="Stay on top" Tag="&#xE718;" IsCheckable="True" IsChecked="{Binding Topmost}" />
             <MenuItem StaysOpenOnClick="True" Tag="&#xE793;">
                 <MenuItem.Header>
@@ -58,10 +44,42 @@
             </MenuItem>
             <MenuItem Header="Click-through" Tag="&#xE8B0;" IsCheckable="True" IsChecked="{Binding ClickThrough}"
                       InputGestureText="off via tray"
-                      ToolTip="The mouse passes through the widget. Turn it off from the tray icon." />
+                      ToolTip="The mouse passes through the widget. Turn it off from the tray icon or with Ctrl+Alt+T." />
             <MenuItem Header="Lock position" Tag="&#xE72E;" IsCheckable="True" IsChecked="{Binding LockPosition}" />
             <MenuItem Header="Snap to screen edges" Tag="&#xE8A9;" IsCheckable="True" IsChecked="{Binding SnapToEdges}"
                       ToolTip="Hold Shift while dragging to place the widget freely." />
+            <Separator />
+            <MenuItem Header="Exit PricePin" Tag="&#xE711;" Command="{Binding App.ExitCommand}" />
+        </ContextMenu>
+
+        <!-- Tray icon menu. DataContext: AppViewModel. -->
+        <ContextMenu x:Key="TrayMenu" x:Shared="False">
+            <MenuItem Tag="&#xE7B3;" Command="{Binding ToggleAllWidgetsCommand}">
+                <MenuItem.Style>
+                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                        <Setter Property="Header" Value="Hide widgets" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding AnyWidgetVisible}" Value="False">
+                                <Setter Property="Header" Value="Show widgets" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </MenuItem.Style>
+            </MenuItem>
+            <MenuItem Header="Click-through" Tag="&#xE8B0;" IsCheckable="True" IsChecked="{Binding AnyClickThrough, Mode=OneWay}"
+                      Command="{Binding ToggleClickThroughAllCommand}" />
+            <MenuItem Header="Settings…" Tag="&#xE713;" Command="{Binding OpenSettingsCommand}" />
+            <Separator />
+            <MenuItem Header="Data source" Tag="&#xE774;" ItemsSource="{Binding DataSourceOptions}">
+                <MenuItem.ItemContainerStyle>
+                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                        <Setter Property="Header" Value="{Binding Label}" />
+                        <Setter Property="IsChecked" Value="{Binding IsSelected, Mode=OneWay}" />
+                        <Setter Property="Command" Value="{Binding SelectCommand}" />
+                    </Style>
+                </MenuItem.ItemContainerStyle>
+            </MenuItem>
+            <MenuItem Header="Reconnect" Tag="&#xE72C;" Command="{Binding ReconnectCommand}" />
             <Separator />
             <MenuItem Header="Start with Windows" Tag="&#xE7E8;" IsCheckable="True" IsChecked="{Binding StartWithWindows}" />
             <Separator />
