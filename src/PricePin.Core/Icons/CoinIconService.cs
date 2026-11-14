@@ -24,6 +24,16 @@ public sealed class CoinIconService
         Directory.CreateDirectory(_cacheDir);
     }
 
+    /// <summary>Path of an already-downloaded logo, without touching the network.</summary>
+    public string? TryGetCachedPath(string symbol)
+    {
+        var key = symbol.ToLowerInvariant();
+        if (key.Any(c => !char.IsAsciiLetterOrDigit(c)))
+            return null;
+        var path = Path.Combine(_cacheDir, key + ".png");
+        return File.Exists(path) ? path : null;
+    }
+
     /// <summary>Returns the path of a cached PNG, downloading it if needed, or null if none exists.</summary>
     public async Task<string?> GetIconPathAsync(string symbol, CancellationToken ct = default)
     {

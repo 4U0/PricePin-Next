@@ -45,6 +45,21 @@ public static class CoinCatalog
         new("AAVE", "Aave", "#B6509E"),
     }.ToDictionary(c => c.Symbol, StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Position in the well-known list (lower is more popular), or int.MaxValue.</summary>
+    public static int PopularityRank(string symbol)
+    {
+        var i = 0;
+        foreach (var key in Known.Keys)
+        {
+            if (string.Equals(key, symbol, StringComparison.OrdinalIgnoreCase))
+                return i;
+            i++;
+        }
+        return int.MaxValue;
+    }
+
+    public static bool IsKnown(string symbol) => Known.ContainsKey(symbol);
+
     public static CoinInfo Get(string symbol) =>
         Known.TryGetValue(symbol, out var info) ? info : new CoinInfo(symbol.ToUpperInvariant(), symbol.ToUpperInvariant(), "#64748B");
 

@@ -1,15 +1,12 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.IO;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PricePin.Core.Coins;
 using PricePin.Core.History;
-using PricePin.Core.Icons;
 using PricePin.Core.Market;
 using PricePin.Models;
 using PricePin.Services;
@@ -29,22 +26,24 @@ public sealed partial class WidgetViewModel : ObservableObject, IDisposable
     private readonly SettingsService _settings;
     private readonly MarketDataService _market;
     private readonly PriceHistoryService _history;
-    private readonly CoinIconService _icons;
+    private readonly LogoProvider _logos;
     private readonly Dispatcher _dispatcher;
     private readonly DispatcherTimer _flushTimer;
     private readonly DispatcherTimer _clockTimer;
+    private readonly DispatcherTimer _restartTimer;
+    private string _activeQuote = "";
     private readonly Dictionary<string, Ticker> _pending = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, CoinRowViewModel> _rowsBySymbol = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _lifetime = new();
     private FeedStatus _status = new(FeedState.Connecting, "—");
     private DateTimeOffset _lastTickAt;
 
-    public WidgetViewModel(SettingsService settings, MarketDataService market, PriceHistoryService history, CoinIconService icons)
+    public WidgetViewModel(SettingsService settings, MarketDataService market, PriceHistoryService history, LogoProvider logos)
     {
         _settings = settings;
         _market = market;
         _history = history;
-        _icons = icons;
+        _logos = logos;
         _dispatcher = Dispatcher.CurrentDispatcher;
         var s = settings.Current;
 
@@ -61,20 +60,20 @@ public sealed partial class WidgetViewModel : ObservableObject, IDisposable
             StartupService.SetEnabled(true);
         s.StartWithWindows = _startWithWindows;
 
+        _size = s.Size;
+        _showNames = s.ShowNames;
+        _showSparklines = s.ShowSparklines;
+        _showColumnHeadings = s.ShowColumnHeadings;
+
         Coins = [];
-        foreach (var symbol in s.Coins)
-        {
-            var row = new CoinRowViewModel(CoinCatalog.Get(symbol), s.QuoteCurrency);
-            Coins.Add(row);
-            _rowsBySymbol[symbol] = row;
-        }
 
         DataSourceOptions =
         [
-            new(DataSource.Auto, "Automatic (best available)", SelectDataSource),
-            new(DataSource.Binance, "Binance", SelectDataSource),
-            new(DataSource.Coinbase, "Coinbase", SelectDataSource),
-            new(DataSource.Kraken, "Kraken", SelectDataSource),
+            new(DataSource.Auto, "Automatic (best available)",
+                "Tries Binance, then Coinbase, then Kraken, and switches by itself if one is down or blocked where you are.", SelectDataSource),
+            new(DataSource.Binance, "Binance", "Largest choice of coins. Not available in some countries.", SelectDataSource),
+            new(DataSource.Coinbase, "Coinbase", "Real USD prices. Available almost everywhere.", SelectDataSource),
+            new(DataSource.Kraken, "Kraken", "Real USD and EUR prices. Available almost everywhere.", SelectDataSource),
         ];
         foreach (var o in DataSourceOptions)
             o.IsSelected = o.Value == s.DataSource;
@@ -82,12 +81,23 @@ public sealed partial class WidgetViewModel : ObservableObject, IDisposable
         _market.TickReceived += OnTickReceived;
         _market.StatusChanged += OnStatusChanged;
 
+        // Coalesce quick edits in the coin picker into one reconnect.
+        _restartTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(700), DispatcherPriority.Background, (_, _) =>
+        {
+            _restartTimer!.Stop();
+            RestartFeed();
+        }, _dispatcher);
+        _restartTimer.Stop();
+
         _flushTimer = new DispatcherTimer(UiFlushInterval, DispatcherPriority.Render, (_, _) => FlushTicks(), _dispatcher);
         _clockTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => RefreshStatusText(), _dispatcher);
     }
 
     /// <summary>Raised when the user picks Exit.</summary>
     public event EventHandler? ExitRequested;
+
+    /// <summary>Raised when the user asks for the settings window.</summary>
+    public event EventHandler? SettingsRequested;
 
     /// <summary>Raised when the user asks to show or hide the widget.</summary>
     public event EventHandler? ToggleVisibilityRequested;
@@ -123,6 +133,39 @@ public sealed partial class WidgetViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isWidgetVisible = true;
 
+    // ---- Appearance --------------------------------------------------------------------
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Scale))]
+    private WidgetSize _size;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CardWidth))]
+    private bool _showNames;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CardWidth))]
+    private bool _showSparklines;
+
+    [ObservableProperty]
+    private bool _showColumnHeadings;
+
+    /// <summary>Zoom applied to the whole card.</summary>
+    public double Scale => Size switch
+    {
+        WidgetSize.Small => 0.86,
+        WidgetSize.Large => 1.18,
+        _ => 1.0,
+    };
+
+    /// <summary>Card width before scaling; narrower when columns are hidden.</summary>
+    public double CardWidth => 320 - (ShowSparklines ? 0 : 64) - (ShowNames ? 0 : 36);
+
+    partial void OnSizeChanged(WidgetSize value) => Save(s => s.Size = value);
+    partial void OnShowNamesChanged(bool value) => Save(s => s.ShowNames = value);
+    partial void OnShowSparklinesChanged(bool value) => Save(s => s.ShowSparklines = value);
+    partial void OnShowColumnHeadingsChanged(bool value) => Save(s => s.ShowColumnHeadings = value);
+
     /// <summary>Connection state for the status pill.</summary>
     [ObservableProperty]
     private FeedState _statusState = FeedState.Connecting;
@@ -148,9 +191,56 @@ public sealed partial class WidgetViewModel : ObservableObject, IDisposable
     {
         _flushTimer.Start();
         _clockTimer.Start();
-        RestartFeed();
-        _ = LoadLogosAsync(_lifetime.Token);
+        ApplyCoinSettings(restartNow: true);
         _ = RefreshHistoryLoopAsync(_lifetime.Token);
+    }
+
+    /// <summary>
+    /// Rebuilds the rows after the coin list or currency changed in Settings. Rows for
+    /// coins that stay keep their price and sparkline; new ones load logo and history.
+    /// </summary>
+    public void ApplyCoinSettings(bool restartNow = false)
+    {
+        var s = _settings.Current;
+        if (!string.Equals(_activeQuote, s.QuoteCurrency, StringComparison.Ordinal))
+        {
+            // Prices in another currency: start every row fresh.
+            _activeQuote = s.QuoteCurrency;
+            _rowsBySymbol.Clear();
+            lock (_pending)
+                _pending.Clear();
+        }
+
+        var added = new List<CoinRowViewModel>();
+        var rows = new List<CoinRowViewModel>();
+        foreach (var symbol in s.Coins)
+        {
+            if (!_rowsBySymbol.TryGetValue(symbol, out var row))
+            {
+                row = new CoinRowViewModel(CoinCatalog.Get(symbol), s.QuoteCurrency) { Logo = _logos.GetLocal(symbol) };
+                added.Add(row);
+            }
+            rows.Add(row);
+        }
+
+        _rowsBySymbol.Clear();
+        Coins.Clear();
+        foreach (var row in rows)
+        {
+            _rowsBySymbol[row.Symbol] = row;
+            Coins.Add(row);
+        }
+
+        if (restartNow)
+            RestartFeed();
+        else
+        {
+            _restartTimer.Stop();
+            _restartTimer.Start();
+        }
+
+        _ = LoadLogosAsync(added, _lifetime.Token);
+        _ = LoadHistoryAsync(added, _lifetime.Token);
     }
 
     public void Dispose()
@@ -208,6 +298,9 @@ public sealed partial class WidgetViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void Reconnect() => RestartFeed();
+
+    [RelayCommand]
+    private void OpenSettings() => SettingsRequested?.Invoke(this, EventArgs.Empty);
 
     [RelayCommand]
     private void ToggleVisibility() => ToggleVisibilityRequested?.Invoke(this, EventArgs.Empty);
@@ -309,21 +402,15 @@ public sealed partial class WidgetViewModel : ObservableObject, IDisposable
 
     // ---- Logos and history -------------------------------------------------------------
 
-    private async Task LoadLogosAsync(CancellationToken ct)
+    private async Task LoadLogosAsync(IReadOnlyList<CoinRowViewModel> rows, CancellationToken ct)
     {
-        foreach (var row in Coins.ToList())
+        foreach (var row in rows)
         {
-            if (TryLoadBundledLogo(row.Symbol) is { } bundled)
-            {
-                row.Logo = bundled;
+            if (row.Logo is not null)
                 continue;
-            }
-
             try
             {
-                var path = await _icons.GetIconPathAsync(row.Symbol, ct);
-                if (path is not null)
-                    row.Logo = LoadImage(new Uri(path));
+                row.Logo = await _logos.GetAsync(row.Symbol, ct);
             }
             catch (OperationCanceledException)
             {
@@ -332,36 +419,21 @@ public sealed partial class WidgetViewModel : ObservableObject, IDisposable
         }
     }
 
-    private static ImageSource? TryLoadBundledLogo(string symbol)
+    private async Task LoadHistoryAsync(IReadOnlyList<CoinRowViewModel> rows, CancellationToken ct)
     {
-        var uri = new Uri($"pack://application:,,,/Assets/Coins/{symbol.ToLowerInvariant()}.png");
+        var quote = _settings.Current.QuoteCurrency;
         try
         {
-            using var stream = Application.GetResourceStream(uri)?.Stream;
-            return stream is null ? null : LoadImage(uri);
+            foreach (var row in rows)
+            {
+                var closes = await _history.GetLast24hAsync(new MarketSymbol(row.Symbol, quote), ct);
+                if (closes.Count > 0)
+                    row.SetHistory(closes);
+            }
         }
-        catch (IOException)
+        catch (OperationCanceledException)
         {
-            return null; // not bundled
-        }
-    }
-
-    private static ImageSource? LoadImage(Uri uri)
-    {
-        try
-        {
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.UriSource = uri;
-            image.DecodePixelWidth = 64; // shown at 28px; 64 stays sharp up to ~225% scaling
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.EndInit();
-            image.Freeze();
-            return image;
-        }
-        catch (Exception ex) when (ex is IOException or NotSupportedException or InvalidOperationException or FileFormatException)
-        {
-            return null;
+            // Shutting down.
         }
     }
 
@@ -371,14 +443,8 @@ public sealed partial class WidgetViewModel : ObservableObject, IDisposable
         {
             while (!ct.IsCancellationRequested)
             {
-                var quote = _settings.Current.QuoteCurrency;
-                foreach (var row in Coins.ToList())
-                {
-                    var closes = await _history.GetLast24hAsync(new MarketSymbol(row.Symbol, quote), ct);
-                    if (closes.Count > 0)
-                        row.SetHistory(closes);
-                }
                 await Task.Delay(HistoryRefreshInterval, ct);
+                await LoadHistoryAsync(Coins.ToList(), ct);
             }
         }
         catch (OperationCanceledException)
