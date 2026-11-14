@@ -13,6 +13,11 @@
 
   <ItemGroup>
     <Resource Include="Assets\PricePin.ico" />
+    <Resource Include="Assets\Coins\*.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PricePin.Core\PricePin.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

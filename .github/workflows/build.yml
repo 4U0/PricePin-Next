@@ -26,6 +26,10 @@ jobs:
       - name: Build
         run: dotnet build PricePin.sln -c Release
 
+      - name: Test
+        if: matrix.rid == 'win-x64'
+        run: dotnet test tests/PricePin.Core.Tests -c Release --no-build
+
       - name: Publish single-file exe
         run: >
           dotnet publish src/PricePin/PricePin.csproj -c Release -r ${{ matrix.rid }}
@@ -41,3 +45,20 @@ jobs:
           name: PricePin-${{ matrix.rid }}
           path: publish/PricePin.exe
           if-no-files-found: error
+
+  feed-probe:
+    # Connects to the real exchanges from a Windows runner and prints what arrived.
+    # Informational only: GitHub's runners are in the US, where Binance.com is blocked,
+    # so this also shows the automatic failover doing its job.
+    name: Live feed probe
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Probe feeds
+        run: dotnet run --project tools/FeedProbe -c Release -- 15 BTC ETH SOL SUI

@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using PricePin.Core.Coins;
+using PricePin.Core.Market;
 
 namespace PricePin.Models;
 
@@ -38,7 +40,11 @@ public sealed class AppSettings
     public WidgetLayout Layout { get; set; } = WidgetLayout.List;
 
     /// <summary>Base symbols to show, in display order.</summary>
-    public List<string> Coins { get; set; } = ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE", "ADA"];
+    public List<string> Coins { get; set; } = [.. CoinCatalog.Defaults];
+
+    /// <summary>Exchange to stream from. Auto picks the first one that works where the user is.</summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<DataSource>))]
+    public DataSource DataSource { get; set; } = DataSource.Auto;
 
     /// <summary>Currency prices are shown in.</summary>
     public string QuoteCurrency { get; set; } = "USD";
@@ -54,6 +60,9 @@ public sealed class AppSettings
             .ToList();
         if (string.IsNullOrWhiteSpace(QuoteCurrency))
             QuoteCurrency = "USD";
+        QuoteCurrency = QuoteCurrency.Trim().ToUpperInvariant();
+        if (!Enum.IsDefined(DataSource))
+            DataSource = DataSource.Auto;
         if (Left is { } l && !double.IsFinite(l)) Left = null;
         if (Top is { } t && !double.IsFinite(t)) Top = null;
         SchemaVersion = CurrentSchemaVersion;

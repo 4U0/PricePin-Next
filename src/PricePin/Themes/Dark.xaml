@@ -7,6 +7,18 @@
     <Color x:Key="AccentColor">#22D399</Color>
 
     <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    <Color x:Key="UpColor">#22D399</Color>
+    <Color x:Key="DownColor">#F43F5E</Color>
+
+    <!-- Card: faint top-to-bottom gradient with a lighter top edge, like frosted glass. -->
+    <LinearGradientBrush x:Key="CardBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#F5182030" Offset="0" />
+        <GradientStop Color="#F20E121B" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="CardBorderBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#40FFFFFF" Offset="0" />
+        <GradientStop Color="#14FFFFFF" Offset="1" />
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="MenuSurfaceBrush" Color="{StaticResource MenuSurfaceColor}" />
     <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#26FFFFFF" />
     <SolidColorBrush x:Key="HoverBrush" Color="#14FFFFFF" />
@@ -109,6 +121,28 @@
                             <TextBlock x:Name="Gesture" Grid.Column="2" Text="{TemplateBinding InputGestureText}"
                                        Foreground="{StaticResource TextTertiaryBrush}" FontSize="11"
                                        VerticalAlignment="Center" Margin="12,0,0,0" />
+                            <TextBlock x:Name="Arrow" Grid.Column="2" Text="&#xE76C;"
+                                       FontFamily="{StaticResource IconFont}" FontSize="9"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" Margin="12,0,0,0" Visibility="Collapsed" />
+
+                            <!-- Submenu (only used by items that have children). -->
+                            <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="0" VerticalOffset="-15"
+                                   AllowsTransparency="True" Focusable="False" PopupAnimation="Fade"
+                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                                <Grid Margin="10">
+                                    <Border Background="{StaticResource MenuSurfaceBrush}" CornerRadius="10">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" ShadowDepth="3" Opacity="0.45" Direction="270" />
+                                        </Border.Effect>
+                                    </Border>
+                                    <Border Background="{StaticResource MenuSurfaceBrush}"
+                                            BorderBrush="{StaticResource SurfaceBorderBrush}"
+                                            BorderThickness="1" CornerRadius="10" Padding="0,4" MinWidth="220">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
+                                    </Border>
+                                </Grid>
+                            </Popup>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -122,6 +156,10 @@
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                        <Trigger Property="Role" Value="SubmenuHeader">
+                            <Setter TargetName="Arrow" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="Gesture" Property="Visibility" Value="Collapsed" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

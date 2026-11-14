@@ -1,9 +1,14 @@
 using System.ComponentModel;
+using System.IO;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using H.NotifyIcon;
 using H.NotifyIcon.Core;
+using PricePin.Core.History;
+using PricePin.Core.Icons;
+using PricePin.Core.Market;
 using PricePin.Services;
 using PricePin.ViewModels;
 using PricePin.Views;
@@ -18,6 +23,7 @@ public partial class App : Application
     private Mutex? _instanceMutex;
     private EventWaitHandle? _showSignal;
     private SettingsService? _settings;
+    private MarketDataService? _market;
     private WidgetViewModel? _vm;
     private WidgetWindow? _widget;
     private TaskbarIcon? _tray;
@@ -47,7 +53,10 @@ public partial class App : Application
         ListenForShowSignal();
 
         _settings = new SettingsService();
-        _vm = new WidgetViewModel(_settings);
+        _market = new MarketDataService();
+        var iconCache = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PricePin", "icons");
+        _vm = new WidgetViewModel(_settings, _market, new PriceHistoryService(), new CoinIconService(iconCache));
         _vm.ExitRequested += (_, _) => ExitApp();
         _vm.ToggleVisibilityRequested += (_, _) => SetWidgetVisible(!_vm.IsWidgetVisible);
         _vm.PropertyChanged += OnViewModelPropertyChanged;
@@ -56,10 +65,14 @@ public partial class App : Application
 
         _widget = new WidgetWindow(_vm, _settings.Current.Left, _settings.Current.Top);
         _widget.Show();
+        _vm.Start();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _vm?.Dispose();
+        // Close sockets politely, but never let shutdown hang on the network.
+        _market?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(2));
         _settings?.SaveNow();
         _tray?.Dispose();
         _showSignal?.Dispose();
@@ -81,6 +94,7 @@ public partial class App : Application
             LeftClickCommand = _vm!.ToggleVisibilityCommand,
             NoLeftClickDelay = true,
         };
+        _tray.SetBinding(TaskbarIcon.ToolTipTextProperty, new Binding(nameof(WidgetViewModel.TrayToolTip)));
         // false = don't put the process in Windows "efficiency mode"; prices must stay real-time.
         _tray.ForceCreate(false);
     }
