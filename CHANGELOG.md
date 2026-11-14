@@ -4,6 +4,20 @@ Each release's notes on GitHub come from its section here.
 
 ## 1.3.0
 
+The first public release of PricePin, a live crypto price widget for Windows. It brings together everything built for versions 1.0 to 1.3; the full list is in [CHANGELOG.md](https://github.com/4U0/PricePin-Next/blob/main/CHANGELOG.md).
+
+**Which file do I need?** `PricePin-win-x64-Setup.exe` for most PCs, `PricePin-win-arm64-Setup.exe` for ARM PCs, or a `Portable.zip` to run without installing. The installer isn't code-signed yet, so if Windows SmartScreen warns you, click **More info → Run anyway**.
+
+**Highlights**
+
+- Live prices over WebSocket from Binance, Coinbase or Kraken, with automatic failover if an exchange is blocked where you are
+- Any coin from those exchanges, in USD, USDT, EUR, TRY or GBP
+- A card list or a scrolling ticker bar, up to 8 widgets, stay on top, opacity and click-through
+- Coin charts, a market overview with the Fear & Greed Index, price alerts, and a portfolio with privacy mode
+- Automatic updates, English and Türkçe
+
+**New in 1.3**
+
 - **Coin charts.** Double-click a coin in any widget or the ticker bar to open its chart. Choose 1 day, 1 week, 1 month or 1 year. The chart follows the live price, shows the time and price under the mouse, and lists the range's high, low, change and volume. **Set alert** and **Add to portfolio** buttons are right there. The chart data comes from Binance, Coinbase or Kraken, whichever works where you are.
 - **Market overview** (widget or tray menu): total crypto market cap and its 24h change, BTC and ETH dominance, the Crypto Fear & Greed Index as a gauge, and your top gainers and losers today. It refreshes every five minutes. Data comes from CoinGecko and alternative.me, with no account or key needed.
 
@@ -20,8 +34,6 @@ Each release's notes on GitHub come from its section here.
 - Typing prices accepts both `70,000.50` and `70.000,50`.
 
 ## 1.0.0
-
-The first public release.
 
 - **Installer and automatic updates.** `PricePin-win-x64-Setup.exe` installs PricePin for your user (no admin rights needed) and keeps it up to date in the background. A portable zip is there if you'd rather not install.
 - **English and Turkish (Türkçe).** PricePin follows your Windows language, or you can pick one in Settings → General.
