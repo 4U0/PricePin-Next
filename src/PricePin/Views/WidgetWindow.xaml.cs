@@ -117,6 +117,13 @@ public partial class WidgetWindow : Window
 
     private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        // Double-click a coin to open its chart.
+        if (e.ClickCount == 2 && CoinUnder(e.OriginalSource) is { } row)
+        {
+            e.Handled = true;
+            _vm.App.OpenCoinDetail(row.Symbol);
+            return;
+        }
         if (_vm.LockPosition || e.ButtonState != MouseButtonState.Pressed || e.OriginalSource is ButtonBase)
             return;
         try
@@ -128,6 +135,14 @@ public partial class WidgetWindow : Window
             // Mouse was released before DragMove started; nothing to do.
         }
     }
+
+    /// <summary>The coin row under the mouse, if any.</summary>
+    internal static CoinRowViewModel? CoinUnder(object source) => source switch
+    {
+        FrameworkElement { DataContext: CoinRowViewModel row } => row,
+        FrameworkContentElement { DataContext: CoinRowViewModel row } => row,
+        _ => null,
+    };
 
     /// <summary>Ctrl + mouse wheel over the widget changes its opacity.</summary>
     private void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)

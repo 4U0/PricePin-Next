@@ -1,0 +1,153 @@
+<Window x:Class="PricePin.Views.MarketWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:PricePin.Controls"
+        xmlns:vm="clr-namespace:PricePin.ViewModels"
+        Title="{DynamicResource Market.Title}"
+        Width="460" SizeToContent="Height" MinWidth="400"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="CanMinimize"
+        Background="{DynamicResource WindowBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="{StaticResource UiFont}"
+        UseLayoutRounding="True"
+        Icon="/Assets/PricePin.ico">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="44" ResizeBorderThickness="0" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <Style x:Key="ChromeButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+        </Style>
+        <Style x:Key="Tile" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+        </Style>
+        <Style x:Key="TileLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
+        </Style>
+        <DataTemplate x:Key="Mover" DataType="{x:Type vm:MoverItem}">
+            <Button Style="{StaticResource TextButton}" HorizontalContentAlignment="Stretch" Padding="8,5" Margin="0,2"
+                    Command="{Binding DataContext.OpenCoinCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding Symbol}">
+                <DockPanel>
+                    <TextBlock x:Name="Change" DockPanel.Dock="Right" Text="{Binding ChangeText}" FontWeight="SemiBold" FontSize="12"
+                               Foreground="{DynamicResource UpBrush}" />
+                    <TextBlock FontSize="12.5">
+                        <Run Text="{Binding Symbol, Mode=OneWay}" FontWeight="SemiBold" />
+                        <Run Text="{Binding PriceText, Mode=OneWay}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </TextBlock>
+                </DockPanel>
+            </Button>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsUp}" Value="False">
+                    <Setter TargetName="Change" Property="Foreground" Value="{DynamicResource DownBrush}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <StackPanel>
+        <!-- Title bar -->
+        <DockPanel Height="44" Margin="16,0,6,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,6,0,0">
+                <Button Style="{StaticResource ChromeButton}" Content="&#xE72C;" ToolTip="{DynamicResource Common.Reconnect}" Command="{Binding ReloadCommand}" />
+                <Button Style="{StaticResource ChromeButton}" Content="&#xE8BB;" ToolTip="{DynamicResource Common.Close}" Click="Close_Click" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Image Source="/Assets/PricePin.ico" Width="18" Height="18" RenderOptions.BitmapScalingMode="HighQuality" />
+                <TextBlock Text="{DynamicResource Market.Title}" Margin="10,0,0,0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+        </DockPanel>
+
+        <StackPanel Margin="18,2,18,16">
+            <TextBlock Text="{Binding Message}" Margin="2,0,0,10" Foreground="{DynamicResource DownBrush}" TextWrapping="Wrap" FontSize="12" />
+
+            <!-- Market cap -->
+            <Border Style="{StaticResource Tile}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource TileLabel}" Text="{DynamicResource Market.Cap}" />
+                    <TextBlock Text="{Binding MarketCapText}" FontFamily="{StaticResource DisplayFont}" FontSize="24" FontWeight="SemiBold" Margin="0,2,0,0" />
+                    <TextBlock Text="{Binding MarketCapChangeText}" FontSize="12" FontWeight="SemiBold">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource UpBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MarketCapUp}" Value="False">
+                                        <Setter Property="Foreground" Value="{DynamicResource DownBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Dominance -->
+            <Grid Margin="0,0,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource Tile}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource TileLabel}" Text="{DynamicResource Market.BtcDominance}" />
+                        <TextBlock Text="{Binding BtcDominanceText}" FontSize="18" FontWeight="SemiBold" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource Tile}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource TileLabel}" Text="{DynamicResource Market.EthDominance}" />
+                        <TextBlock Text="{Binding EthDominanceText}" FontSize="18" FontWeight="SemiBold" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Fear & Greed -->
+            <Border Style="{StaticResource Tile}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource TileLabel}" Text="{DynamicResource Market.FearGreed}" />
+                    <ctl:FearGreedGauge Value="{Binding FearGreed}" Height="110" Margin="0,8,0,0"
+                                        TextBrush="{DynamicResource TextPrimaryBrush}" TrackBrush="{DynamicResource TrackBrush}" />
+                    <TextBlock Text="{Binding FearGreedLabel}" HorizontalAlignment="Center" FontSize="14" FontWeight="SemiBold" Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Your coins today -->
+            <Border Style="{StaticResource Tile}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource TileLabel}" Text="{DynamicResource Market.YourCoins}" Margin="0,0,0,4" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Market.Gainers}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="8,0,0,2" />
+                            <ItemsControl ItemsSource="{Binding Gainers}" ItemTemplate="{StaticResource Mover}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{DynamicResource Market.Losers}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="8,0,0,2" />
+                            <ItemsControl ItemsSource="{Binding Losers}" ItemTemplate="{StaticResource Mover}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <TextBlock FontSize="10.5" Foreground="{DynamicResource TextTertiaryBrush}" TextWrapping="Wrap" Margin="2,0,0,0">
+                <Run Text="{Binding UpdatedText, Mode=OneWay}" /> <Run Text="{DynamicResource Market.Sources}" />
+            </TextBlock>
+        </StackPanel>
+    </StackPanel>
+</Window>

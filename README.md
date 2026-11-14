@@ -1,69 +1,151 @@
+<div align="center">
+
+<img src="docs/images/icon.png" width="96" height="96" alt="PricePin icon">
+
 # PricePin
 
-A fast, good-looking crypto price widget for Windows. It floats on your desktop, stays on top if you want it to, and shows live prices that update the moment they change.
+**Live crypto prices on your Windows desktop.**
 
-> **Status:** v1.2. Portfolio tracking with a privacy mode. Coin detail charts and a market overview are next. See the [roadmap](#roadmap).
+A fast, good-looking price widget that floats on your desktop, stays on top if you want it to, and updates the moment a trade happens.
+
+[![Latest release](https://img.shields.io/github/v/release/4U0/PricePin-Next?label=download&color=2ea44f)](../../releases/latest)
+[![Build](https://github.com/4U0/PricePin-Next/actions/workflows/build.yml/badge.svg)](../../actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Windows 10 | 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4)
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
+
+[Download](#download) · [Features](#features) · [Shortcuts](#keyboard-and-mouse) · [Privacy](#privacy) · [Build from source](#build-from-source) · [Changelog](CHANGELOG.md)
+
+</div>
+
+---
+
+## Why PricePin
+
+- **Real time.** Prices stream over WebSocket and change on every trade, not every minute.
+- **Works anywhere.** If an exchange is blocked or down where you are, PricePin moves to the next one by itself.
+- **Every coin.** Pick from every coin listed on Binance, Coinbase and Kraken, in the order you like.
+- **Out of your way.** Stay on top, see-through, click-through, and lockable in place.
+- **Private.** No account, no API key, no tracking. Your portfolio never leaves your PC.
 
 ## Features
 
-**Now**
-- Live prices over WebSocket from Binance, Coinbase or Kraken, updating on every trade
-- Automatic failover: if an exchange is down or blocked in your region, PricePin switches to the next one, and falls back to REST polling if no stream works
-- Reconnects on its own with growing waits, and notices silent connections within 20 seconds
-- Live status pill (LIVE, RECONNECTING, DELAYED, OFFLINE); hover it for details
-- Real coin logos, 24h sparklines, green/red flashes on every price move, and 24h change that moves with the price
-- Hover a coin for its 24h high, low and volume
-- Settings window: pick any coin from Binance, Coinbase and Kraken's lists (search by name or symbol), drag to reorder, and show prices in USD, USDT, EUR, TRY or GBP
-- Dark, light or follow-Windows theme, eight accent colours, three sizes, and options to hide names, sparklines or headings
-- Two layouts: a vertical card list, or a horizontal scrolling ticker bar docked to the top or bottom of the screen (optionally reserving the space so maximised windows don't cover it) or floating anywhere
-- Run several widgets at once (up to 8), each with its own coins, layout, size, opacity and position
-- Global hotkeys: <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd> shows or hides all widgets, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> toggles click-through (both can be changed in Settings)
-- The ticker bar pauses while you hover it, and steps out of the way of full-screen apps
-- Price alerts: when a coin goes above or below a price, or moves a set percentage in 24h. Alerts appear as Windows notifications with an optional sound, and can fire once or every time
-- Portfolio: enter what you hold (and optionally what you paid) to see each holding's value under its price, a live total with today's change, and profit/loss. Stored only on your PC
-- Privacy mode (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>H</kbd>) blurs and masks every amount for screen sharing and streaming, while prices stay visible
-- Live price in the tray icon for the coin you pick, green or red with the 24h move
-- Installer with automatic background updates from GitHub Releases (or a portable zip if you'd rather not install)
-- English and Turkish (Türkçe), following your Windows language or picked in Settings
-- Borderless dark "glass" widget you can drag anywhere
-- Snaps to screen edges (hold <kbd>Shift</kbd> while dragging to place it freely)
-- Stay on top, opacity slider (20–100%), and <kbd>Ctrl</kbd> + mouse wheel to change opacity
-- Click-through mode so the mouse passes through the widget
-- Lock position
-- Tray icon: left-click to show or hide, right-click for the menu
-- Start with Windows
-- Remembers its position and settings, and moves back on screen if a monitor is unplugged
-- Sharp on high-DPI and mixed-scaling multi-monitor setups
+### Widgets and layouts
+- **Card list** that you drag anywhere and that snaps to screen edges (hold <kbd>Shift</kbd> to place it freely)
+- **Ticker bar** that scrolls prices across the top or bottom of the screen, can reserve that space so maximised windows don't cover it, pauses while you hover it, and steps aside for full-screen apps
+- **Up to 8 widgets at once**, each with its own coins, layout, size, opacity and position
+- Stay on top, opacity from 20% to 100%, click-through and lock position
+- Remembers where it was, and moves back on screen if a monitor is unplugged
 - Only one copy runs at a time; launching it again shows the existing widget
+- Sharp on high-DPI and mixed-scaling multi-monitor setups
 
-**Planned**
-- Coin detail charts and market overview (v1.3)
+### Live prices
+- WebSocket feeds from **Binance, Coinbase and Kraken**, with automatic failover and REST polling as a last resort
+- Reconnects on its own and notices a silent connection within 20 seconds
+- Status pill showing LIVE, RECONNECTING, DELAYED or OFFLINE (hover it for details)
+- Real coin logos, 24h sparklines, green and red flashes on every move, and a live 24h change
+- Hover a coin for its 24h high, low and volume
+- Prices in **USD, USDT, EUR, TRY or GBP**
+
+### Charts and market
+- **Coin charts:** double-click any coin for a 1D, 1W, 1M or 1Y chart that follows the live price. It has a crosshair, plus the range's high, low, change and volume
+- **Market overview:** total market cap and its 24h change, BTC and ETH dominance, the Fear & Greed Index, and your best and worst coins today
+
+### Alerts
+- Alerts when a coin goes **above or below a price**, or **rises or falls by a percentage** in 24h
+- Windows notifications with an optional sound, firing once or every time
+- **Live price in the tray icon** for a coin you choose, green or red with the 24h move
+
+### Portfolio and privacy
+- Enter what you hold, and optionally what you paid, to see each holding's value, a live total, today's change and profit or loss
+- **Privacy mode** blurs every amount for screen sharing and streaming while prices stay visible
+
+### Look and feel
+- Dark, light or follow-Windows theme, eight accent colours and three sizes
+- Options to hide coin names, sparklines or headings
+- **English and Türkçe**, following your Windows language or chosen in Settings
+- Automatic background updates, start with Windows, and a tray icon
 
 ## Download
 
-Get it from the [latest release](../../releases/latest):
+Get the **[latest release](../../releases/latest)**:
 
-- **PricePin-win-x64-Setup.exe**: installs for your user only (no admin rights), adds a Start menu shortcut and keeps itself up to date. Use **PricePin-win-arm64-Setup.exe** on ARM PCs.
-- **PricePin-win-x64-Portable.zip**: unzip anywhere and run `PricePin.exe`. The portable copy doesn't update itself.
+| File | For |
+| --- | --- |
+| `PricePin-win-x64-Setup.exe` | Most PCs. Installs for your user only (no admin rights), adds a Start menu shortcut and keeps itself up to date. |
+| `PricePin-win-arm64-Setup.exe` | ARM PCs such as Snapdragon laptops. |
+| `PricePin-win-x64-Portable.zip` | No install. Unzip anywhere and run `PricePin.exe`. This copy doesn't update itself. |
 
-Or with the Windows Package Manager, once it's listed there:
+> [!NOTE]
+> The installer isn't code-signed yet, so Windows SmartScreen may warn the first time. Click **More info → Run anyway**.
+
+To remove PricePin, uninstall it from *Settings → Apps* like any other app. Your settings stay in `%AppData%\PricePin` in case you come back; delete that folder to remove them too.
+
+**Want to try unreleased changes?** Every build on the [Actions tab](../../actions/workflows/build.yml) has a test installer under *Artifacts*.
+
+## Getting started
+
+1. Run the installer. A widget with the top coins appears and the tray icon shows up in the notification area.
+2. **Right-click the widget** (or the tray icon) and open **Settings** to add, remove or reorder coins, change the currency, or switch to the ticker bar.
+3. **Double-click a coin** to open its chart, where you can also set an alert or add it to your portfolio.
+
+### Keyboard and mouse
+
+| Action | How |
+| --- | --- |
+| Show or hide all widgets | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd> |
+| Toggle click-through | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> |
+| Toggle privacy mode | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>H</kbd> |
+| Change opacity | <kbd>Ctrl</kbd> + mouse wheel over a widget |
+| Place freely without snapping | Hold <kbd>Shift</kbd> while dragging |
+| Open a coin's chart | Double-click the coin |
+| Show or hide from the tray | Left-click the tray icon (right-click for the menu) |
+
+All three global shortcuts can be changed in *Settings → General*.
+
+## Privacy
+
+PricePin has no account, no telemetry and no analytics. It only talks to the public price and logo sources listed below. Your coins, alerts and holdings are stored in a settings file on your PC and nowhere else.
+
+## Data sources
+
+| Source | Used for |
+| --- | --- |
+| Binance | Live prices (WebSocket), 24h history and charts. USD is shown using USDT pairs. Not available in some regions, so PricePin moves on automatically. |
+| Coinbase | Live prices (WebSocket), REST fallback, 24h history and charts |
+| Kraken | Live prices (WebSocket), 24h history and charts |
+| [cryptocurrency-icons](https://github.com/spothq/cryptocurrency-icons) (CC0) | Coin logos. Popular coins are bundled; others download once and are cached. |
+| CoinGecko | Logos for newer coins, plus market cap and dominance from its public `/global` endpoint |
+| [alternative.me](https://alternative.me/crypto/fear-and-greed-index/) | Fear & Greed Index |
+
+All of these are public endpoints, so no account or API key is needed. To check which sources work from your network:
 
 ```powershell
-winget install PricePin
+dotnet run --project tools/FeedProbe -- 15 BTC ETH SOL
 ```
 
-Uninstall from *Settings → Apps* like any other app. Your settings stay in `%AppData%\PricePin` in case you come back; delete that folder to remove them too.
+## Files
 
-The installer isn't code-signed yet, so Windows SmartScreen may warn the first time. Click **More info → Run anyway**.
-
-Want to try unreleased changes? Every build on the [Actions tab](../../actions/workflows/build.yml) has a test installer and a single-file exe under *Artifacts*.
+| Path | What's there |
+| --- | --- |
+| `%AppData%\PricePin\settings.json` | Your settings, alerts and holdings. Delete it to reset everything. |
+| `%AppData%\PricePin\crash.log` | Unexpected errors, if any |
+| `%LocalAppData%\PricePin` | Cached logos and coin lists |
 
 ## Build from source
 
 Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download) on Windows 10 or 11.
 
 ```powershell
+git clone https://github.com/4U0/PricePin-Next.git
+cd PricePin-Next
 dotnet run --project src/PricePin
+```
+
+Run the tests:
+
+```powershell
+dotnet test
 ```
 
 Single-file release build:
@@ -73,51 +155,51 @@ dotnet publish src/PricePin -c Release -r win-x64 --self-contained `
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
 ```
 
-## Data sources
+### Project layout
 
-| Source | Used for | Notes |
-| --- | --- | --- |
-| Binance | Live prices (WebSocket), 24h history | USD is shown using USDT pairs. Not available in some regions; PricePin moves on automatically. |
-| Coinbase | Live prices (WebSocket), REST fallback, 24h history | |
-| Kraken | Live prices (WebSocket), 24h history | |
-| [cryptocurrency-icons](https://github.com/spothq/cryptocurrency-icons) (CC0) | Coin logos | Popular coins are bundled; others download once and are cached. |
-| CoinGecko | Logos for newer coins | Only asked when a logo isn't in the set above. |
-
-All of these are public endpoints. No account or API key is needed.
-
-To check which sources work from your network:
-
-```powershell
-dotnet run --project tools/FeedProbe -- 15 BTC ETH SOL
+```text
+src/PricePin          WPF app: windows, view models, controls, themes, strings
+src/PricePin.Core     Feeds, failover, alerts, portfolio, charts and settings (no UI)
+tests/                Unit tests for PricePin.Core and the translations
+tools/FeedProbe       Console tool that checks which data sources work from your network
+docs/                 Release guide and images
 ```
 
-## Where settings live
+**Tech:** C# · .NET 10 · WPF · [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) · [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon) · [Velopack](https://velopack.io) for the installer and updates
 
-`%AppData%\PricePin\settings.json`. Delete it to reset everything. Unexpected errors are written to `crash.log` in the same folder. Downloaded logos and the coin list are cached in `%LocalAppData%\PricePin`.
+## Contributing
 
-## Roadmap
+Issues and pull requests are welcome. Every pull request is built and tested on Windows, and gets a test installer you can try from the run's *Artifacts*.
 
-1. **Foundation**: widget window, stay on top, opacity, click-through, tray, saved position ✅
-2. **Live data**: Binance, Coinbase and Kraken feeds, failover, REST fallback, logos, sparklines, design refresh ✅
-3. **v0.3 Settings**: settings window, coin picker, display currency, themes, sizes ✅
-4. **v0.4 Layouts**: ticker bar, multiple widgets, hotkeys ✅
-5. **v1.0 Launch**: installer, auto-update, Turkish and English ✅ (winget listing and code signing are set up and switch on after the first release; see [RELEASING.md](docs/RELEASING.md))
-6. **v1.1**: price alerts, live price on the tray icon ✅
-7. **v1.2**: portfolio and privacy blur ✅
-8. **v1.3**: coin detail charts, market overview (Fear & Greed, BTC dominance)
+### Translating
 
-## Translating
+PricePin's text lives in [`src/PricePin/Strings`](src/PricePin/Strings). To add a language:
 
-PricePin's text lives in [`src/PricePin/Strings`](src/PricePin/Strings). To add a language, copy `Strings.en.xaml` to `Strings.<code>.xaml` (for example `Strings.de.xaml`), translate the text between the tags, keep `{0}`-style placeholders, and add the language to `Loc.Languages` in [`Services/Loc.cs`](src/PricePin/Services/Loc.cs). The tests check that every translation has the same keys and placeholders as English.
+1. Copy `Strings.en.xaml` to `Strings.<code>.xaml`, for example `Strings.de.xaml`.
+2. Translate the text between the tags, keeping placeholders like `{0}` as they are.
+3. Add the language to `Loc.Languages` in [`Services/Loc.cs`](src/PricePin/Services/Loc.cs).
 
-## Releasing
+The tests check that every translation has the same keys and placeholders as English.
+
+### Releasing
 
 See [docs/RELEASING.md](docs/RELEASING.md).
 
-## Tech
+## Roadmap
 
-C# · .NET 10 · WPF · [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) · [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon) · [Velopack](https://velopack.io) (installer and updates)
+- [x] Widget, stay on top, opacity, click-through and tray
+- [x] Live feeds from Binance, Coinbase and Kraken with failover
+- [x] Settings window, coin picker, currencies, themes and sizes
+- [x] Ticker bar, multiple widgets and global hotkeys
+- [x] Installer, auto-update, English and Turkish
+- [x] Price alerts and live price in the tray icon
+- [x] Portfolio and privacy mode
+- [x] Coin charts and market overview
+- [ ] Code signing and a winget listing
+- [ ] Any token by contract address (DexScreener)
+- [ ] Currency converter
+- [ ] Stocks and forex
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). PricePin isn't financial advice, and prices may be delayed or wrong. Always check with your exchange before you trade.

@@ -15,6 +15,7 @@
             <MenuItem Header="{DynamicResource Menu.HideWidget}" Tag="&#xE7B3;" Command="{Binding ToggleVisibilityCommand}" />
             <MenuItem Header="{DynamicResource Menu.Settings}" Tag="&#xE713;" Command="{Binding App.OpenSettingsCommand}" />
             <MenuItem Header="{DynamicResource Menu.Alerts}" Tag="&#xEA8F;" Command="{Binding App.OpenAlertsCommand}" />
+            <MenuItem Header="{DynamicResource Menu.Market}" Tag="&#xE9D2;" Command="{Binding App.OpenMarketCommand}" />
             <Separator />
             <MenuItem Tag="&#xE8A9;" Command="{Binding SwitchLayoutCommand}">
                 <MenuItem.Style>
@@ -72,6 +73,7 @@
                       Command="{Binding ToggleClickThroughAllCommand}" />
             <MenuItem Header="{DynamicResource Menu.Settings}" Tag="&#xE713;" Command="{Binding OpenSettingsCommand}" />
             <MenuItem Header="{DynamicResource Menu.Alerts}" Tag="&#xEA8F;" Command="{Binding OpenAlertsCommand}" />
+            <MenuItem Header="{DynamicResource Menu.Market}" Tag="&#xE9D2;" Command="{Binding OpenMarketCommand}" />
             <MenuItem Header="{DynamicResource Menu.Privacy}" Tag="&#xED1A;" IsCheckable="True" IsChecked="{Binding Portfolio.PrivacyMode}" />
             <Separator />
             <MenuItem Header="{DynamicResource Menu.DataSource}" Tag="&#xE774;" ItemsSource="{Binding DataSourceOptions}">

@@ -36,6 +36,10 @@ public partial class App : Application
     private AppViewModel? _vm;
     private TaskbarIcon? _tray;
     private SettingsWindow? _settingsWindow;
+    private MarketWindow? _marketWindow;
+    private readonly Dictionary<string, CoinDetailWindow> _detailWindows = new(StringComparer.OrdinalIgnoreCase);
+    private readonly CandleService _candles = new();
+    private readonly MarketOverviewService _overview = new();
     private bool _clickThroughHintShown;
     private bool _exiting;
 
@@ -84,6 +88,8 @@ public partial class App : Application
         _updates.RestartRequested += (_, _) => RestartForUpdate();
         _vm.Updates = _updates;
         _vm.Alerts.Triggered += (_, hits) => ShowAlert(hits);
+        _vm.CoinDetailRequested += (_, symbol) => ShowCoinDetail(symbol);
+        _vm.MarketRequested += (_, _) => ShowMarket();
         _vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(AppViewModel.TrayIconText) or nameof(AppViewModel.TrayIconUp))
@@ -217,6 +223,37 @@ public partial class App : Application
         _tray.SetBinding(TaskbarIcon.ToolTipTextProperty, new Binding(nameof(AppViewModel.TrayToolTip)));
         // false = don't put the process in Windows "efficiency mode"; prices must stay real-time.
         _tray.ForceCreate(false);
+    }
+
+    private void ShowCoinDetail(string symbol)
+    {
+        if (_exiting)
+            return;
+        if (!_detailWindows.TryGetValue(symbol, out var window))
+        {
+            window = new CoinDetailWindow(new CoinDetailViewModel(_vm!, _candles, symbol));
+            _detailWindows[symbol] = window;
+            window.Closed += (_, _) => _detailWindows.Remove(symbol);
+            window.Show();
+        }
+        if (window.WindowState == WindowState.Minimized)
+            window.WindowState = WindowState.Normal;
+        window.Activate();
+    }
+
+    private void ShowMarket()
+    {
+        if (_exiting)
+            return;
+        if (_marketWindow is null)
+        {
+            _marketWindow = new MarketWindow(new MarketViewModel(_vm!, _overview));
+            _marketWindow.Closed += (_, _) => _marketWindow = null;
+            _marketWindow.Show();
+        }
+        if (_marketWindow.WindowState == WindowState.Minimized)
+            _marketWindow.WindowState = WindowState.Normal;
+        _marketWindow.Activate();
     }
 
     private ImageSource? _logoIcon;

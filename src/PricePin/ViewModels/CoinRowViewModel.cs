@@ -104,7 +104,8 @@ public sealed partial class CoinRowViewModel : ObservableObject
                 (Loc.T("Coin.Source"), Source ?? "—"),
             ];
             var width = lines.Max(l => l.Label.Length) + 2;
-            return $"{Name} ({Symbol})\n" + string.Join("\n", lines.Select(l => l.Label.PadRight(width) + l.Value));
+            return $"{Name} ({Symbol})\n" + string.Join("\n", lines.Select(l => l.Label.PadRight(width) + l.Value))
+                   + "\n\n" + Loc.T("Coin.ChartHint");
         }
     }
 

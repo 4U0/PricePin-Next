@@ -248,4 +248,37 @@
     <sys:String x:Key="Portfolio.Widget">PORTFÖY</sys:String>
     <sys:String x:Key="Widgets.ShowHoldings">Varlıklarımı ve portföy toplamını göster</sys:String>
     <sys:String x:Key="Portfolio.ValueColumn">Değer</sys:String>
+
+    <!-- Charts and market overview (v1.3) -->
+    <sys:String x:Key="Menu.Market">Piyasa özeti…</sys:String>
+    <sys:String x:Key="Coin.ChartHint">Grafik için çift tıklayın</sys:String>
+    <sys:String x:Key="Detail.Day">1G</sys:String>
+    <sys:String x:Key="Detail.Week">1H</sys:String>
+    <sys:String x:Key="Detail.Month">1A</sys:String>
+    <sys:String x:Key="Detail.Year">1Y</sys:String>
+    <sys:String x:Key="Detail.High">En yüksek</sys:String>
+    <sys:String x:Key="Detail.Low">En düşük</sys:String>
+    <sys:String x:Key="Detail.Change">Değişim</sys:String>
+    <sys:String x:Key="Detail.Volume">Hacim</sys:String>
+    <sys:String x:Key="Detail.Source">Grafik: {0}</sys:String>
+    <sys:String x:Key="Detail.Loading">Grafik yükleniyor…</sys:String>
+    <sys:String x:Key="Detail.NoData">Hiçbir borsada {1} cinsinden {0} grafiği yok. Ayarlar → Coinler'den başka bir para birimi deneyin.</sys:String>
+    <sys:String x:Key="Detail.SetAlert">Alarm kur</sys:String>
+    <sys:String x:Key="Detail.AddHolding">Portföye ekle</sys:String>
+    <sys:String x:Key="Market.Title">Piyasa özeti</sys:String>
+    <sys:String x:Key="Market.Cap">TOPLAM KRİPTO PİYASA DEĞERİ</sys:String>
+    <sys:String x:Key="Market.BtcDominance">BTC HAKİMİYETİ</sys:String>
+    <sys:String x:Key="Market.EthDominance">ETH HAKİMİYETİ</sys:String>
+    <sys:String x:Key="Market.FearGreed">KORKU VE AÇGÖZLÜLÜK ENDEKSİ</sys:String>
+    <sys:String x:Key="Market.ExtremeFear">Aşırı korku</sys:String>
+    <sys:String x:Key="Market.Fear">Korku</sys:String>
+    <sys:String x:Key="Market.Neutral">Nötr</sys:String>
+    <sys:String x:Key="Market.Greed">Açgözlülük</sys:String>
+    <sys:String x:Key="Market.ExtremeGreed">Aşırı açgözlülük</sys:String>
+    <sys:String x:Key="Market.YourCoins">COİNLERİNİZ BUGÜN</sys:String>
+    <sys:String x:Key="Market.Gainers">En çok yükselenler</sys:String>
+    <sys:String x:Key="Market.Losers">En çok düşenler</sys:String>
+    <sys:String x:Key="Market.Updated">{0} itibarıyla.</sys:String>
+    <sys:String x:Key="Market.Sources">Piyasa verileri CoinGecko'dan, Korku ve Açgözlülük Endeksi alternative.me'den.</sys:String>
+    <sys:String x:Key="Market.LoadFailed">Piyasa verileri şu an yüklenemedi. Birkaç dakika içinde tekrar denenecek.</sys:String>
 </ResourceDictionary>
