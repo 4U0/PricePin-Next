@@ -2,6 +2,12 @@
 
 Each release's notes on GitHub come from its section here.
 
+## 1.2.0
+
+- **Portfolio.** Add what you hold in Settings → Portfolio, with the average price you paid if you like. List widgets show each holding's amount and value under the coin, plus a portfolio total with today's change at the bottom. The Portfolio page shows the total value, today's change and profit/loss for each coin and overall. Buying more of a coin you already hold averages the cost for you. Holdings are kept only in your settings file on this PC.
+- **Privacy mode.** One click (widget or tray menu) or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>H</kbd> hides every amount and value behind a blur, everywhere, including the tray tooltip. Prices stay visible, so it's safe for screen sharing and streaming.
+- Coins you hold stream live even if no widget shows them.
+
 ## 1.1.0
 
 - **Price alerts.** Get a Windows notification when a coin goes above or below a price, or rises or falls by a percentage over 24h. An alert can fire once or every time (it waits for the price to move back before repeating, so a price sitting on the line doesn't spam you). Set them up in Settings → Alerts, or from the widget and tray menus. Alerts work for any coin, even one that isn't in a widget.

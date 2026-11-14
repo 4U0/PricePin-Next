@@ -74,6 +74,8 @@ public partial class SettingsWindow : Window
             _vm.App.HotkeyToggleWidgets = gesture;
         else if (ReferenceEquals(sender, HotkeyClickThrough))
             _vm.App.HotkeyToggleClickThrough = gesture;
+        else if (ReferenceEquals(sender, HotkeyPrivacy))
+            _vm.App.HotkeyTogglePrivacy = gesture;
     }
 
     // ---- Add by double-click -----------------------------------------------------------

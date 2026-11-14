@@ -72,9 +72,11 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
 
         _hotkeyToggleWidgets = s.Hotkeys.ToggleWidgets;
         _hotkeyToggleClickThrough = s.Hotkeys.ToggleClickThrough;
+        _hotkeyTogglePrivacy = s.Hotkeys.TogglePrivacy;
 
         Widgets = new(s.Widgets.Select(w => new WidgetViewModel(this, w)));
         Alerts = new AlertsViewModel(this);
+        Portfolio = new PortfolioViewModel(this);
         _trayCoin = s.TrayCoin;
         RebuildTrayCoinOptions();
 
@@ -101,6 +103,19 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     public IReadOnlyList<LanguageOption> LanguageOptions { get; }
 
     public AlertsViewModel Alerts { get; }
+    public PortfolioViewModel Portfolio { get; }
+
+    /// <summary>Shortcut that hides or shows portfolio amounts.</summary>
+    [ObservableProperty]
+    private string _hotkeyTogglePrivacy = "";
+
+    partial void OnHotkeyTogglePrivacyChanged(string value)
+    {
+        Settings.Hotkeys.TogglePrivacy = value;
+        Portfolio?.RaiseHintsChanged();
+        Save();
+        HotkeysChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     /// <summary>Coins the tray icon can show ("" is the PricePin logo).</summary>
     public ObservableCollection<ChoiceOption> TrayCoinOptions { get; } = [];
@@ -192,6 +207,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         RestartFeed();
         _ = RefreshHistoryLoopAsync(_lifetime.Token);
         _ = Alerts.LoadLogosAsync();
+        _ = Portfolio.LoadLogosAsync();
     }
 
     public void Save() => _settings.ScheduleSave();
@@ -221,6 +237,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         foreach (var w in Widgets)
             w.ApplyCoinSettings(currencyChanged: true);
         Alerts.OnQuoteChanged();
+        Portfolio.OnQuoteChanged();
         TrayIconText = null;
         RequestFeedRestart();
     }
@@ -339,6 +356,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
             w.RefreshText();
         Updates?.RefreshText();
         Alerts.RefreshText();
+        Portfolio.RefreshText();
         foreach (var o in TrayCoinOptions)
             o.RefreshText();
     }
@@ -388,10 +406,12 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         var symbols = Widgets
             .SelectMany(w => w.Settings.Coins)
             .Concat(Alerts.WatchedSymbols)
+            .Concat(Portfolio.WatchedSymbols)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Select(c => new MarketSymbol(c, quote))
             .ToList();
         _subscribed = new(symbols.Select(m => m.Base), StringComparer.OrdinalIgnoreCase);
+        Portfolio.Recalculate(force: true); // widget rows may have been rebuilt
         _market.Start(symbols, Settings.DataSource);
     }
 
@@ -427,6 +447,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         foreach (var w in Widgets)
             w.Apply(batch);
         Alerts.OnPrices(batch);
+        Portfolio.Recalculate();
         UpdateTrayIcon();
         _lastTickAt = DateTimeOffset.UtcNow;
     }
@@ -473,7 +494,8 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
 
         var rows = Widgets.SelectMany(w => w.Coins).ToList();
         if ((rows.FirstOrDefault(r => r.Symbol == TrayCoin) ?? rows.FirstOrDefault()) is { HasPrice: true } first)
-            TrayToolTip = $"PricePin · {first.Symbol} {first.PriceText} {first.ChangeText}";
+            TrayToolTip = $"PricePin · {first.Symbol} {first.PriceText} {first.ChangeText}"
+                          + (Portfolio.Summary is { } summary ? "\n" + summary : "");
     }
 
     private static string FormatAge(TimeSpan t) =>

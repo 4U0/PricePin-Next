@@ -157,6 +157,9 @@
                                             <TextBlock Text="{Binding Name}" FontSize="11" TextTrimming="CharacterEllipsis"
                                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                                        Visibility="{Binding DataContext.ShowNames, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
+                                            <TextBlock x:Name="Holding" Text="{Binding HoldingText}" FontSize="10.5" TextTrimming="CharacterEllipsis"
+                                                       Typography.NumeralAlignment="Tabular" Margin="0,1,0,0"
+                                                       Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed" />
                                         </StackPanel>
 
                                         <ctl:Sparkline x:Name="Spark" Grid.Column="2" Width="60" Height="26" Margin="2,0"
@@ -185,6 +188,20 @@
                                 <DataTrigger Binding="{Binding HasLogo}" Value="True">
                                     <Setter TargetName="Badge" Property="Visibility" Value="Collapsed" />
                                 </DataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding HasHolding}" Value="True" />
+                                        <Condition Binding="{Binding DataContext.ShowHoldings, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter TargetName="Holding" Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                                <DataTrigger Binding="{Binding DataContext.App.Portfolio.PrivacyMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                    <Setter TargetName="Holding" Property="Effect">
+                                        <Setter.Value>
+                                            <BlurEffect Radius="2.5" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </DataTrigger>
                                 <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
                                     <Setter TargetName="Row" Property="Background" Value="{DynamicResource HoverBrush}" />
                                 </Trigger>
@@ -193,6 +210,60 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 </ScrollViewer>
+
+                <!-- Portfolio total -->
+                <Border Margin="12,4,12,2" Padding="10,7" CornerRadius="10" Background="{DynamicResource HoverBrush}">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding ShowHoldings}" Value="True" />
+                                        <Condition Binding="{Binding App.Portfolio.HasHoldings}" Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                            <TextBlock x:Name="PortfolioTotal" Text="{Binding App.Portfolio.TotalValueText}" HorizontalAlignment="Right"
+                                       FontFamily="{StaticResource DisplayFont}" FontSize="14" FontWeight="SemiBold"
+                                       Typography.NumeralAlignment="Tabular" Foreground="{DynamicResource TextPrimaryBrush}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding App.Portfolio.PrivacyMode}" Value="True">
+                                                <Setter Property="Effect">
+                                                    <Setter.Value>
+                                                        <BlurEffect Radius="3" />
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding App.Portfolio.TotalChangeText}" HorizontalAlignment="Right" FontSize="10.5"
+                                       FontWeight="SemiBold" Typography.NumeralAlignment="Tabular">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource UpBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding App.Portfolio.TotalUp}" Value="False">
+                                                <Setter Property="Foreground" Value="{DynamicResource DownBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                        <TextBlock Text="{DynamicResource Portfolio.Widget}" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
+                    </DockPanel>
+                </Border>
 
                 <!-- Empty state -->
                 <TextBlock Text="{DynamicResource Widget.Empty}" Margin="16,8" FontSize="12"

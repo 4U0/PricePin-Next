@@ -267,6 +267,8 @@ public partial class App : Application
             failed.Add(_vm.HotkeyToggleWidgets);
         if (!string.IsNullOrWhiteSpace(_vm.HotkeyToggleClickThrough) && !_hotkeys.Register(_vm.HotkeyToggleClickThrough, _vm.ToggleClickThroughAll))
             failed.Add(_vm.HotkeyToggleClickThrough);
+        if (!string.IsNullOrWhiteSpace(_vm.HotkeyTogglePrivacy) && !_hotkeys.Register(_vm.HotkeyTogglePrivacy, _vm.Portfolio.TogglePrivacy))
+            failed.Add(_vm.HotkeyTogglePrivacy);
 
         _vm.HotkeyWarning = failed.Count == 0
             ? null
