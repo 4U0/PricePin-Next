@@ -14,6 +14,7 @@
         <ContextMenu x:Key="WidgetMenu" x:Shared="False">
             <MenuItem Header="{DynamicResource Menu.HideWidget}" Tag="&#xE7B3;" Command="{Binding ToggleVisibilityCommand}" />
             <MenuItem Header="{DynamicResource Menu.Settings}" Tag="&#xE713;" Command="{Binding App.OpenSettingsCommand}" />
+            <MenuItem Header="{DynamicResource Menu.Alerts}" Tag="&#xEA8F;" Command="{Binding App.OpenAlertsCommand}" />
             <Separator />
             <MenuItem Tag="&#xE8A9;" Command="{Binding SwitchLayoutCommand}">
                 <MenuItem.Style>
@@ -69,6 +70,7 @@
             <MenuItem Header="{DynamicResource Menu.ClickThrough}" Tag="&#xE8B0;" IsCheckable="True" IsChecked="{Binding AnyClickThrough, Mode=OneWay}"
                       Command="{Binding ToggleClickThroughAllCommand}" />
             <MenuItem Header="{DynamicResource Menu.Settings}" Tag="&#xE713;" Command="{Binding OpenSettingsCommand}" />
+            <MenuItem Header="{DynamicResource Menu.Alerts}" Tag="&#xEA8F;" Command="{Binding OpenAlertsCommand}" />
             <Separator />
             <MenuItem Header="{DynamicResource Menu.DataSource}" Tag="&#xE774;" ItemsSource="{Binding DataSourceOptions}">
                 <MenuItem.ItemContainerStyle>

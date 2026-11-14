@@ -2,7 +2,7 @@
 
 A fast, good-looking crypto price widget for Windows. It floats on your desktop, stays on top if you want it to, and shows live prices that update the moment they change.
 
-> **Status:** v1.0. Installer with automatic updates, English and Turkish. Price alerts are next. See the [roadmap](#roadmap).
+> **Status:** v1.1. Price alerts and a live price in the tray icon. A portfolio with privacy blur is next. See the [roadmap](#roadmap).
 
 ## Features
 
@@ -19,6 +19,8 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Run several widgets at once (up to 8), each with its own coins, layout, size, opacity and position
 - Global hotkeys: <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd> shows or hides all widgets, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> toggles click-through (both can be changed in Settings)
 - The ticker bar pauses while you hover it, and steps out of the way of full-screen apps
+- Price alerts: when a coin goes above or below a price, or moves a set percentage in 24h. Alerts appear as Windows notifications with an optional sound, and can fire once or every time
+- Live price in the tray icon for the coin you pick, green or red with the 24h move
 - Installer with automatic background updates from GitHub Releases (or a portable zip if you'd rather not install)
 - English and Turkish (Türkçe), following your Windows language or picked in Settings
 - Borderless dark "glass" widget you can drag anywhere
@@ -33,7 +35,6 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Only one copy runs at a time; launching it again shows the existing widget
 
 **Planned**
-- Price alerts and live price on the tray icon (v1.1)
 - Portfolio with privacy blur (v1.2)
 - Coin detail charts and market overview (v1.3)
 
@@ -100,7 +101,7 @@ dotnet run --project tools/FeedProbe -- 15 BTC ETH SOL
 3. **v0.3 Settings**: settings window, coin picker, display currency, themes, sizes ✅
 4. **v0.4 Layouts**: ticker bar, multiple widgets, hotkeys ✅
 5. **v1.0 Launch**: installer, auto-update, Turkish and English ✅ (winget listing and code signing are set up and switch on after the first release; see [RELEASING.md](docs/RELEASING.md))
-6. **v1.1**: price alerts, live price on the tray icon
+6. **v1.1**: price alerts, live price on the tray icon ✅
 7. **v1.2**: portfolio and privacy blur
 8. **v1.3**: coin detail charts, market overview (Fear & Greed, BTC dominance)
 

@@ -74,6 +74,9 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _hotkeyToggleClickThrough = s.Hotkeys.ToggleClickThrough;
 
         Widgets = new(s.Widgets.Select(w => new WidgetViewModel(this, w)));
+        Alerts = new AlertsViewModel(this);
+        _trayCoin = s.TrayCoin;
+        RebuildTrayCoinOptions();
 
         _market.TickReceived += OnTickReceived;
         _market.StatusChanged += OnStatusChanged;
@@ -96,6 +99,26 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     public ObservableCollection<WidgetViewModel> Widgets { get; }
     public IReadOnlyList<DataSourceOption> DataSourceOptions { get; }
     public IReadOnlyList<LanguageOption> LanguageOptions { get; }
+
+    public AlertsViewModel Alerts { get; }
+
+    /// <summary>Coins the tray icon can show ("" is the PricePin logo).</summary>
+    public ObservableCollection<ChoiceOption> TrayCoinOptions { get; } = [];
+
+    /// <summary>Coin drawn in the tray icon; empty for the logo.</summary>
+    [ObservableProperty]
+    private string _trayCoin;
+
+    /// <summary>Short price for the tray icon ("97k"), or null to show the logo.</summary>
+    [ObservableProperty]
+    private string? _trayIconText;
+
+    /// <summary>Colour of <see cref="TrayIconText"/>: up (green) or down (red) over 24h.</summary>
+    [ObservableProperty]
+    private bool _trayIconUp = true;
+
+    /// <summary>Page the next Settings window opens on, e.g. "Alerts".</summary>
+    public string? PendingSettingsPage { get; set; }
 
     /// <summary>Background updates; set by the app at startup.</summary>
     public UpdatesViewModel? Updates { get; set; }
@@ -168,6 +191,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
             w.ApplyCoinSettings();
         RestartFeed();
         _ = RefreshHistoryLoopAsync(_lifetime.Token);
+        _ = Alerts.LoadLogosAsync();
     }
 
     public void Save() => _settings.ScheduleSave();
@@ -179,6 +203,15 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _restartTimer.Start();
     }
 
+    private HashSet<string> _subscribed = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Reconnects only if <paramref name="symbol"/> isn't streaming yet (e.g. a new alert's coin).</summary>
+    public void EnsureSubscribed(string symbol)
+    {
+        if (!_subscribed.Contains(symbol))
+            RequestFeedRestart();
+    }
+
     /// <summary>Re-reads the currency for every widget (prices start fresh).</summary>
     public void ApplyQuoteCurrency()
     {
@@ -187,6 +220,8 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _historyCache.Clear();
         foreach (var w in Widgets)
             w.ApplyCoinSettings(currencyChanged: true);
+        Alerts.OnQuoteChanged();
+        TrayIconText = null;
         RequestFeedRestart();
     }
 
@@ -227,6 +262,13 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void OpenSettings() => SettingsRequested?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
+    private void OpenAlerts()
+    {
+        PendingSettingsPage = "Alerts";
+        SettingsRequested?.Invoke(this, EventArgs.Empty);
+    }
 
     [RelayCommand]
     private void Reconnect() => RestartFeed();
@@ -296,16 +338,60 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         foreach (var w in Widgets)
             w.RefreshText();
         Updates?.RefreshText();
+        Alerts.RefreshText();
+        foreach (var o in TrayCoinOptions)
+            o.RefreshText();
+    }
+
+    partial void OnTrayCoinChanged(string value)
+    {
+        Settings.TrayCoin = value;
+        Save();
+        foreach (var o in TrayCoinOptions)
+            o.IsSelected = o.Value == value;
+        UpdateTrayIcon();
+    }
+
+    private void RebuildTrayCoinOptions()
+    {
+        var coins = Widgets.SelectMany(w => w.Settings.Coins).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var values = new List<string> { "" };
+        values.AddRange(coins);
+        if (TrayCoinOptions.Select(o => o.Value).SequenceEqual(values))
+            return;
+        TrayCoinOptions.Clear();
+        foreach (var v in values)
+        {
+            var symbol = v;
+            TrayCoinOptions.Add(new ChoiceOption(v, () => symbol.Length == 0 ? Loc.T("Tray.Logo") : symbol, o => TrayCoin = o.Value)
+            {
+                IsSelected = v == TrayCoin,
+            });
+        }
+    }
+
+    private void UpdateTrayIcon()
+    {
+        if (TrayCoin.Length > 0 && Alerts.TryGetLatest(TrayCoin, out var price, out var change))
+        {
+            TrayIconText = PriceText.Tiny(price);
+            TrayIconUp = (change ?? 0) >= 0;
+        }
+        else
+            TrayIconText = null;
     }
 
     private void RestartFeed()
     {
         var quote = Settings.QuoteCurrency;
+        RebuildTrayCoinOptions();
         var symbols = Widgets
             .SelectMany(w => w.Settings.Coins)
+            .Concat(Alerts.WatchedSymbols)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Select(c => new MarketSymbol(c, quote))
             .ToList();
+        _subscribed = new(symbols.Select(m => m.Base), StringComparer.OrdinalIgnoreCase);
         _market.Start(symbols, Settings.DataSource);
     }
 
@@ -340,6 +426,8 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
 
         foreach (var w in Widgets)
             w.Apply(batch);
+        Alerts.OnPrices(batch);
+        UpdateTrayIcon();
         _lastTickAt = DateTimeOffset.UtcNow;
     }
 
@@ -383,7 +471,8 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
             detail += "\n" + _status.Detail;
         StatusDetail = detail;
 
-        if (Widgets.SelectMany(w => w.Coins).FirstOrDefault() is { HasPrice: true } first)
+        var rows = Widgets.SelectMany(w => w.Coins).ToList();
+        if ((rows.FirstOrDefault(r => r.Symbol == TrayCoin) ?? rows.FirstOrDefault()) is { HasPrice: true } first)
             TrayToolTip = $"PricePin · {first.Symbol} {first.PriceText} {first.ChangeText}";
     }
 

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using PricePin.Core.Alerts;
 using PricePin.Core.Coins;
 using PricePin.Core.Market;
 
@@ -151,6 +152,15 @@ public sealed class AppSettings
     public bool AutoUpdate { get; set; } = true;
 
     public const string SystemLanguage = "system";
+    public const int MaxAlerts = 100;
+
+    public List<PriceAlert> Alerts { get; set; } = [];
+
+    /// <summary>Play the Windows notification sound when an alert fires.</summary>
+    public bool AlertSound { get; set; } = true;
+
+    /// <summary>Coin whose price is drawn in the tray icon; empty shows the PricePin logo.</summary>
+    public string TrayCoin { get; set; } = "";
 
     // ---- Version 1 fields, read once to migrate and never written again ----
     [JsonPropertyName("Topmost"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public bool? V1Topmost { get; set; }
@@ -186,6 +196,15 @@ public sealed class AppSettings
         if (!Enum.IsDefined(Theme)) Theme = AppTheme.Dark;
         if (!AccentPresets.IsValid(Accent)) Accent = AccentPresets.Default;
         Hotkeys ??= new HotkeySettings();
+        Alerts = (Alerts ?? []).Where(x => x is not null && x.IsValid).Take(MaxAlerts).ToList();
+        foreach (var alert in Alerts)
+        {
+            alert.Symbol = alert.Symbol.Trim().ToUpperInvariant();
+            alert.Quote = alert.Quote.Trim().ToUpperInvariant();
+        }
+        foreach (var dup in Alerts.GroupBy(x => x.Id).SelectMany(g => g.Skip(1)))
+            dup.Id = Guid.NewGuid().ToString("N")[..8];
+        TrayCoin = (TrayCoin ?? "").Trim().ToUpperInvariant();
         Language = string.IsNullOrWhiteSpace(Language) ? SystemLanguage : Language.Trim().ToLowerInvariant();
         SchemaVersion = CurrentSchemaVersion;
     }

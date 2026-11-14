@@ -2,6 +2,12 @@
 
 Each release's notes on GitHub come from its section here.
 
+## 1.1.0
+
+- **Price alerts.** Get a Windows notification when a coin goes above or below a price, or rises or falls by a percentage over 24h. An alert can fire once or every time (it waits for the price to move back before repeating, so a price sitting on the line doesn't spam you). Set them up in Settings → Alerts, or from the widget and tray menus. Alerts work for any coin, even one that isn't in a widget.
+- **Live price in the tray icon.** Pick a coin in Settings → Appearance and its price shows in the notification area, green when it's up over 24h and red when it's down.
+- Typing prices accepts both `70,000.50` and `70.000,50`.
+
 ## 1.0.0
 
 The first public release.

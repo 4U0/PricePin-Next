@@ -188,4 +188,40 @@
     <sys:String x:Key="Data.AboutText">Ücretsiz ve açık kaynak (MIT). Hesap yok, izleme yok: fiyatlar doğrudan herkese açık borsa akışlarından gelir. Coin logoları cryptocurrency-icons (CC0) ve CoinGecko'dan.</sys:String>
     <sys:String x:Key="Data.Project">GitHub'daki proje sayfası</sys:String>
     <sys:String x:Key="Data.OpenFolder">Ayarlar klasörünü aç</sys:String>
+
+    <!-- Alerts and tray icon (v1.1) -->
+    <sys:String x:Key="Nav.Alerts">Alarmlar</sys:String>
+    <sys:String x:Key="Menu.Alerts">Fiyat alarmları…</sys:String>
+    <sys:String x:Key="Alerts.New">YENİ ALARM</sys:String>
+    <sys:String x:Key="Alerts.Coin">Coin</sys:String>
+    <sys:String x:Key="Alerts.When">Koşul</sys:String>
+    <sys:String x:Key="Alerts.Above">Üstüne çıkınca</sys:String>
+    <sys:String x:Key="Alerts.Below">Altına inince</sys:String>
+    <sys:String x:Key="Alerts.Rises">24s yükselince</sys:String>
+    <sys:String x:Key="Alerts.Falls">24s düşünce</sys:String>
+    <sys:String x:Key="Alerts.Value">Değer</sys:String>
+    <sys:String x:Key="Alerts.RepeatLabel">Her seferinde tekrarla (aksi halde alarm bir kez çalınca kapanır)</sys:String>
+    <sys:String x:Key="Alerts.AddButton">Alarm ekle</sys:String>
+    <sys:String x:Key="Alerts.Yours">ALARMLARINIZ</sys:String>
+    <sys:String x:Key="Alerts.Empty">Henüz alarm yok. Yukarıdan ekleyin; PricePin açık olduğu sürece size haber verir.</sys:String>
+    <sys:String x:Key="Alerts.Sound">Ses çal</sys:String>
+    <sys:String x:Key="Alerts.Hint">Alarmlar Windows bildirimi olarak görünür. Rahatsız etmeyin modu bunları geciktirebilir.</sys:String>
+    <sys:String x:Key="Alerts.Paused">Duraklatıldı: fiyatlar {0} cinsinden gösteriliyor</sys:String>
+    <sys:String x:Key="Alerts.Repeats">Tekrarlar</sys:String>
+    <sys:String x:Key="Alerts.Once">Bir kez</sys:String>
+    <sys:String x:Key="Alerts.LastFired">son alarm {0}</sys:String>
+    <sys:String x:Key="Alerts.Now">Şu an {0}</sys:String>
+    <sys:String x:Key="Alerts.BadSymbol">BTC gibi bir coin sembolü yazın.</sys:String>
+    <sys:String x:Key="Alerts.BadValue">Sıfırdan büyük bir sayı yazın.</sys:String>
+    <sys:String x:Key="Alerts.TooMany">En fazla {0} alarm kurabilirsiniz.</sys:String>
+    <sys:String x:Key="Alerts.DescAbove">{0} {1} üzerinde</sys:String>
+    <sys:String x:Key="Alerts.DescBelow">{0} {1} altında</sys:String>
+    <sys:String x:Key="Alerts.DescRises">{0} 24 saatte +%{1}</sys:String>
+    <sys:String x:Key="Alerts.DescFalls">{0} 24 saatte −%{1}</sys:String>
+    <sys:String x:Key="Alerts.NotifyLine">Şu an {0}</sys:String>
+    <sys:String x:Key="Alerts.NotifyLineChange">Şu an {0} · {1} (24s)</sys:String>
+    <sys:String x:Key="Alerts.NotifyMany">{0} fiyat alarmı</sys:String>
+    <sys:String x:Key="Tray.Title">TEPSİ SİMGESİ</sys:String>
+    <sys:String x:Key="Tray.Logo">PricePin logosu</sys:String>
+    <sys:String x:Key="Tray.Hint">Bir coinin fiyatını görev çubuğunun bildirim alanında gösterin: 24 saatte yükselişteyse yeşil, düşüşteyse kırmızı.</sys:String>
 </ResourceDictionary>
