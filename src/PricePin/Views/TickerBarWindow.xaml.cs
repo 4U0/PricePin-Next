@@ -226,6 +226,12 @@ public partial class TickerBarWindow : Window
 
     private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (e.ClickCount == 2 && WidgetWindow.CoinUnder(e.OriginalSource) is { } row)
+        {
+            e.Handled = true;
+            _vm.App.OpenCoinDetail(row.Symbol);
+            return;
+        }
         if (!_vm.IsFloating || _vm.LockPosition || e.ButtonState != MouseButtonState.Pressed || e.OriginalSource is ButtonBase)
             return;
         try

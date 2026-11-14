@@ -2,7 +2,7 @@
 
 A fast, good-looking crypto price widget for Windows. It floats on your desktop, stays on top if you want it to, and shows live prices that update the moment they change.
 
-> **Status:** v1.2. Portfolio tracking with a privacy mode. Coin detail charts and a market overview are next. See the [roadmap](#roadmap).
+> **Status:** v1.3. Everything on the original roadmap is in. Ideas for later are listed below. See the [roadmap](#roadmap).
 
 ## Features
 
@@ -22,6 +22,8 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Price alerts: when a coin goes above or below a price, or moves a set percentage in 24h. Alerts appear as Windows notifications with an optional sound, and can fire once or every time
 - Portfolio: enter what you hold (and optionally what you paid) to see each holding's value under its price, a live total with today's change, and profit/loss. Stored only on your PC
 - Privacy mode (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>H</kbd>) blurs and masks every amount for screen sharing and streaming, while prices stay visible
+- Coin charts: double-click any coin for a 1D, 1W, 1M or 1Y chart that follows the live price, with a crosshair, the range's high, low, change and volume, and one-click alert or portfolio entry
+- Market overview: total crypto market cap and its 24h change, BTC and ETH dominance, the Fear & Greed Index, and your best and worst coins today
 - Live price in the tray icon for the coin you pick, green or red with the 24h move
 - Installer with automatic background updates from GitHub Releases (or a portable zip if you'd rather not install)
 - English and Turkish (Türkçe), following your Windows language or picked in Settings
@@ -37,7 +39,7 @@ A fast, good-looking crypto price widget for Windows. It floats on your desktop,
 - Only one copy runs at a time; launching it again shows the existing widget
 
 **Planned**
-- Coin detail charts and market overview (v1.3)
+- Any token by contract address (DexScreener), a currency converter, stocks and forex
 
 ## Download
 
@@ -77,11 +79,12 @@ dotnet publish src/PricePin -c Release -r win-x64 --self-contained `
 
 | Source | Used for | Notes |
 | --- | --- | --- |
-| Binance | Live prices (WebSocket), 24h history | USD is shown using USDT pairs. Not available in some regions; PricePin moves on automatically. |
-| Coinbase | Live prices (WebSocket), REST fallback, 24h history | |
-| Kraken | Live prices (WebSocket), 24h history | |
+| Binance | Live prices (WebSocket), 24h history, charts | USD is shown using USDT pairs. Not available in some regions; PricePin moves on automatically. |
+| Coinbase | Live prices (WebSocket), REST fallback, 24h history, charts | |
+| Kraken | Live prices (WebSocket), 24h history, charts | |
 | [cryptocurrency-icons](https://github.com/spothq/cryptocurrency-icons) (CC0) | Coin logos | Popular coins are bundled; others download once and are cached. |
-| CoinGecko | Logos for newer coins | Only asked when a logo isn't in the set above. |
+| CoinGecko | Logos for newer coins, market overview | Logos only when one isn't in the set above; the overview's market cap and dominance come from its public `/global` endpoint. |
+| [alternative.me](https://alternative.me/crypto/fear-and-greed-index/) | Fear & Greed Index | Shown in the market overview. |
 
 All of these are public endpoints. No account or API key is needed.
 
@@ -104,7 +107,7 @@ dotnet run --project tools/FeedProbe -- 15 BTC ETH SOL
 5. **v1.0 Launch**: installer, auto-update, Turkish and English ✅ (winget listing and code signing are set up and switch on after the first release; see [RELEASING.md](docs/RELEASING.md))
 6. **v1.1**: price alerts, live price on the tray icon ✅
 7. **v1.2**: portfolio and privacy blur ✅
-8. **v1.3**: coin detail charts, market overview (Fear & Greed, BTC dominance)
+8. **v1.3**: coin detail charts, market overview (Fear & Greed, BTC dominance) ✅
 
 ## Translating
 

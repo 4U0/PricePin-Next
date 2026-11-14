@@ -248,4 +248,37 @@
     <sys:String x:Key="Portfolio.Widget">PORTFOLIO</sys:String>
     <sys:String x:Key="Widgets.ShowHoldings">Show my holdings and portfolio total</sys:String>
     <sys:String x:Key="Portfolio.ValueColumn">Value</sys:String>
+
+    <!-- Charts and market overview (v1.3) -->
+    <sys:String x:Key="Menu.Market">Market overview…</sys:String>
+    <sys:String x:Key="Coin.ChartHint">Double-click for the chart</sys:String>
+    <sys:String x:Key="Detail.Day">1D</sys:String>
+    <sys:String x:Key="Detail.Week">1W</sys:String>
+    <sys:String x:Key="Detail.Month">1M</sys:String>
+    <sys:String x:Key="Detail.Year">1Y</sys:String>
+    <sys:String x:Key="Detail.High">High</sys:String>
+    <sys:String x:Key="Detail.Low">Low</sys:String>
+    <sys:String x:Key="Detail.Change">Change</sys:String>
+    <sys:String x:Key="Detail.Volume">Volume</sys:String>
+    <sys:String x:Key="Detail.Source">Chart from {0}</sys:String>
+    <sys:String x:Key="Detail.Loading">Loading chart…</sys:String>
+    <sys:String x:Key="Detail.NoData">No exchange has a {0} chart in {1}. Try another currency in Settings → Coins.</sys:String>
+    <sys:String x:Key="Detail.SetAlert">Set alert</sys:String>
+    <sys:String x:Key="Detail.AddHolding">Add to portfolio</sys:String>
+    <sys:String x:Key="Market.Title">Market overview</sys:String>
+    <sys:String x:Key="Market.Cap">TOTAL CRYPTO MARKET CAP</sys:String>
+    <sys:String x:Key="Market.BtcDominance">BTC DOMINANCE</sys:String>
+    <sys:String x:Key="Market.EthDominance">ETH DOMINANCE</sys:String>
+    <sys:String x:Key="Market.FearGreed">FEAR &amp; GREED INDEX</sys:String>
+    <sys:String x:Key="Market.ExtremeFear">Extreme fear</sys:String>
+    <sys:String x:Key="Market.Fear">Fear</sys:String>
+    <sys:String x:Key="Market.Neutral">Neutral</sys:String>
+    <sys:String x:Key="Market.Greed">Greed</sys:String>
+    <sys:String x:Key="Market.ExtremeGreed">Extreme greed</sys:String>
+    <sys:String x:Key="Market.YourCoins">YOUR COINS TODAY</sys:String>
+    <sys:String x:Key="Market.Gainers">Top gainers</sys:String>
+    <sys:String x:Key="Market.Losers">Top losers</sys:String>
+    <sys:String x:Key="Market.Updated">Updated {0}.</sys:String>
+    <sys:String x:Key="Market.Sources">Market data from CoinGecko, Fear &amp; Greed Index from alternative.me.</sys:String>
+    <sys:String x:Key="Market.LoadFailed">Couldn't load market data right now. It will try again in a few minutes.</sys:String>
 </ResourceDictionary>

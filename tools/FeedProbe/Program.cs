@@ -61,6 +61,22 @@ foreach (var sym in symbols)
     Console.WriteLine($"  {sym,-9} {closes.Count} points" + (closes.Count > 0 ? $", {closes[0]} → {closes[^1]}" : ""));
 }
 
+Console.WriteLine("\nDetail chart candles:");
+var candles = new CandleService();
+foreach (var range in Enum.GetValues<ChartRange>())
+{
+    var series = await candles.GetAsync(symbols[0], range);
+    Console.WriteLine($"  {symbols[0],-9} {range,-6} " + (series is null
+        ? "none"
+        : $"{series.Candles.Count} candles from {series.Source}, {series.Candles[0].Time:yyyy-MM-dd HH:mm} → {series.Candles[^1].Time:yyyy-MM-dd HH:mm}"));
+}
+
+Console.WriteLine("\nMarket overview:");
+var overview = await new MarketOverviewService().GetAsync("USD");
+Console.WriteLine($"  Market cap {overview.TotalMarketCap?.ToString("N0") ?? "?"} {overview.MarketCapCurrency}, 24h {overview.MarketCapChange24h?.ToString("0.00") ?? "?"}%");
+Console.WriteLine($"  BTC dominance {overview.BtcDominance?.ToString("0.0") ?? "?"}%, ETH {overview.EthDominance?.ToString("0.0") ?? "?"}%");
+Console.WriteLine($"  Fear & Greed {overview.FearGreed?.ToString() ?? "?"} ({overview.FearGreedLevel?.ToString() ?? "?"})");
+
 Console.WriteLine("\nLogos:");
 var iconDir = Path.Combine(Path.GetTempPath(), "pricepin-probe-icons");
 var icons = new CoinIconService(iconDir);

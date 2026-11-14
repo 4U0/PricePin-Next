@@ -2,6 +2,11 @@
 
 Each release's notes on GitHub come from its section here.
 
+## 1.3.0
+
+- **Coin charts.** Double-click a coin in any widget or the ticker bar to open its chart. Choose 1 day, 1 week, 1 month or 1 year. The chart follows the live price, shows the time and price under the mouse, and lists the range's high, low, change and volume. **Set alert** and **Add to portfolio** buttons are right there. The chart data comes from Binance, Coinbase or Kraken, whichever works where you are.
+- **Market overview** (widget or tray menu): total crypto market cap and its 24h change, BTC and ETH dominance, the Crypto Fear & Greed Index as a gauge, and your top gainers and losers today. It refreshes every five minutes. Data comes from CoinGecko and alternative.me, with no account or key needed.
+
 ## 1.2.0
 
 - **Portfolio.** Add what you hold in Settings → Portfolio, with the average price you paid if you like. List widgets show each holding's amount and value under the coin, plus a portfolio total with today's change at the bottom. The Portfolio page shows the total value, today's change and profit/loss for each coin and overall. Buying more of a coin you already hold averages the cost for you. Holdings are kept only in your settings file on this PC.

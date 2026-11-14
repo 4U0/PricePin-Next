@@ -281,11 +281,26 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     private void OpenSettings() => SettingsRequested?.Invoke(this, EventArgs.Empty);
 
     [RelayCommand]
-    private void OpenAlerts()
+    private void OpenAlerts() => OpenSettingsPage("Alerts");
+
+    public void OpenSettingsPage(string page)
     {
-        PendingSettingsPage = "Alerts";
+        PendingSettingsPage = page;
         SettingsRequested?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Raised after each batch of prices has been applied (about ten times a second).</summary>
+    public event EventHandler? PricesUpdated;
+
+    /// <summary>Asks the app to open the chart window for a coin.</summary>
+    public event EventHandler<string>? CoinDetailRequested;
+
+    public event EventHandler? MarketRequested;
+
+    public void OpenCoinDetail(string symbol) => CoinDetailRequested?.Invoke(this, symbol);
+
+    [RelayCommand]
+    private void OpenMarket() => MarketRequested?.Invoke(this, EventArgs.Empty);
 
     [RelayCommand]
     private void Reconnect() => RestartFeed();
@@ -449,6 +464,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         Alerts.OnPrices(batch);
         Portfolio.Recalculate();
         UpdateTrayIcon();
+        PricesUpdated?.Invoke(this, EventArgs.Empty);
         _lastTickAt = DateTimeOffset.UtcNow;
     }
 
