@@ -73,6 +73,17 @@ public class DexTokenTests
     }
 
     [Fact]
+    public void Lists_tokens_that_trade_before_stale_look_alikes()
+    {
+        var stale = Pair("solana", "P9", "Fake11111111111111111111111111111111111111", "Bonk", "0.0000066", 1_700_000)
+            .Replace("\"priceChange\": { \"m5\": 0.1, \"h1\": -1.5, \"h6\": 2, \"h24\": 25 },", "")
+            .Replace("\"h24\": 1000000,", "");
+        var pairs = DexScreenerClient.ParsePairs(J($"[{stale},{Pair("solana", "P2", Bonk, "Bonk", "0.0000022", 220_000)}]"));
+        var best = DexScreenerClient.BestPerToken(pairs, DexScreenerClient.MinSearchLiquidityUsd);
+        Assert.Equal(["P2", "P9"], best.Select(p => p.PairAddress));
+    }
+
+    [Fact]
     public void Prices_from_the_saved_pool_or_else_the_most_liquid_one()
     {
         var pairs = DexScreenerClient.ParsePairs(J($"[{Pair("solana", "P1", Bonk, "Bonk", "0.00002", 900_000)},{Pair("solana", "P2", Bonk, "Bonk", "0.000021", 4_000_000)}]"));

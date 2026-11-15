@@ -21,11 +21,43 @@ public static class GeckoTerminalClient
         var network = DexChains.GeckoTerminalNetwork(chain);
         var url = $"https://api.geckoterminal.com/api/v2/networks/{Uri.EscapeDataString(network)}/pools/{Uri.EscapeDataString(poolAddress)}" +
                   $"/ohlcv/{timeframe}?aggregate={aggregate}&limit={limit}&currency=usd&token=base";
-        using var response = await Http.Client.GetAsync(url, ct).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-            return null;
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>(ct).ConfigureAwait(false);
-        return ParseOhlcv(json);
+        for (var attempt = 0; ; attempt++)
+        {
+            await WaitTurnAsync(ct).ConfigureAwait(false);
+            using var response = await Http.Client.GetAsync(url, ct).ConfigureAwait(false);
+            // The free API allows only a few calls in a burst; wait as asked and try once more.
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt == 0)
+            {
+                var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(4);
+                await Task.Delay(wait > TimeSpan.FromSeconds(10) ? TimeSpan.FromSeconds(10) : wait, ct).ConfigureAwait(false);
+                continue;
+            }
+            if (!response.IsSuccessStatusCode)
+                return null;
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>(ct).ConfigureAwait(false);
+            return ParseOhlcv(json);
+        }
+    }
+
+    // Calls are spaced out so a chart, a few sparklines and quick search stay under the limit.
+    private static readonly SemaphoreSlim Gate = new(1, 1);
+    private static DateTime _lastCall = DateTime.MinValue;
+    private static readonly TimeSpan MinSpacing = TimeSpan.FromMilliseconds(1200);
+
+    private static async Task WaitTurnAsync(CancellationToken ct)
+    {
+        await Gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var wait = _lastCall + MinSpacing - DateTime.UtcNow;
+            if (wait > TimeSpan.Zero)
+                await Task.Delay(wait, ct).ConfigureAwait(false);
+            _lastCall = DateTime.UtcNow;
+        }
+        finally
+        {
+            Gate.Release();
+        }
     }
 
     // {"data":{"attributes":{"ohlcv_list":[[timeSec, open, high, low, close, volumeUsd], ...]}}} newest first

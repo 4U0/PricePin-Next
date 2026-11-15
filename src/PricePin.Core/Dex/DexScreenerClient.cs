@@ -107,9 +107,14 @@ public static class DexScreenerClient
     internal static IReadOnlyList<DexPair> BestPerToken(IEnumerable<DexPair> pairs, decimal minLiquidity) =>
         pairs.Where(p => p.PriceUsd is > 0 && (p.LiquidityUsd ?? 0) >= minLiquidity)
             .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
-            .Select(g => g.OrderByDescending(p => p.LiquidityUsd ?? 0).First())
-            .OrderByDescending(p => (p.LiquidityUsd ?? 0) + (p.VolumeUsd24h ?? 0))
+            .Select(g => g.OrderByDescending(IsTrading).ThenByDescending(p => p.LiquidityUsd ?? 0).First())
+            // Pools with no trades or price change today are often stale copies or look-alikes
+            // of a real token, however much liquidity they claim; list them after real ones.
+            .OrderByDescending(IsTrading)
+            .ThenByDescending(p => (p.LiquidityUsd ?? 0) + (p.VolumeUsd24h ?? 0))
             .ToList();
+
+    private static bool IsTrading(DexPair p) => p.Change24h is not null && p.VolumeUsd24h is > 0;
 
     internal static IReadOnlyList<DexPair> ParsePairs(JsonElement array)
     {
