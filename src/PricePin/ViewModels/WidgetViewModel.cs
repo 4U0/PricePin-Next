@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Windows.Threading;
 using PricePin.Core.Market;
 using PricePin.Core.Settings;
 using PricePin.Services;
@@ -39,7 +40,82 @@ public sealed partial class WidgetViewModel : ObservableObject
         _scrollSpeed = settings.ScrollSpeed;
         _floatingWidth = settings.FloatingWidth;
         _changePeriod = settings.ChangePeriod;
+        _showNews = settings.ShowNews;
+        _showFees = settings.ShowFees;
+        _headlineTimer = new DispatcherTimer(HeadlineEvery, DispatcherPriority.Background, (_, _) => NextHeadline(), Dispatcher.CurrentDispatcher);
+        _headlineTimer.Stop();
     }
+
+    private static readonly TimeSpan HeadlineEvery = TimeSpan.FromSeconds(12);
+    private readonly DispatcherTimer _headlineTimer;
+    private IReadOnlyList<HeadlineViewModel> _headlines = [];
+    private int _headlineIndex;
+
+    /// <summary>What a ticker bar scrolls: the coins, then fees and headlines when they are turned on.</summary>
+    public ObservableCollection<object> TickerItems { get; } = [];
+
+    [ObservableProperty] private bool _showNews;
+    [ObservableProperty] private bool _showFees;
+
+    /// <summary>The headline a list widget shows under its coins; changes every few seconds.</summary>
+    [ObservableProperty] private HeadlineViewModel? _currentHeadline;
+
+    partial void OnShowNewsChanged(bool value)
+    {
+        Save(s => s.ShowNews = value);
+        App.Pulse.UpdateDemand();
+        RefreshPulse();
+    }
+
+    partial void OnShowFeesChanged(bool value)
+    {
+        Save(s => s.ShowFees = value);
+        App.Pulse.UpdateDemand();
+        RebuildTickerItems();
+    }
+
+    /// <summary>Picks up new headlines (called by the app when the news refreshes).</summary>
+    public void RefreshPulse()
+    {
+        _headlines = ShowNews ? App.Pulse.HeadlinesFor(Settings.Coins) : [];
+        if (_headlines.Count > 0 && !IsTickerBar)
+        {
+            _headlineIndex %= _headlines.Count;
+            CurrentHeadline = _headlines[_headlineIndex];
+            _headlineTimer.Start();
+        }
+        else
+        {
+            CurrentHeadline = null;
+            _headlineTimer.Stop();
+        }
+        RebuildTickerItems();
+    }
+
+    private void NextHeadline()
+    {
+        if (_headlines.Count == 0)
+            return;
+        _headlineIndex = (_headlineIndex + 1) % _headlines.Count;
+        CurrentHeadline = _headlines[_headlineIndex];
+    }
+
+    private void RebuildTickerItems()
+    {
+        var items = new List<object>(Coins);
+        if (ShowFees)
+            items.Add(App.Pulse.Fees);
+        if (IsTickerBar)
+            items.AddRange(_headlines.Take(5));
+        if (items.SequenceEqual(TickerItems))
+            return;
+        TickerItems.Clear();
+        foreach (var item in items)
+            TickerItems.Add(item);
+    }
+
+    /// <summary>Stops the headline timer when the widget is removed.</summary>
+    public void Detach() => _headlineTimer.Stop();
 
     /// <summary>Raised when the layout changes, so the app can swap the window type.</summary>
     public event EventHandler? LayoutChanged;
@@ -127,6 +203,7 @@ public sealed partial class WidgetViewModel : ObservableObject
     partial void OnLayoutChanged(WidgetLayout value)
     {
         Save(s => s.Layout = value);
+        RefreshPulse();
         LayoutChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -232,6 +309,7 @@ public sealed partial class WidgetViewModel : ObservableObject
             Coins.Add(row);
         }
 
+        RefreshPulse();
         _ = App.LoadLogosAsync(added);
         _ = App.LoadHistoryAsync(added, ChangePeriod);
     }

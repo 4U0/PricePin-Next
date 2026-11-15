@@ -370,6 +370,8 @@
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowSparklines}" IsChecked="{Binding SelectedWidget.ShowSparklines}" />
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowHeadings}" IsChecked="{Binding SelectedWidget.ShowColumnHeadings}" />
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowHoldings}" IsChecked="{Binding SelectedWidget.ShowHoldings}" />
+                                    <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowNews}" IsChecked="{Binding SelectedWidget.ShowNews}" />
+                                    <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowFees}" IsChecked="{Binding SelectedWidget.ShowFees}" />
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Common.Snap}" IsChecked="{Binding SelectedWidget.SnapToEdges}" />
                                     <TextBlock Style="{StaticResource Hint}" Text="{DynamicResource Common.SnapTip}" Margin="0,-2,0,6" />
                                 </StackPanel>

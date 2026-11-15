@@ -63,6 +63,9 @@ public static class CoinCatalog
 
     public static bool IsKnown(string symbol) => Known.ContainsKey(symbol);
 
+    /// <summary>The well-known coins, most popular first.</summary>
+    public static IEnumerable<CoinInfo> All => Known.Values;
+
     private static readonly ConcurrentDictionary<string, DexToken> Tokens = new(StringComparer.OrdinalIgnoreCase);
 
     private static readonly string[] TokenColors =

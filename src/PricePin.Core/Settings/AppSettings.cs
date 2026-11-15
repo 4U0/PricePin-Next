@@ -4,6 +4,7 @@ using PricePin.Core.Coins;
 using PricePin.Core.Dex;
 using PricePin.Core.Portfolio;
 using PricePin.Core.Market;
+using PricePin.Core.Pulse;
 
 namespace PricePin.Core.Settings;
 
@@ -93,6 +94,12 @@ public sealed class WidgetSettings
 
     /// <summary>Width of a floating bar.</summary>
     public double FloatingWidth { get; set; } = 720;
+
+    /// <summary>Mix the latest headlines into a ticker bar, or show one under a list.</summary>
+    public bool ShowNews { get; set; }
+
+    /// <summary>Show Bitcoin and Ethereum network fees in the widget.</summary>
+    public bool ShowFees { get; set; }
 
     public void Normalize()
     {
@@ -189,6 +196,9 @@ public sealed class AppSettings
     /// <summary>DEX tokens the user added, so their names, logos and pools are known offline.</summary>
     public List<DexToken> Tokens { get; set; } = [];
 
+    /// <summary>News, whale and liquidation radar, and network fees.</summary>
+    public PulseSettings Pulse { get; set; } = new();
+
     // ---- Version 1 fields, read once to migrate and never written again ----
     [JsonPropertyName("Topmost"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public bool? V1Topmost { get; set; }
     [JsonPropertyName("Opacity"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public double? V1Opacity { get; set; }
@@ -247,6 +257,8 @@ public sealed class AppSettings
         // Every window resolves token keys to names through the catalog.
         foreach (var t in Tokens)
             CoinCatalog.Register(t);
+        Pulse ??= new PulseSettings();
+        Pulse.Normalize();
         Language = string.IsNullOrWhiteSpace(Language) ? SystemLanguage : Language.Trim().ToLowerInvariant();
         SchemaVersion = CurrentSchemaVersion;
     }

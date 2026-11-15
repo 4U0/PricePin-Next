@@ -63,6 +63,11 @@ A fast, good-looking price widget that floats on your desktop, stays on top if y
 - **Coin charts:** double-click any coin for a 1D, 1W, 1M or 1Y chart that follows the live price. It has a crosshair, plus the range's high, low, change and volume
 - **Market overview:** total market cap and its 24h change, BTC and ETH dominance, the Fear & Greed Index, and your best and worst coins today
 
+### News, whales and fees
+- **Crypto headlines** from CoinDesk, Cointelegraph, Decrypt, The Block and Bitcoin Magazine, each tagged with the coins it mentions. Mix them into a ticker bar or show one at a time under a list widget, and click one to read it. Filter to news about your own coins, and optionally get notified about news on coins you hold
+- **Whale and liquidation radar:** big spot trades on Binance (or Coinbase) and futures liquidations on Binance (or Bybit) as they happen, with last-hour totals of longs and shorts wiped out. Pick the sizes that count, and get notified about very large ones
+- **Network fees:** Bitcoin fees in sat/vB for the next block, 30 minutes, an hour or economy, and Ethereum gas in gwei, with what a payment costs in your currency. Show them in a widget, and get notified when gas or the Bitcoin fee falls below a level you choose
+
 ### Alerts
 - Alerts when a coin goes **above or below a price**, or **rises or falls by a percentage** in 24h
 - Windows notifications with an optional sound, firing once or every time
@@ -133,6 +138,10 @@ PricePin has no account, no telemetry and no analytics. It only talks to the pub
 | [DexScreener](https://dexscreener.com) | Prices, search and logos for tokens on decentralised exchanges |
 | [GeckoTerminal](https://www.geckoterminal.com) | Charts and sparklines for tokens on decentralised exchanges |
 | Coinbase, [open.er-api.com](https://www.exchangerate-api.com/docs/free) | Dollar exchange rates, to show DEX token prices in EUR, TRY or GBP |
+| CoinDesk, Cointelegraph, Decrypt, The Block, Bitcoin Magazine | Headlines, from their public RSS feeds |
+| Binance, Coinbase, Bybit | Whale trades (spot) and liquidations (futures) for the radar |
+| [mempool.space](https://mempool.space) | Bitcoin fee rates |
+| Public Ethereum nodes ([PublicNode](https://ethereum-rpc.publicnode.com), Cloudflare, LlamaRPC) | Ethereum gas |
 
 All of these are public endpoints, so no account or API key is needed. To check which sources work from your network:
 
@@ -175,7 +184,7 @@ dotnet publish src/PricePin -c Release -r win-x64 --self-contained `
 
 ```text
 src/PricePin          WPF app: windows, view models, controls, themes, strings
-src/PricePin.Core     Feeds, failover, alerts, portfolio, charts and settings (no UI)
+src/PricePin.Core     Feeds, failover, alerts, portfolio, charts, news, radar, fees and settings (no UI)
 tests/                Unit tests for PricePin.Core and the translations
 tools/FeedProbe       Console tool that checks which data sources work from your network
 docs/                 Release guide and images
@@ -213,8 +222,7 @@ See [docs/RELEASING.md](docs/RELEASING.md).
 - [x] Coin charts and market overview
 - [ ] Code signing and a winget listing
 - [x] Any token by contract address, quick search and converter, 1h/7d change
-- [ ] News headlines about your coins in the ticker bar
-- [ ] Whale trades and liquidations radar
+- [x] News headlines, whale and liquidation radar, network fees and fee alerts
 - [ ] Exchange price compare
 - [ ] Stocks and forex
 

@@ -2,6 +2,13 @@
 
 Each release's notes on GitHub come from its section here.
 
+## 1.5.0
+
+- **News.** Open **News, whales & fees** from the widget or tray menu to read the latest headlines from CoinDesk, Cointelegraph, Decrypt, The Block and Bitcoin Magazine. Each one is tagged with the coins it mentions, and a click opens it in your browser. Turn on **Show headlines** for a widget to mix them into a ticker bar or show one at a time under a list. You can keep only news about your coins, and get a notification when there's news about a coin you hold. Headlines refresh every five minutes.
+- **Whale and liquidation radar.** Watch big spot trades and futures liquidations as they happen, with totals for the last hour: longs and shorts liquidated, whale buys and sells. Trades come from Binance (or Coinbase where Binance isn't available) and liquidations from Binance futures (or Bybit). Choose the smallest trade and liquidation that count, keep it to your coins, and get notified about very large events.
+- **Network fees.** See Bitcoin fees for the next block, 30 minutes, an hour and economy, and Ethereum gas with its base fee and tip, plus what a payment costs in your currency. Turn on **Show network fees** to keep them in a widget, and set an alert for when gas or the Bitcoin fee drops to your level. An alert fires once and again only after fees have gone back up.
+- Nothing runs in the background unless something uses it: the window, a widget that shows it, or a notification you turned on.
+
 ## 1.4.0
 
 - **Any token, on any chain.** Search by name or paste a contract address in Settings → Coins or in quick search, and PricePin finds tokens on decentralised exchanges too: Solana, Base, BNB Chain, Ethereum, Arbitrum and dozens more, including brand-new meme coins. Their prices come from DexScreener and update every few seconds, charts and sparklines come from GeckoTerminal, and hovering one shows its chain, market cap and liquidity. Results with very little liquidity are left out of name searches to keep spam away. DEX tokens work in alerts, the portfolio and the tray icon like any other coin, and their chart has a link to the pool on DexScreener.

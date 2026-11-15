@@ -38,6 +38,7 @@ public partial class App : Application
     private SettingsWindow? _settingsWindow;
     private MarketWindow? _marketWindow;
     private QuickSearchWindow? _quickSearch;
+    private PulseWindow? _pulseWindow;
     private readonly Dictionary<string, CoinDetailWindow> _detailWindows = new(StringComparer.OrdinalIgnoreCase);
     private readonly CandleService _candles = new();
     private readonly MarketOverviewService _overview = new();
@@ -92,6 +93,9 @@ public partial class App : Application
         _vm.CoinDetailRequested += (_, symbol) => ShowCoinDetail(symbol);
         _vm.MarketRequested += (_, _) => ShowMarket();
         _vm.QuickSearchRequested += (_, _) => ToggleQuickSearch();
+        _vm.PulseRequested += (_, tab) => ShowPulse(tab);
+        _vm.Pulse.NotificationRequested += (title, body) =>
+            _tray?.ShowNotification(title, body, NotificationIcon.Info, sound: _vm.Alerts.AlertSound);
         _vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(AppViewModel.TrayIconText) or nameof(AppViewModel.TrayIconUp))
@@ -256,6 +260,22 @@ public partial class App : Application
         if (_marketWindow.WindowState == WindowState.Minimized)
             _marketWindow.WindowState = WindowState.Normal;
         _marketWindow.Activate();
+    }
+
+    private void ShowPulse(string tab)
+    {
+        if (_exiting)
+            return;
+        if (_pulseWindow is null)
+        {
+            _pulseWindow = new PulseWindow(_vm!.Pulse);
+            _pulseWindow.Closed += (_, _) => _pulseWindow = null;
+            _pulseWindow.Show();
+        }
+        _pulseWindow.SelectTab(tab);
+        if (_pulseWindow.WindowState == WindowState.Minimized)
+            _pulseWindow.WindowState = WindowState.Normal;
+        _pulseWindow.Activate();
     }
 
     /// <summary>The shortcut opens quick search, or closes it when it is already open.</summary>
@@ -424,6 +444,7 @@ public partial class App : Application
         _exiting = true;
         _settings?.SaveNow();
         _settingsWindow?.Close();
+        _pulseWindow?.Close();
         foreach (var widget in _windows.Keys.ToList())
             CloseWindowFor(widget);
         Shutdown();
