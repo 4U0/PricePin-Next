@@ -323,6 +323,51 @@
                     </DockPanel>
                 </Border>
 
+                <!-- Odds of the first pinned (or busiest) prediction market; click opens the odds tab. -->
+                <Border Margin="12,4,12,2" Padding="10,6" CornerRadius="10" Background="{DynamicResource HoverBrush}"
+                        ToolTip="{Binding App.Pulse.Odds.Summary.ToolTip}" Cursor="Hand">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding ShowOdds}" Value="True" />
+                                        <Condition Binding="{Binding App.Pulse.Odds.Summary.HasMarket}" Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Border.InputBindings>
+                        <MouseBinding MouseAction="LeftClick" Command="{Binding App.OpenPulseCommand}" CommandParameter="Odds" />
+                    </Border.InputBindings>
+                    <DockPanel>
+                        <TextBlock Text="&#xE7C1;" FontFamily="{StaticResource IconFont}" FontSize="11" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,0,8,0" />
+                        <TextBlock DockPanel.Dock="Right" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0" Typography.NumeralAlignment="Tabular">
+                            <Run Text="{Binding App.Pulse.Odds.Summary.ChanceText, Mode=OneWay}" FontWeight="SemiBold" />
+                            <Run Text="{Binding App.Pulse.Odds.Summary.ChangeText, Mode=OneWay}">
+                                <Run.Style>
+                                    <Style TargetType="Run">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding App.Pulse.Odds.Summary.IsUp}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource UpBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding App.Pulse.Odds.Summary.IsUp}" Value="False">
+                                                <Setter Property="Foreground" Value="{DynamicResource DownBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Run.Style>
+                            </Run>
+                        </TextBlock>
+                        <TextBlock Text="{Binding App.Pulse.Odds.Summary.Title}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                </Border>
+
                 <!-- Latest headline, changing every few seconds; click to read it. -->
                 <Border Margin="12,4,12,2" Padding="10,6" CornerRadius="10" Background="{DynamicResource HoverBrush}" Cursor="Hand"
                         ToolTip="{Binding CurrentHeadline.SourceLine}"

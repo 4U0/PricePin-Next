@@ -391,6 +391,7 @@
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowNews}" IsChecked="{Binding SelectedWidget.ShowNews}" />
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowFees}" IsChecked="{Binding SelectedWidget.ShowFees}" />
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowEvents}" IsChecked="{Binding SelectedWidget.ShowEvents}" />
+                                    <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowOdds}" IsChecked="{Binding SelectedWidget.ShowOdds}" />
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Common.Snap}" IsChecked="{Binding SelectedWidget.SnapToEdges}" />
                                     <TextBlock Style="{StaticResource Hint}" Text="{DynamicResource Common.SnapTip}" Margin="0,-2,0,6" />
                                 </StackPanel>

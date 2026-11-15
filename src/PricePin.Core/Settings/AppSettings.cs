@@ -104,6 +104,9 @@ public sealed class WidgetSettings
     /// <summary>Show a countdown to the next big market event in the widget.</summary>
     public bool ShowEvents { get; set; }
 
+    /// <summary>Show the odds of the first pinned (or busiest) prediction market in the widget.</summary>
+    public bool ShowOdds { get; set; }
+
     public void Normalize()
     {
         if (string.IsNullOrWhiteSpace(Id)) Id = Guid.NewGuid().ToString("N")[..8];
