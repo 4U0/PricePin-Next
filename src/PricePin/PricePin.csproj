@@ -24,6 +24,12 @@
     <ProjectReference Include="..\PricePin.Core\PricePin.Core.csproj" />
   </ItemGroup>
 
+  <!-- Release builds get the analytics key from CI (-p:AptabaseKey=...); local builds have none
+       and never send usage pings. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="AptabaseKey" Value="$(AptabaseKey)" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="H.NotifyIcon.Wpf" Version="2.4.1" />

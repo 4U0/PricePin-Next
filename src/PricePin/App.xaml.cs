@@ -94,6 +94,11 @@ public partial class App : Application
         _vm.MarketRequested += (_, _) => ShowMarket();
         _vm.QuickSearchRequested += (_, _) => ToggleQuickSearch();
         _vm.PulseRequested += (_, tab) => ShowPulse(tab);
+        _vm.UsagePromptRequested += (_, _) =>
+        {
+            if (!_exiting)
+                new UsagePromptWindow(_vm).Show();
+        };
         _vm.Pulse.NotificationRequested += (title, body) =>
             _tray?.ShowNotification(title, body, NotificationIcon.Info, sound: _vm.Alerts.AlertSound);
         _vm.PropertyChanged += (_, e) =>

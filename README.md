@@ -27,7 +27,7 @@ Pin your coins, follow your portfolio, and keep your workspace yours.
 
 | Keep the market close | Make it your own | Keep your data local |
 | :--- | :--- | :--- |
-| Streaming prices from Binance, Coinbase and Kraken, with automatic failover. | Floating cards or a scrolling ticker. Up to eight widgets, each with its own setup. | No account, API key or telemetry. Settings and holdings stay on your PC. |
+| Streaming prices from Binance, Coinbase and Kraken, with automatic failover. | Floating cards or a scrolling ticker. Up to eight widgets, each with its own setup. | No account or API key. Settings and holdings stay on your PC; only an anonymous daily usage count, which you can turn off. |
 
 ## Download
 
@@ -173,7 +173,9 @@ All four global shortcuts can be changed in *Settings → General*.
 
 ## Privacy
 
-PricePin has no account, no telemetry and no analytics. Market data comes from the public sources listed below; the app also checks GitHub for updates. Your coins, alerts and holdings are stored in a settings file on your PC and nowhere else.
+PricePin has no account and no tracking. Market data comes from the public sources listed below; the app also checks GitHub for updates. Your coins, alerts and holdings are stored in a settings file on your PC and nowhere else.
+
+**Usage count.** To know roughly how many people use PricePin, official releases send one anonymous message a day to [Aptabase](https://aptabase.com), a privacy-first analytics service that stores no IP addresses or device IDs. It holds only the PricePin version, the Windows version, the app's language and whether it's installed or portable. PricePin tells you about it the first time it runs, before anything is sent, and you can turn it off then or any time in **Settings → General**. Builds from source never send it. The code is in [`UsageReporter.cs`](src/PricePin.Core/Usage/UsageReporter.cs).
 
 ## Data sources
 

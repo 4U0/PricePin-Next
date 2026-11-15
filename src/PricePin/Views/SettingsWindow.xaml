@@ -172,6 +172,15 @@
                             </StackPanel>
                         </Border>
 
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="{DynamicResource Usage.Section}"
+                                   Visibility="{Binding App.UsageAvailable, Converter={StaticResource BoolToVisibility}}" />
+                        <Border Style="{StaticResource Card}" Visibility="{Binding App.UsageAvailable, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Usage.Toggle}" IsChecked="{Binding App.UsageStats}" />
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,6" Text="{DynamicResource Usage.Hint}" />
+                            </StackPanel>
+                        </Border>
+
                         <TextBlock Style="{StaticResource SectionTitle}" Text="{DynamicResource General.Updates}" />
                         <Border Style="{StaticResource Card}" DataContext="{Binding App.Updates}">
                             <StackPanel>
