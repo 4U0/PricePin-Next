@@ -7,7 +7,7 @@ using PricePin.Core.History;
 namespace PricePin.Core.Dex;
 
 /// <summary>
-/// Price history for DEX pools from GeckoTerminal's free public API (no key, about 10
+/// Price history for DEX pools from GeckoTerminal's free public API (no key, a few
 /// requests a minute), used for DEX tokens' sparklines and charts. Prices are in US dollars.
 /// </summary>
 public static class GeckoTerminalClient
@@ -41,9 +41,9 @@ public static class GeckoTerminalClient
         }
     }
 
-    // GeckoTerminal's free API allows about 10 calls a minute. Calls past that wait their turn
+    // GeckoTerminal's free API allows only a few calls a minute (5 is safe). Calls past that wait their turn
     // instead of failing, so a chart, a few sparklines and quick search all still load.
-    public const int CallsPerMinute = 10;
+    public const int CallsPerMinute = 5;
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static readonly Queue<DateTime> RecentCalls = new();
 
