@@ -24,6 +24,7 @@ and publishes one GitHub release containing:
 | --- | --- |
 | `PricePin-win-x64-Setup.exe`, `PricePin-win-arm64-Setup.exe` | Installer (per user, no admin) |
 | `PricePin-win-x64-Portable.zip`, `PricePin-win-arm64-Portable.zip` | Portable copy, doesn't self-update |
+| `PricePin.streamDeckPlugin` | Stream Deck plugin (one x64 build; double-click to install). Its version follows the release. |
 | `*.nupkg`, `releases.*.json`, `RELEASES-*`, `assets.*.json` | Update packages. Leave these in place: installed copies read them |
 
 A version with a suffix (`1.1.0-beta.1`) is published as a pre-release, which installed copies ignore.

@@ -80,6 +80,10 @@ jobs:
           }
           Get-ChildItem releases
 
+      - name: Build Stream Deck plugin
+        shell: pwsh
+        run: ./tools/pack-streamdeck.ps1 -Version $env:VERSION -Out streamdeck-out
+
       - name: Publish to GitHub Releases
         shell: pwsh
         env:
@@ -94,6 +98,9 @@ jobs:
               --publish --merge @pre
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+          # The Stream Deck plugin goes on the same release as an extra download.
+          gh release upload "v$env:VERSION" streamdeck-out/PricePin.streamDeckPlugin --clobber --repo "${{ github.repository }}"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   winget:
     # Sends the new version to the Windows Package Manager. Off until the first version has

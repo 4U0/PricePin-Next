@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\PricePin.Core\PricePin.Core.csproj" />
+    <ProjectReference Include="..\..\src\PricePin.StreamDeck\PricePin.StreamDeck.csproj" />
   </ItemGroup>
 
 </Project>

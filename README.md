@@ -76,8 +76,9 @@ All four global shortcuts can be changed in *Settings → General*.
 | **📌 Desktop widgets** | Choose floating cards or a scrolling ticker, tune opacity, and enable click-through. |
 | **⚡ Live markets** | Follow exchange prices and DEX tokens, with sparklines and five display currencies. |
 | **🔎 Search & charts** | Look up coins from anywhere, convert amounts, and explore charts from 1D to 1Y. |
-| **🔔 Alerts & portfolio** | Set price or percentage alerts, track holdings and profit/loss, and blur amounts for screen sharing. |
-| **📰 Beyond the price** | Follow crypto headlines, whale trades, liquidations, Bitcoin fees and Ethereum gas. |
+| **🔔 Alerts & portfolio** | Set price, fast-move, volume-spike and new-listing alerts, track holdings and profit/loss, and blur amounts for screen sharing. |
+| **📰 Beyond the price** | Follow crypto headlines, whale trades, liquidations, network fees, and a calendar of Fed, inflation and halving dates. |
+| **🎛️ Stream Deck** | Put live prices on your Elgato Stream Deck keys with the PricePin plugin. |
 | **🎨 Personal touches** | Pick dark, light or system themes, eight accent colours, three sizes, and English or Turkish. |
 
 **Explore the details**
@@ -136,11 +137,12 @@ All four global shortcuts can be changed in *Settings → General*.
 </details>
 
 <details>
-<summary><strong>News, whales and fees</strong></summary>
+<summary><strong>News, whales, fees and calendar</strong></summary>
 
 - **Crypto headlines** from CoinDesk, Cointelegraph, Decrypt, The Block and Bitcoin Magazine, each tagged with the coins it mentions. Mix them into a ticker bar or show one at a time under a list widget, and click one to read it. Filter to news about your own coins, and optionally get notified about news on coins you hold
 - **Whale and liquidation radar:** big spot trades on Binance (or Coinbase) and futures liquidations on Binance and Bybit as they happen, with last-hour totals of longs and shorts wiped out. Pick the sizes that count, and get notified about very large ones
 - **Network fees:** Bitcoin fees in sat/vB for the next block, 30 minutes, an hour or economy, and Ethereum gas in gwei, with what a payment costs in your currency. Show them in a widget, and get notified when gas or the Bitcoin fee falls below a level you choose
+- **Event calendar:** this week's high-impact economic releases, upcoming Fed rate decisions and US inflation (CPI) days, and a countdown to the next Bitcoin halving. Show the next event with a countdown in a widget, and get a reminder 15, 30 or 60 minutes before one starts
 
 </details>
 
@@ -149,6 +151,7 @@ All four global shortcuts can be changed in *Settings → General*.
 
 - Alerts when a coin goes **above or below a price**, or **rises or falls by a percentage** in 24h
 - Windows notifications with an optional sound, firing once or every time
+- **Smart alerts:** get notified when one of your coins moves 2–10% within 5 minutes to an hour, when it trades 3, 5 or 10 times its normal hourly volume, or when Binance, Coinbase, Kraken or Bybit lists a new coin
 - **Live price in the tray icon** for a coin you choose, green or red with the 24h move
 
 </details>
@@ -170,6 +173,12 @@ All four global shortcuts can be changed in *Settings → General*.
 - Automatic background updates, start with Windows, and a tray icon
 
 </details>
+
+## Stream Deck
+
+Download **[PricePin.streamDeckPlugin](https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin.streamDeckPlugin)** from the latest release and double-click it to install it in the Stream Deck app (version 6.4 or newer, on Windows). Then drag **PricePin → Coin price** onto a key and type the coin in its settings.
+
+Each key shows the coin's live price, its 24h change and a faint 24-hour chart. Press the key to switch between the 24h change and the 24h low and high. The plugin streams prices itself, with the same Binance, Coinbase and Kraken failover as the app, so it works whether or not PricePin is running.
 
 ## Privacy
 
@@ -197,6 +206,10 @@ PricePin has no account and no tracking. Market data comes from the public sourc
 | Binance, Coinbase, Bybit | Whale trades (Binance spot, or Coinbase where Binance is blocked) and liquidations (Binance and Bybit futures) for the radar |
 | [mempool.space](https://mempool.space) | Bitcoin fee rates |
 | Public Ethereum nodes ([PublicNode](https://ethereum-rpc.publicnode.com), dRPC, 1RPC, LlamaRPC) | Ethereum gas |
+| [Forex Factory](https://www.forexfactory.com/calendar) | This week's high-impact economic releases for the calendar |
+| [`data/events.json`](data/events.json) in this repository | Upcoming Fed decisions and US CPI days, from the [Federal Reserve](https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm) and [BLS](https://www.bls.gov/schedule/news_release/cpi.htm). The app downloads it from GitHub, so dates can be added without a new release. |
+| mempool.space | Block height and average block time for the halving countdown |
+| Binance, Coinbase, Kraken, Bybit | Market lists for new-listing alerts, and 15-minute candles for volume-spike alerts |
 
 All of these are public endpoints, so no account or API key is needed. To check which sources work from your network:
 
@@ -212,7 +225,7 @@ dotnet run --project tools/FeedProbe -- 15 BTC ETH SOL
 | --- | --- |
 | `%AppData%\PricePin\settings.json` | Your settings, alerts and holdings. Delete it to reset everything. |
 | `%AppData%\PricePin\crash.log` | Unexpected errors, if any |
-| `%LocalAppData%\PricePin` | Cached logos and coin lists |
+| `%LocalAppData%\PricePin` | Cached logos, coin lists and the coins each exchange lists |
 
 ## Build from source
 
@@ -241,8 +254,10 @@ dotnet publish src/PricePin -c Release -r win-x64 --self-contained `
 
 ```text
 src/PricePin          WPF app: windows, view models, controls, themes, strings
-src/PricePin.Core     Feeds, failover, alerts, portfolio, charts, news, radar, fees and settings (no UI)
-tests/                Unit tests for PricePin.Core and the translations
+src/PricePin.Core     Feeds, failover, alerts, portfolio, charts, news, radar, fees, calendar and settings (no UI)
+src/PricePin.StreamDeck  Stream Deck plugin: live prices on keys
+data/events.json      Known event dates the calendar downloads
+tests/                Unit tests for PricePin.Core, the Stream Deck plugin and the translations
 tools/FeedProbe       Console tool that checks which data sources work from your network
 docs/                 Release guide and images
 ```
@@ -288,6 +303,7 @@ Next up:
 - [x] Coin charts and market overview
 - [x] Any token by contract address, quick search and converter, 1h/7d change
 - [x] News headlines, whale and liquidation radar, network fees and fee alerts
+- [x] Event calendar, smart alerts and a Stream Deck plugin
 
 </details>
 

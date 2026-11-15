@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PricePin</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; padding: 8px 12px; background: #2D2D2D; color: #D8D8D8; font: 12px "Segoe UI", Arial, sans-serif; }
+    .row { display: flex; align-items: center; margin: 0 0 10px; }
+    label { width: 92px; flex: none; color: #969696; }
+    input, select { flex: 1; min-width: 0; height: 26px; box-sizing: border-box; padding: 0 8px; border: 1px solid #3D3D3D;
+                    border-radius: 3px; background: #3D3D3D; color: #D8D8D8; font: inherit; }
+    input:focus, select:focus { outline: none; border-color: #6F6F6F; }
+    .hint { margin: 2px 0 10px 92px; color: #7A7A7A; line-height: 1.4; }
+    a { color: #4A9EFF; cursor: pointer; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <label for="coin">Coin</label>
+    <input id="coin" list="coins" maxlength="15" spellcheck="false" autocomplete="off" placeholder="BTC">
+    <datalist id="coins">
+      <option value="BTC"><option value="ETH"><option value="SOL"><option value="XRP"><option value="BNB">
+      <option value="DOGE"><option value="ADA"><option value="TRX"><option value="AVAX"><option value="LINK">
+      <option value="TON"><option value="SUI"><option value="DOT"><option value="LTC"><option value="PEPE">
+    </datalist>
+  </div>
+  <div class="hint">The coin's symbol, as listed on Binance, Coinbase or Kraken.</div>
+
+  <div class="row">
+    <label for="quote">Currency</label>
+    <select id="quote">
+      <option value="USD">US dollar (USD)</option>
+      <option value="USDT">Tether (USDT)</option>
+      <option value="EUR">Euro (EUR)</option>
+      <option value="TRY">Turkish lira (TRY)</option>
+      <option value="GBP">British pound (GBP)</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <label for="show">Bottom line</label>
+    <select id="show">
+      <option value="change">24h change</option>
+      <option value="range">24h low and high</option>
+    </select>
+  </div>
+  <div class="hint">Pressing the key switches between the two.</div>
+
+  <div class="hint" style="margin-left:0">Prices stream live from Binance, Coinbase or Kraken, whichever works where you are.
+    <a id="home">PricePin on GitHub</a></div>
+
+  <script>
+    // Stream Deck calls this when the settings page opens.
+    let socket = null;
+    let uuid = null;
+
+    function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
+      uuid = inUuid;
+      let settings = {};
+      try { settings = JSON.parse(actionInfo).payload.settings || {}; } catch (e) { }
+      document.getElementById('coin').value = settings.coin || 'BTC';
+      document.getElementById('quote').value = settings.quote || 'USD';
+      document.getElementById('show').value = settings.show === 'range' ? 'range' : 'change';
+
+      socket = new WebSocket('ws://127.0.0.1:' + port);
+      socket.onopen = () => socket.send(JSON.stringify({ event: registerEvent, uuid: uuid }));
+      socket.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+        // Pressing the key changes "show"; keep this page in step.
+        if (data.event === 'didReceiveSettings' && data.payload && data.payload.settings) {
+          const s = data.payload.settings;
+          if (s.show) document.getElementById('show').value = s.show;
+        }
+      };
+    }
+
+    function save() {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      const coin = document.getElementById('coin').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      socket.send(JSON.stringify({
+        event: 'setSettings',
+        context: uuid,
+        payload: {
+          coin: coin || 'BTC',
+          quote: document.getElementById('quote').value,
+          show: document.getElementById('show').value
+        }
+      }));
+    }
+
+    let typing = null;
+    document.getElementById('coin').addEventListener('input', () => { clearTimeout(typing); typing = setTimeout(save, 500); });
+    document.getElementById('coin').addEventListener('change', save);
+    document.getElementById('quote').addEventListener('change', save);
+    document.getElementById('show').addEventListener('change', save);
+    document.getElementById('home').addEventListener('click', () => {
+      if (socket) socket.send(JSON.stringify({ event: 'openUrl', payload: { url: 'https://github.com/4U0/PricePin-Next' } }));
+    });
+  </script>
+</body>
+</html>

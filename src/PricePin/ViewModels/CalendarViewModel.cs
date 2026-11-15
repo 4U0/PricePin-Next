@@ -102,6 +102,7 @@ public sealed partial class CalendarViewModel : ObservableObject
         _app = app;
         _windowOpen = windowOpen;
         _allCountries = Settings.CalendarAllCountries;
+        _status = Loc.T("Calendar.Loading");
         RemindOptions = PulseSettings.RemindOptions
             .Select(m => new ChoiceOption(m.ToString(CultureInfo.InvariantCulture), () => RemindLabel(m), o => RemindMinutes = int.Parse(o.Value, CultureInfo.InvariantCulture))
             {

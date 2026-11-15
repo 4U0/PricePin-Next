@@ -2,6 +2,12 @@
 
 Each release's notes on GitHub come from its section here.
 
+## 1.7.0
+
+- **Event calendar.** A new **Calendar** tab in **News, whales, fees & calendar** lists the week's high-impact economic releases (with forecast and previous values), upcoming Fed rate decisions and US inflation (CPI) days, and a live countdown to the next Bitcoin halving. Times are shown in your time zone. US releases are shown by default because they move crypto most; switch on other countries if you want them. Turn on **Show next event** for a widget to keep a countdown to the next one in view, and choose a reminder 15, 30 or 60 minutes before events start.
+- **Smart alerts.** New in Settings → Alerts: get notified when one of your coins moves fast (2, 3, 5 or 10% within 5 minutes, 15 minutes or an hour), when it trades 3, 5 or 10 times its normal hourly volume, or when Binance, Coinbase, Kraken or Bybit starts trading a new coin. They watch the coins on your widgets and in your portfolio, and each event notifies you once.
+- **Stream Deck plugin.** Install `PricePin.streamDeckPlugin` from the release to put live prices on Elgato Stream Deck keys. Each key shows the price, the 24h change and a small 24-hour chart; press it to switch to the 24h low and high. It streams prices on its own, so PricePin doesn't need to be running.
+
 ## 1.6.0
 
 - **Anonymous usage count.** Once a day, PricePin sends one anonymous message so the project can see roughly how many people use it and on which versions of Windows. It holds only the PricePin version, the Windows version, the app's language and whether it's installed or portable, and goes to Aptabase, which stores no IP addresses or device IDs. Your coins, alerts, holdings and settings are never sent. PricePin shows a notice before the first one is sent, and you can turn it off there or any time in Settings → General.

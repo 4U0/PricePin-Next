@@ -9,6 +9,9 @@ using PricePin.Core.Market;
 using PricePin.Core.Fees;
 using PricePin.Core.News;
 using PricePin.Core.Radar;
+using PricePin.Core.Events;
+using PricePin.Core.Alerts;
+using PricePin.Core.Listings;
 
 var seconds = args.Length > 0 && int.TryParse(args[0], out var s) ? s : 12;
 var coins = args.Skip(1).DefaultIfEmpty("BTC").Concat(args.Length > 1 ? [] : ["ETH", "SOL"]).ToArray();
@@ -179,6 +182,38 @@ foreach (var rpc in FeeService.EthereumRpcUrls)
 {
     var (gas, gasError) = await FeeService.FetchEthereumAsync(rpc, CancellationToken.None);
     Console.WriteLine($"  {new Uri(rpc).Host,-28} {(gas is null ? $"FAILED ({gasError})" : $"base {gas.BaseFeeGwei} + tip {gas.PriorityFeeGwei} gwei")}");
+}
+
+Console.WriteLine("\nEvent calendar:");
+var (week, weekError) = await EventCalendarService.FetchWeekWithErrorAsync(CancellationToken.None);
+Console.WriteLine($"  Forex Factory   {(week is null ? $"FAILED ({weekError})" : $"{week.Count} high-impact events this week, {week.Count(e => e.Country == "USD")} for the US")}");
+foreach (var e in week?.Where(e => e.Country == "USD").Take(5) ?? [])
+    Console.WriteLine($"    {e.Time:ddd HH:mm}Z {e.Title} (forecast {e.Forecast ?? "-"}, previous {e.Previous ?? "-"})");
+var (curated, curatedError) = await EventCalendarService.FetchCuratedWithErrorAsync(CancellationToken.None);
+Console.WriteLine($"  events.json     {(curated is null ? $"FAILED ({curatedError}), built-in copy has {EventCalendarService.LoadBundled().Count}" : $"{curated.Count} known dates, next: {curated.FirstOrDefault(e => e.Time > DateTimeOffset.UtcNow)?.Title}")}");
+var (halving, halvingError) = await EventCalendarService.FetchHalvingWithErrorAsync(DateTimeOffset.UtcNow, CancellationToken.None);
+Console.WriteLine($"  halving         {(halving is null ? $"FAILED ({halvingError})" : $"block {halving.TipHeight:N0}, halving at {halving.HalvingHeight:N0} around {halving.Estimated:yyyy-MM-dd} (avg block {halving.AverageBlock.TotalMinutes:0.0} min)")}");
+
+Console.WriteLine("\nSmart alerts:");
+foreach (var (exchange, fetch) in ListingService.Exchanges)
+{
+    try
+    {
+        var listed = await fetch(CancellationToken.None);
+        Console.WriteLine($"  {exchange,-15} {(listed is null ? "FAILED (unexpected answer)" : $"{listed.Count} coins trading")}");
+    }
+    catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+    {
+        Console.WriteLine($"  {exchange,-15} FAILED ({ex.GetType().Name}: {ex.Message})");
+    }
+}
+var day = await new CandleService().GetAsync(new MarketSymbol("BTC", "USD"), ChartRange.Day);
+if (day is null)
+    Console.WriteLine("  volume check    FAILED (no 15-minute candles)");
+else
+{
+    var ratio = VolumeSpikes.Check("BTC", day.Candles, 0.0001m, DateTimeOffset.UtcNow);
+    Console.WriteLine($"  volume check    {day.Candles.Count} candles from {day.Source}, last hour is {(ratio is null ? "n/a" : $"{ratio.Ratio}x")} an average hour");
 }
 
 Console.WriteLine("\nWhale and liquidation streams (every trade counted, no size filter):");

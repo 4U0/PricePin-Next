@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Stream Deck plugin: live coin prices on Stream Deck keys. Stream Deck starts this exe and talks
+    to it over a local WebSocket. It streams prices itself with the same feeds as the app (Binance,
+    Coinbase, Kraken with failover), so it works whether or not the PricePin app is running.
+    The release workflow packs the publish folder into PricePin.streamDeckPlugin.
+  -->
+  <PropertyGroup>
+    <!-- WinExe: no console window when Stream Deck starts it. -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>PricePin.StreamDeck</AssemblyName>
+    <RootNamespace>PricePin.StreamDeck</RootNamespace>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PricePin.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PricePin.Core\PricePin.Core.csproj" />
+  </ItemGroup>
+
+  <!-- manifest.json, icons and the settings page sit next to the exe in the .sdPlugin folder. -->
+  <ItemGroup>
+    <None Include="Plugin\**\*" Link="%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+</Project>
