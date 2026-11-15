@@ -60,6 +60,23 @@
             </StackPanel>
         </DataTemplate>
 
+        <!-- Next market event: "US CPI in 2h 15m". -->
+        <DataTemplate DataType="{x:Type vm:NextEventViewModel}">
+            <StackPanel Orientation="Horizontal" Margin="0,0,18,0" VerticalAlignment="Center" ToolTip="{Binding ToolTip}">
+                <TextBlock Text="&#xE787;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding Title}" FontSize="12" Margin="7,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                <TextBlock x:Name="Countdown" Text="{Binding CountdownText}" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center"
+                           Typography.NumeralAlignment="Tabular" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <Ellipse Width="3" Height="3" Margin="18,0,0,0" Fill="{DynamicResource TextTertiaryBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsSoon}" Value="True">
+                    <Setter TargetName="Countdown" Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
         <!-- A headline: source badge and title; click opens the article. -->
         <DataTemplate DataType="{x:Type vm:HeadlineViewModel}">
             <StackPanel Orientation="Horizontal" Margin="0,0,18,0" VerticalAlignment="Center" Cursor="Hand"

@@ -35,6 +35,16 @@ public sealed class PulseSettings
     /// <summary>Notify when the fast Bitcoin fee falls to this many sat/vB or less. Null is off.</summary>
     public decimal? BtcFeeBelowSatVb { get; set; }
 
+    // ---- Calendar ----
+
+    /// <summary>Remind this many minutes before a big event starts. 0 is off.</summary>
+    public int CalendarRemindMinutes { get; set; }
+
+    /// <summary>Show high-impact releases from every economy, not just the US ones that move crypto most.</summary>
+    public bool CalendarAllCountries { get; set; }
+
+    public static IReadOnlyList<int> RemindOptions { get; } = [0, 15, 30, 60];
+
     public static IReadOnlyList<decimal> WhaleThresholds { get; } = [100_000m, 250_000m, 500_000m, 1_000_000m, 5_000_000m];
     public static IReadOnlyList<decimal> LiquidationThresholds { get; } = [10_000m, 50_000m, 100_000m, 500_000m, 1_000_000m];
     public static IReadOnlyList<decimal> NotifyThresholds { get; } = [1_000_000m, 5_000_000m, 10_000_000m, 25_000_000m];
@@ -46,6 +56,7 @@ public sealed class PulseSettings
         NotifyRadarUsd = Clamp(NotifyRadarUsd, 100_000m, 1_000_000_000m, 5_000_000m);
         if (EthGasBelowGwei is { } g && (g <= 0 || g > 10_000)) EthGasBelowGwei = null;
         if (BtcFeeBelowSatVb is { } b && (b <= 0 || b > 10_000)) BtcFeeBelowSatVb = null;
+        if (!RemindOptions.Contains(CalendarRemindMinutes)) CalendarRemindMinutes = 0;
     }
 
     private static decimal Clamp(decimal v, decimal min, decimal max, decimal fallback) =>

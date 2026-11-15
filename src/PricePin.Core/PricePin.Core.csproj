@@ -11,4 +11,9 @@
     <InternalsVisibleTo Include="FeedProbe" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Known event dates; the app downloads the newest copy from GitHub and falls back to this one. -->
+    <EmbeddedResource Include="..\..\data\events.json" LogicalName="PricePin.Core.Events.events.json" />
+  </ItemGroup>
+
 </Project>

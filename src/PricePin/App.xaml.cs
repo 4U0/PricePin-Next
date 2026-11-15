@@ -101,6 +101,8 @@ public partial class App : Application
         };
         _vm.Pulse.NotificationRequested += (title, body) =>
             _tray?.ShowNotification(title, body, NotificationIcon.Info, sound: _vm.Alerts.AlertSound);
+        _vm.SmartAlerts.NotificationRequested += (title, body) =>
+            _tray?.ShowNotification(title, body, NotificationIcon.Info, sound: _vm.Alerts.AlertSound);
         _vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(AppViewModel.TrayIconText) or nameof(AppViewModel.TrayIconUp))
