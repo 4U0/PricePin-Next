@@ -196,6 +196,15 @@ public sealed class AppSettings
     /// <summary>DEX tokens the user added, so their names, logos and pools are known offline.</summary>
     public List<DexToken> Tokens { get; set; } = [];
 
+    /// <summary>
+    /// Send the anonymous daily usage ping. It is on by default, but null means the user hasn't
+    /// seen the notice about it yet, and nothing is sent until they have.
+    /// </summary>
+    public bool? UsageStats { get; set; }
+
+    /// <summary>When the last usage ping was accepted, so only one goes out a day.</summary>
+    public DateTimeOffset? UsageLastSent { get; set; }
+
     /// <summary>News, whale and liquidation radar, and network fees.</summary>
     public PulseSettings Pulse { get; set; } = new();
 

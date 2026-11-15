@@ -377,4 +377,17 @@
     <sys:String x:Key="Fees.AlertBody">Şu an {0}. {1}</sys:String>
     <sys:String x:Key="Fees.Offline">Ücret kaynaklarına ulaşılamadı. Bir dakika içinde yeniden denenecek.</sys:String>
     <sys:String x:Key="Fees.Sources">Bitcoin ücretleri mempool.space'ten, Ethereum gas açık Ethereum düğümlerinden. Dakikada bir yenilenir.</sys:String>
+    <!-- v1.6: anonim kullanım sayımı (varsayılan açık, kapatılabilir) -->
+    <sys:String x:Key="Usage.Title">PricePin kullanıcılarını anonim olarak sayar</sys:String>
+    <sys:String x:Key="Usage.Body">PricePin ücretsizdir ve boş zamanlarda geliştiriliyor. Kabaca kaç kişinin kullandığını ve hangi Windows sürümlerinin olduğunu bilmek, neye öncelik verileceğine karar vermeye yardımcı olur. Bu yüzden PricePin günde bir kez anonim bir "çalışıyorum" mesajı gönderir.</sys:String>
+    <sys:String x:Key="Usage.WhatSent">GÖNDERİLENLER</sys:String>
+    <sys:String x:Key="Usage.Sent">PricePin sürümü, Windows sürümünüz, uygulamanın dili ve kurulu mu taşınabilir mi olduğu. Bilgiler, IP adresi veya cihaz kimliği saklamayan Aptabase'e gider.</sys:String>
+    <sys:String x:Key="Usage.WhatNot">ASLA GÖNDERİLMEYENLER</sys:String>
+    <sys:String x:Key="Usage.NotSent">Coinleriniz, alarmlarınız, varlıklarınız, ayarlarınız, adınız veya yazdığınız herhangi bir şey.</sys:String>
+    <sys:String x:Key="Usage.Later">Şimdi ya da istediğiniz zaman Ayarlar → Genel'den kapatabilirsiniz.</sys:String>
+    <sys:String x:Key="Usage.Yes">Tamam</sys:String>
+    <sys:String x:Key="Usage.No">Kapat</sys:String>
+    <sys:String x:Key="Usage.Section">KULLANIM İSTATİSTİKLERİ</sys:String>
+    <sys:String x:Key="Usage.Toggle">Günlük anonim kullanım sayımı gönder</sys:String>
+    <sys:String x:Key="Usage.Hint">Günde bir kez: PricePin sürümü, Windows sürümü, dil ve kurulum türü. Coinleriniz, alarmlarınız, varlıklarınız veya yazdıklarınız asla gönderilmez.</sys:String>
 </ResourceDictionary>

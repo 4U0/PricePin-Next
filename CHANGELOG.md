@@ -2,6 +2,11 @@
 
 Each release's notes on GitHub come from its section here.
 
+## 1.6.0
+
+- **Anonymous usage count.** Once a day, PricePin sends one anonymous message so the project can see roughly how many people use it and on which versions of Windows. It holds only the PricePin version, the Windows version, the app's language and whether it's installed or portable, and goes to Aptabase, which stores no IP addresses or device IDs. Your coins, alerts, holdings and settings are never sent. PricePin shows a notice before the first one is sent, and you can turn it off there or any time in Settings → General.
+- DEX token charts for 1 month and 1 year load again; requests to GeckoTerminal now wait their turn under its rate limit.
+
 ## 1.5.0
 
 - **News.** Open **News, whales & fees** from the widget or tray menu to read the latest headlines from CoinDesk, Cointelegraph, Decrypt, The Block and Bitcoin Magazine. Each one is tagged with the coins it mentions, and a click opens it in your browser. Turn on **Show headlines** for a widget to mix them into a ticker bar or show one at a time under a list. You can keep only news about your coins, and get a notification when there's news about a coin you hold. Headlines refresh every five minutes.

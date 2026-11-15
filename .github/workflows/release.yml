@@ -57,11 +57,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # Optional code signing, e.g. a SignPath or signtool command; {{file}} is the file to sign.
           SIGN_TEMPLATE: ${{ vars.VPK_SIGN_TEMPLATE }}
+          # Optional Aptabase app key for the anonymous daily usage count; without it the
+          # release never sends one and hides the setting.
+          APTABASE_KEY: ${{ secrets.APTABASE_APP_KEY }}
         run: |
           $repo = "${{ github.server_url }}/${{ github.repository }}"
           foreach ($rid in 'win-x64', 'win-arm64') {
             dotnet publish src/PricePin/PricePin.csproj -c Release -r $rid --self-contained `
-              -p:Version=$env:VERSION -p:DebugType=none -o "publish/$rid"
+              -p:Version=$env:VERSION -p:DebugType=none -p:AptabaseKey=$env:APTABASE_KEY -o "publish/$rid"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
             # Previous release, so small delta updates can be made. Missing on the first release.

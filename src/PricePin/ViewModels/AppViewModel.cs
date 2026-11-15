@@ -8,6 +8,7 @@ using PricePin.Core.Dex;
 using PricePin.Core.History;
 using PricePin.Core.Market;
 using PricePin.Core.Settings;
+using PricePin.Core.Usage;
 using PricePin.Services;
 
 namespace PricePin.ViewModels;
@@ -34,6 +35,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     private readonly DexPriceService _dex = new();
     private readonly Dictionary<string, int> _watched = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _lifetime = new();
+    private readonly UsageReporter _usage = new(UsageReporter.BuiltInKey(typeof(AppViewModel).Assembly));
     private FeedStatus _status = new(FeedState.Connecting, "—");
     private DateTimeOffset _lastTickAt;
 
@@ -78,6 +80,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _hotkeyToggleClickThrough = s.Hotkeys.ToggleClickThrough;
         _hotkeyTogglePrivacy = s.Hotkeys.TogglePrivacy;
         _hotkeyQuickSearch = s.Hotkeys.QuickSearch;
+        _usageStats = s.UsageStats != false;
 
         Widgets = new(s.Widgets.Select(w => new WidgetViewModel(this, w)));
         Alerts = new AlertsViewModel(this);
@@ -238,9 +241,74 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _ = Alerts.LoadLogosAsync();
         _ = Portfolio.LoadLogosAsync();
         Pulse.Start();
+        _ = UsageLoopAsync(_lifetime.Token);
     }
 
     public void Save() => _settings.ScheduleSave();
+
+    // ---- Anonymous usage count (on by default, with an off switch) ----------------------
+
+    /// <summary>False in builds without an analytics key, which then hide the setting.</summary>
+    public bool UsageAvailable => _usage.IsAvailable;
+
+    /// <summary>The anonymous daily "PricePin is running" ping is on.</summary>
+    [ObservableProperty]
+    private bool _usageStats;
+
+    partial void OnUsageStatsChanged(bool value)
+    {
+        // Changing the switch in Settings also counts as having seen what it does.
+        Settings.UsageStats = value;
+        Save();
+        if (value)
+            _ = SendUsageIfDueAsync();
+    }
+
+    /// <summary>Asks the app to show the one-time notice about the usage count.</summary>
+    public event EventHandler? UsagePromptRequested;
+
+    /// <summary>The user saw the notice: keep counting, or turn it off.</summary>
+    public void AnswerUsagePrompt(bool yes)
+    {
+        Settings.UsageStats = yes;
+        UsageStats = yes;
+        Save();
+    }
+
+    private async Task UsageLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            // Let the widgets settle first; nobody wants a question in their face at startup.
+            await Task.Delay(TimeSpan.FromSeconds(45), ct);
+            if (!_usage.IsAvailable)
+                return;
+            if (Settings.UsageStats is null)
+                UsagePromptRequested?.Invoke(this, EventArgs.Empty);
+            while (!ct.IsCancellationRequested)
+            {
+                await SendUsageIfDueAsync();
+                await Task.Delay(TimeSpan.FromHours(1), ct); // a PC left on for days still counts each day
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task SendUsageIfDueAsync()
+    {
+        if (Settings.UsageStats != true || !UsageReporter.IsDue(Settings.UsageLastSent, DateTimeOffset.UtcNow))
+            return;
+        var version = typeof(AppViewModel).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "0.0.0";
+        var arch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Arm64 ? "win-arm64" : "win-x64";
+        var channel = Updates is { IsInstalled: false } ? arch + "-portable" : arch;
+        if (await _usage.SendAsync(version, Environment.OSVersion.Version.ToString(), CultureInfo.CurrentUICulture.Name, channel, _lifetime.Token))
+        {
+            Settings.UsageLastSent = DateTimeOffset.UtcNow;
+            Save();
+        }
+    }
 
     /// <summary>Called by widgets when their coins change; merges quick edits into one reconnect.</summary>
     public void RequestFeedRestart()

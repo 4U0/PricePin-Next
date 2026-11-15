@@ -377,4 +377,17 @@
     <sys:String x:Key="Fees.AlertBody">Now {0}. {1}</sys:String>
     <sys:String x:Key="Fees.Offline">Couldn't reach the fee sources. Trying again in a minute.</sys:String>
     <sys:String x:Key="Fees.Sources">Bitcoin fees from mempool.space, Ethereum gas from public Ethereum nodes. Refreshed every minute.</sys:String>
+    <!-- v1.6: anonymous usage count (on by default, with an off switch) -->
+    <sys:String x:Key="Usage.Title">PricePin counts its users anonymously</sys:String>
+    <sys:String x:Key="Usage.Body">PricePin is free and made in spare time. Knowing roughly how many people use it, and which versions of Windows they have, helps decide what to work on. So once a day, PricePin sends one anonymous "I'm running" message.</sys:String>
+    <sys:String x:Key="Usage.WhatSent">WHAT'S SENT</sys:String>
+    <sys:String x:Key="Usage.Sent">The PricePin version, your Windows version, the app's language, and whether it's installed or portable. It goes to Aptabase, which doesn't store IP addresses or device IDs.</sys:String>
+    <sys:String x:Key="Usage.WhatNot">WHAT'S NEVER SENT</sys:String>
+    <sys:String x:Key="Usage.NotSent">Your coins, alerts, holdings, settings, name or anything you type.</sys:String>
+    <sys:String x:Key="Usage.Later">You can turn it off now, or any time in Settings → General.</sys:String>
+    <sys:String x:Key="Usage.Yes">OK</sys:String>
+    <sys:String x:Key="Usage.No">Turn it off</sys:String>
+    <sys:String x:Key="Usage.Section">USAGE STATISTICS</sys:String>
+    <sys:String x:Key="Usage.Toggle">Send an anonymous daily usage count</sys:String>
+    <sys:String x:Key="Usage.Hint">Once a day: the PricePin version, Windows version, language and install type. Never your coins, alerts, holdings or anything you type.</sys:String>
 </ResourceDictionary>
