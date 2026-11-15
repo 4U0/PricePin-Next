@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PricePin: live crypto prices on your Windows desktop</title>
   <meta name="description" content="PricePin is a free, open-source Windows widget for live crypto prices, charts, alerts, portfolio, news and prediction odds. No account, no API key.">
-  <meta name="theme-color" content="#0B1019">
+  <meta name="theme-color" content="#070B12">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" href="img/icon.png" type="image/png">
   <link rel="canonical" href="https://4u0.github.io/PricePin-Next/">
@@ -17,220 +17,379 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 
-  <header class="nav" id="top">
-    <div class="wrap nav-row">
-      <a class="brand" href="#top" aria-label="PricePin">
-        <img src="img/icon.png" alt="" width="28" height="28">
+  <!-- Moving light behind everything -->
+  <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <header class="nav-shell">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="#top" aria-label="PricePin home">
+        <img src="img/icon.png" alt="" width="26" height="26">
         <span>PricePin</span>
       </a>
-      <nav class="links" aria-label="Main">
+      <div class="links">
         <a href="#features" data-i18n="nav.features">Features</a>
+        <a href="#customize" data-i18n="nav.customize">Customize</a>
         <a href="#download" data-i18n="nav.download">Download</a>
         <a href="#faq" data-i18n="nav.faq">FAQ</a>
-        <a href="https://github.com/4U0/PricePin-Next" rel="noopener">GitHub</a>
-      </nav>
-      <div class="nav-actions">
-        <button class="lang" id="lang" type="button" aria-label="Türkçe">TR</button>
-        <a class="btn btn-small" href="#download" data-i18n="nav.get">Get PricePin</a>
       </div>
-    </div>
+      <div class="nav-actions">
+        <a class="gh" href="https://github.com/4U0/PricePin-Next" rel="noopener" aria-label="PricePin on GitHub">
+          <svg viewBox="0 0 24 24" class="fill" aria-hidden="true"><path d="M12 2a10 10 0 00-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.2-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 015 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.8-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0012 2z"/></svg>
+          <span class="stars" id="stars" hidden></span>
+        </a>
+        <button class="lang" id="lang" type="button">TR</button>
+        <a class="btn btn-primary btn-sm" href="#download" data-i18n="nav.get">Download</a>
+      </div>
+    </nav>
   </header>
 
   <main id="main">
-    <!-- Hero -->
-    <section class="hero">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow"><span class="dot"></span><span data-i18n="hero.eyebrow">Free and open source for Windows 10 and 11</span></p>
-          <h1 data-i18n="hero.title">Your market, always in view.</h1>
-          <p class="lead" data-i18n="hero.lead">Live crypto prices, charts and alerts in a desktop widget you can shape any way you like. No account, no API key, nothing to sign up for.</p>
-          <div class="cta">
-            <a class="btn btn-primary" id="download-main" href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin-win-x64-Setup.exe">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
-              <span data-i18n="hero.download">Download for Windows</span>
-            </a>
-            <a class="btn btn-ghost" href="https://github.com/4U0/PricePin-Next" rel="noopener">
-              <svg viewBox="0 0 24 24" aria-hidden="true" class="fill"><path d="M12 2a10 10 0 00-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.2-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 015 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.8-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0012 2z"/></svg>
-              <span data-i18n="hero.source">View the source</span>
-            </a>
-          </div>
-          <p class="fine"><span id="version-line" data-i18n="hero.version">x64 and ARM64 · English and Türkçe · MIT license</span></p>
+    <!-- ================= Hero ================= -->
+    <section class="hero" id="top">
+      <div class="wrap hero-copy">
+        <a class="pill reveal" href="https://github.com/4U0/PricePin-Next/releases/latest" rel="noopener">
+          <span class="pill-tag" data-i18n="hero.new">New</span>
+          <span id="pill-text" data-i18n="hero.pill">Prediction market odds from Polymarket and Kalshi</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+        <h1 class="reveal"><span data-i18n="hero.t1">Your market,</span><br><span class="grad" data-i18n="hero.t2">always in view.</span></h1>
+        <p class="lead reveal" data-i18n="hero.lead">Live crypto prices, charts and alerts in a desktop widget you can shape any way you like. Free, open source, and no account needed.</p>
+        <div class="cta reveal">
+          <a class="btn btn-primary btn-lg" id="download-hero" href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin-win-x64-Setup.exe">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5l7.5-1v7H3zM12 4.3L21 3v8.5h-9zM3 12.5h7.5v7L3 18.5zM12 12.5h9V21l-9-1.3z" class="win"/></svg>
+            <span data-i18n="hero.download">Download for Windows</span>
+          </a>
+          <a class="btn btn-glass btn-lg" href="#features">
+            <span data-i18n="hero.tour">See what it does</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0l-6-6m6 6l6-6"/></svg>
+          </a>
         </div>
+        <ul class="trust reveal">
+          <li><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span data-i18n="trust.1">Free and MIT licensed</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span data-i18n="trust.2">No account or API key</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span data-i18n="trust.3">Windows 10 and 11, x64 and ARM64</span></li>
+        </ul>
+      </div>
 
-        <!-- A widget, drawn in HTML, with live prices when the browser can reach Coinbase -->
-        <div class="hero-art" aria-label="A PricePin widget showing live prices" role="img">
-          <div class="glow" aria-hidden="true"></div>
-          <div class="widget" id="widget">
-            <div class="widget-head">
-              <span class="widget-title"><img src="img/icon.png" alt="" width="16" height="16"> PricePin</span>
-              <span class="live" id="live-badge"><span class="pulse"></span><span id="live-text" data-i18n="widget.sample">Sample</span></span>
+      <!-- A Windows desktop with PricePin running, drawn in HTML. Prices are live when Coinbase can be reached. -->
+      <div class="wrap stage-wrap reveal">
+        <div class="stage" id="stage" role="img" aria-label="A Windows desktop with a PricePin ticker bar, a price widget, a chart window and a notification">
+          <div class="screen">
+            <div class="wallpaper" aria-hidden="true"></div>
+
+            <!-- Docked ticker bar -->
+            <div class="bar">
+              <div class="bar-track" id="bar-track"></div>
             </div>
-            <div class="widget-cols"><span data-i18n="widget.coin">COIN</span><span>24H</span><span data-i18n="widget.price">PRICE</span></div>
-            <ul class="rows" id="rows"></ul>
-          </div>
-          <div class="toast" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg>
-            <div><strong data-i18n="toast.title">SOL moved 5% in 15 minutes</strong><span data-i18n="toast.body">Smart alert · just now</span></div>
+
+            <!-- Chart window -->
+            <div class="win chart-win">
+              <div class="win-head">
+                <span class="coin-id"><img src="img/coins/btc.png" alt="" width="20" height="20"><b>Bitcoin</b><small>BTC</small></span>
+                <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              </div>
+              <div class="chart-top">
+                <div><b class="big" id="chart-price">$65,240</b><span class="chg up" id="chart-change">+1.29%</span></div>
+                <div class="tabs" id="chart-tabs">
+                  <button type="button" data-range="day" class="on">1D</button>
+                  <button type="button" data-range="week">1W</button>
+                  <button type="button" data-range="month">1M</button>
+                </div>
+              </div>
+              <svg class="chart" id="hero-chart" viewBox="0 0 400 150" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div class="chart-foot"><span data-i18n="chart.alert">Alert at</span> <b>$68,000</b><span class="sep"></span><span data-i18n="chart.hold">You hold</span> <b class="blurable">0.42 BTC</b></div>
+            </div>
+
+            <!-- Price widget -->
+            <div class="win widget" id="hero-widget">
+              <div class="w-head">
+                <span class="w-title"><img src="img/icon.png" alt="" width="15" height="15">PricePin</span>
+                <span class="live" id="live-badge"><span class="pulse"></span><span id="live-text" data-i18n="widget.sample">Sample</span></span>
+              </div>
+              <ul class="rows" id="rows"></ul>
+            </div>
+
+            <!-- Notification -->
+            <div class="toast" id="toast" aria-live="off">
+              <img src="img/icon.png" alt="" width="18" height="18">
+              <div><strong id="toast-title">BTC is above $65,000</strong><span id="toast-body">Price alert · PricePin</span></div>
+            </div>
+
+            <!-- Taskbar -->
+            <div class="taskbar" aria-hidden="true">
+              <div class="tb-center">
+                <span class="start"><i></i><i></i><i></i><i></i></span>
+                <span class="tb-search"></span>
+                <span class="tb-app"></span><span class="tb-app"></span><span class="tb-app active"></span>
+              </div>
+              <div class="tray">
+                <span class="tray-price" id="tray-price">65k</span>
+                <span class="clock" id="clock">02:19</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Ticker strip -->
-    <div class="ticker" aria-hidden="true">
-      <div class="ticker-track" id="ticker"></div>
-    </div>
-
-    <!-- Promise -->
-    <section class="wrap promise">
-      <div class="promise-item">
-        <h3 data-i18n="p1.title">Prices the moment they change</h3>
-        <p data-i18n="p1.body">Streams from Binance, Coinbase and Kraken, and switches by itself if one is blocked where you live.</p>
+    <!-- ================= Sources strip ================= -->
+    <section class="wrap strip reveal">
+      <p data-i18n="strip.lead">Prices stream from the biggest exchanges, with automatic failover</p>
+      <div class="logos">
+        <span>Binance</span><span>Coinbase</span><span>Kraken</span><span>DexScreener</span><span>Polymarket</span><span>Kalshi</span>
       </div>
-      <div class="promise-item">
-        <h3 data-i18n="p2.title">Made to fit your desk</h3>
-        <p data-i18n="p2.body">Floating cards or a ticker bar, up to eight widgets, any opacity, always on top or click-through.</p>
-      </div>
-      <div class="promise-item">
-        <h3 data-i18n="p3.title">Your data stays yours</h3>
-        <p data-i18n="p3.body">No account or key. Coins, alerts and holdings are saved on your PC and never sent anywhere.</p>
+      <div class="stats">
+        <div><b data-count="8">8</b><span data-i18n="stat.1">widgets at once</span></div>
+        <div><b data-count="5">5</b><span data-i18n="stat.2">display currencies</span></div>
+        <div><b>∞</b><span data-i18n="stat.3">coins and DEX tokens</span></div>
+        <div><b data-count="0">0</b><span data-i18n="stat.4">accounts to create</span></div>
       </div>
     </section>
 
-    <!-- Features -->
+    <!-- ================= Bento features ================= -->
     <section class="section" id="features">
       <div class="wrap">
-        <p class="kicker" data-i18n="f.kicker">Features</p>
-        <h2 data-i18n="f.title">Everything you check, in one glance</h2>
-        <div class="grid">
-          <article class="card">
-            <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h6M7 13h10M7 17h4"/></svg></div>
-            <h3 data-i18n="f1.t">Widgets and ticker bar</h3>
-            <p data-i18n="f1.b">Pin cards anywhere or dock a scrolling bar to the edge of the screen. Snap, lock, resize and theme each one.</p>
+        <div class="head reveal">
+          <p class="kicker" data-i18n="f.kicker">Features</p>
+          <h2 data-i18n="f.title">Everything you check, in one glance</h2>
+          <p class="sub" data-i18n="f.sub">A widget is only the start. PricePin watches the market for you and tells you when something happens.</p>
+        </div>
+
+        <div class="bento">
+          <!-- Alerts -->
+          <article class="tile t-alerts reveal">
+            <div class="demo stack" aria-hidden="true">
+              <div class="note-card n1"><i class="ic up"></i><div><b data-i18n="al.1t">SOL moved +5.2% in 15 min</b><span data-i18n="al.1b">Fast move</span></div></div>
+              <div class="note-card n2"><i class="ic warn"></i><div><b data-i18n="al.2t">PEPE volume 6× normal</b><span data-i18n="al.2b">Volume spike</span></div></div>
+              <div class="note-card n3"><i class="ic new"></i><div><b data-i18n="al.3t">Coinbase listed a new coin</b><span data-i18n="al.3b">New listing</span></div></div>
+            </div>
+            <h3 data-i18n="f.alerts.t">Alerts that matter</h3>
+            <p data-i18n="f.alerts.b">Price and percent alerts, plus smart ones for fast moves, volume spikes and brand-new listings.</p>
           </article>
-          <article class="card">
-            <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-8M15 8h5v5"/></svg></div>
-            <h3 data-i18n="f2.t">Any coin, any token</h3>
-            <p data-i18n="f2.b">Every exchange coin, plus DEX tokens on Solana, Base, BNB Chain and dozens more, by name or contract address.</p>
+
+          <!-- Charts -->
+          <article class="tile t-charts reveal">
+            <div class="demo chart-demo" aria-hidden="true">
+              <div class="cd-top"><span><img src="img/coins/eth.png" alt="" width="18" height="18"> ETH</span><b id="eth-price">$1,812</b></div>
+              <svg id="eth-chart" viewBox="0 0 400 120" preserveAspectRatio="none"></svg>
+              <div class="cd-axis"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span data-i18n="now">now</span></div>
+            </div>
+            <h3 data-i18n="f.charts.t">Charts from one day to one year</h3>
+            <p data-i18n="f.charts.b">Double-click any coin for its chart, with your alerts and holdings drawn right on it.</p>
           </article>
-          <article class="card">
-            <div class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></div>
-            <h3 data-i18n="f3.t">Charts and quick search</h3>
-            <p data-i18n="f3.b">Press Ctrl+Alt+K from anywhere to look up a coin, convert amounts and open charts from one day to one year.</p>
+
+          <!-- Portfolio & privacy -->
+          <article class="tile t-portfolio reveal">
+            <div class="demo port" aria-hidden="false">
+              <div class="port-head">
+                <div><span data-i18n="pf.total">Portfolio</span><b class="blurable">$12,480.55</b><em class="up">+$342.10 (2.8%)</em></div>
+                <button type="button" class="switch" id="privacy" role="switch" aria-checked="false"><span></span><b data-i18n="pf.privacy">Privacy</b></button>
+              </div>
+              <ul class="holdings">
+                <li><img src="img/coins/btc.png" alt="" width="20" height="20"><span>BTC</span><b class="blurable">0.12</b><em class="blurable">$7,829</em></li>
+                <li><img src="img/coins/eth.png" alt="" width="20" height="20"><span>ETH</span><b class="blurable">1.85</b><em class="blurable">$3,353</em></li>
+                <li><img src="img/coins/sol.png" alt="" width="20" height="20"><span>SOL</span><b class="blurable">13.2</b><em class="blurable">$1,298</em></li>
+              </ul>
+            </div>
+            <h3 data-i18n="f.port.t">Portfolio, with a privacy switch</h3>
+            <p data-i18n="f.port.b">Track holdings and profit. One shortcut blurs every amount before you share your screen. Try it.</p>
           </article>
-          <article class="card">
-            <div class="icon"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg></div>
-            <h3 data-i18n="f4.t">Alerts that matter</h3>
-            <p data-i18n="f4.b">Price and percent alerts, plus smart ones for fast moves, volume spikes and brand-new exchange listings.</p>
+
+          <!-- Radar -->
+          <article class="tile t-radar reveal">
+            <div class="demo feed" aria-hidden="true">
+              <div class="feed-track" id="feed"></div>
+            </div>
+            <h3 data-i18n="f.radar.t">News, whales and liquidations</h3>
+            <p data-i18n="f.radar.b">Headlines tagged by coin, big trades and liquidations the moment they happen, and live network fees.</p>
           </article>
-          <article class="card">
-            <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg></div>
-            <h3 data-i18n="f5.t">Portfolio and privacy</h3>
-            <p data-i18n="f5.b">Track holdings and profit, then blur every amount with one shortcut before you share your screen.</p>
+
+          <!-- Calendar -->
+          <article class="tile t-cal reveal">
+            <div class="demo cal" aria-hidden="true">
+              <span class="cal-label" data-i18n="cal.next">Next Fed decision</span>
+              <div class="countdown" id="countdown"><div><b>--</b><span data-i18n="cal.d">days</span></div><div><b>--</b><span data-i18n="cal.h">hrs</span></div><div><b>--</b><span data-i18n="cal.m">min</span></div><div><b>--</b><span data-i18n="cal.s">sec</span></div></div>
+              <span class="cal-date" id="cal-date"></span>
+            </div>
+            <h3 data-i18n="f.cal.t">Event calendar</h3>
+            <p data-i18n="f.cal.b">Fed decisions, inflation days and the halving, with countdowns and reminders.</p>
           </article>
-          <article class="card">
-            <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/></svg></div>
-            <h3 data-i18n="f6.t">News, whales and fees</h3>
-            <p data-i18n="f6.b">Headlines tagged by coin, big trades and liquidations as they happen, and Bitcoin and Ethereum fees.</p>
+
+          <!-- Odds -->
+          <article class="tile t-odds reveal">
+            <div class="demo odds" aria-hidden="true">
+              <p data-i18n="odds.q">How high will Bitcoin get this year?</p>
+              <div class="odd"><span>↑ $80,000</span><i style="--w:34%"></i><b>34%</b></div>
+              <div class="odd"><span>↑ $90,000</span><i style="--w:18%"></i><b>18%</b></div>
+              <div class="odd"><span>↑ $100,000</span><i style="--w:9%"></i><b>9%</b></div>
+            </div>
+            <h3 data-i18n="f.odds.t">Prediction odds</h3>
+            <p data-i18n="f.odds.b">What Polymarket and Kalshi traders expect, with alerts when a market swings.</p>
           </article>
-          <article class="card">
-            <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>
-            <h3 data-i18n="f7.t">Event calendar and odds</h3>
-            <p data-i18n="f7.b">Fed decisions, inflation days and the halving countdown, plus what Polymarket and Kalshi traders expect.</p>
+
+          <!-- Stream Deck -->
+          <article class="tile t-deck reveal">
+            <div class="demo deck" aria-hidden="true" id="deck"></div>
+            <h3 data-i18n="f.deck.t">Stream Deck plugin</h3>
+            <p data-i18n="f.deck.b">Live prices and charts on your Elgato Stream Deck keys.</p>
           </article>
-          <article class="card">
-            <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></div>
-            <h3 data-i18n="f8.t">Stream Deck plugin</h3>
-            <p data-i18n="f8.b">Put live prices and charts on Elgato Stream Deck keys. Press a key to flip between the change and the day's range.</p>
+          <!-- Search -->
+          <article class="tile t-search reveal">
+            <div class="demo search" aria-hidden="true">
+              <div class="kbd-row"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>K</kbd></div>
+              <div class="search-box"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span id="typed"></span><i class="caret"></i></div>
+              <div class="search-result" id="search-result"></div>
+            </div>
+            <h3 data-i18n="f.search.t">Quick search and converter</h3>
+            <p data-i18n="f.search.b">Look up any coin or DEX token from anywhere, and convert amounts both ways.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <!-- Download -->
-    <section class="section download" id="download">
+    <!-- ================= Customizer ================= -->
+    <section class="section" id="customize">
       <div class="wrap">
-        <p class="kicker" data-i18n="d.kicker">Download</p>
-        <h2 data-i18n="d.title">Get PricePin</h2>
-        <p class="sub"><span data-i18n="d.sub">Free, with automatic updates. No admin rights needed.</span> <span class="tag" id="version-tag" hidden></span></p>
-        <div class="dl-grid">
-          <a class="dl dl-main" href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin-win-x64-Setup.exe">
-            <strong data-i18n="d.x64">Windows installer</strong>
-            <span data-i18n="d.x64b">For most Intel and AMD PCs</span>
-            <em>PricePin-win-x64-Setup.exe</em>
-          </a>
-          <a class="dl" href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin-win-arm64-Setup.exe">
-            <strong data-i18n="d.arm">ARM64 installer</strong>
-            <span data-i18n="d.armb">For Snapdragon and other ARM laptops</span>
-            <em>PricePin-win-arm64-Setup.exe</em>
-          </a>
-          <a class="dl" href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin-win-x64-Portable.zip">
-            <strong data-i18n="d.port">Portable</strong>
-            <span data-i18n="d.portb">No install: unzip and run. Updates by hand.</span>
-            <em>PricePin-win-x64-Portable.zip</em>
-          </a>
-          <a class="dl" href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin.streamDeckPlugin">
-            <strong data-i18n="d.sd">Stream Deck plugin</strong>
-            <span data-i18n="d.sdb">Double-click to add it to the Stream Deck app</span>
-            <em>PricePin.streamDeckPlugin</em>
-          </a>
+        <div class="head reveal">
+          <p class="kicker" data-i18n="c.kicker">Make it yours</p>
+          <h2 data-i18n="c.title">Shape it to your desk</h2>
+          <p class="sub" data-i18n="c.sub">Floating cards or a ticker bar, eight accent colours, three sizes, any opacity. Try it here.</p>
         </div>
-        <div class="note">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
-          <p data-i18n="d.note">The installer isn't code-signed yet, so Windows SmartScreen may warn the first time you run it. Click <b>More info</b>, then <b>Run anyway</b>. The full source is on GitHub, and every release is built by GitHub Actions.</p>
+        <div class="custom reveal">
+          <div class="controls">
+            <div class="ctl">
+              <label data-i18n="c.layout">Layout</label>
+              <div class="seg" id="seg-layout">
+                <button type="button" data-v="list" class="on" data-i18n="c.list">Cards</button>
+                <button type="button" data-v="bar" data-i18n="c.bar">Ticker bar</button>
+              </div>
+            </div>
+            <div class="ctl">
+              <label data-i18n="c.accent">Accent</label>
+              <div class="swatches" id="swatches"></div>
+            </div>
+            <div class="ctl">
+              <label data-i18n="c.size">Size</label>
+              <div class="seg" id="seg-size">
+                <button type="button" data-v="0.88" data-i18n="c.s">Small</button>
+                <button type="button" data-v="1" class="on" data-i18n="c.m">Medium</button>
+                <button type="button" data-v="1.12" data-i18n="c.l">Large</button>
+              </div>
+            </div>
+            <div class="ctl">
+              <label data-i18n="c.theme">Theme</label>
+              <div class="seg" id="seg-theme">
+                <button type="button" data-v="dark" class="on" data-i18n="c.dark">Dark</button>
+                <button type="button" data-v="light" data-i18n="c.light">Light</button>
+              </div>
+            </div>
+            <div class="ctl">
+              <label for="opacity"><span data-i18n="c.opacity">Opacity</span> <output id="opacity-out">95%</output></label>
+              <input type="range" id="opacity" min="40" max="100" value="95">
+            </div>
+          </div>
+          <div class="preview" id="preview">
+            <div class="pv-wall" aria-hidden="true"></div>
+            <div class="pv-item" id="pv-item"></div>
+          </div>
         </div>
-        <p class="more"><a href="https://github.com/4U0/PricePin-Next/releases" data-i18n="d.all">All releases and what's new</a> · <a href="https://github.com/4U0/PricePin-Next/blob/main/CHANGELOG.md" data-i18n="d.changelog">Changelog</a></p>
       </div>
     </section>
 
-    <!-- FAQ -->
-    <section class="section" id="faq">
-      <div class="wrap narrow">
-        <p class="kicker" data-i18n="q.kicker">Questions</p>
-        <h2 data-i18n="q.title">Good to know</h2>
-        <details>
-          <summary data-i18n="q1.q">Is PricePin really free?</summary>
-          <p data-i18n="q1.a">Yes. It's open source under the MIT license, with no ads, no trial and no paid tier.</p>
-        </details>
-        <details>
-          <summary data-i18n="q2.q">Do I need an exchange account or API key?</summary>
-          <p data-i18n="q2.a">No. PricePin reads public market data only. It never asks for keys, passwords or wallets, and it can't trade.</p>
-        </details>
-        <details>
-          <summary data-i18n="q3.q">Will it work in my country?</summary>
-          <p data-i18n="q3.a">Most likely. If an exchange is blocked where you are, PricePin switches to another one by itself. You can also pick the source in Settings.</p>
-        </details>
-        <details>
-          <summary data-i18n="q4.q">What does it send over the internet?</summary>
-          <p data-i18n="q4.a">It downloads prices, charts and news from public sources. Once a day it sends one anonymous count with the app and Windows version, which you can turn off. Your coins, alerts and holdings never leave your PC.</p>
-        </details>
-        <details>
-          <summary data-i18n="q5.q">Is there a Mac or Linux version?</summary>
-          <p data-i18n="q5.a">Not yet. PricePin is built for Windows 10 and 11, on both x64 and ARM64.</p>
-        </details>
-        <details>
-          <summary data-i18n="q6.q">How do I uninstall it?</summary>
-          <p data-i18n="q6.a">Remove it from Settings, then Apps, like any other app. Your settings stay in %AppData%\PricePin in case you come back.</p>
-        </details>
+    <!-- ================= Privacy band ================= -->
+    <section class="wrap band reveal">
+      <div class="band-icon"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <div>
+        <h3 data-i18n="b.title">Your data never leaves your PC</h3>
+        <p data-i18n="b.body">No sign-up, no keys, no wallet access. Coins, alerts and holdings are saved locally. The only thing PricePin sends is one anonymous daily count, and you can turn that off.</p>
       </div>
+    </section>
+
+    <!-- ================= Download ================= -->
+    <section class="section" id="download">
+      <div class="wrap">
+        <div class="head reveal">
+          <p class="kicker" data-i18n="d.kicker">Download</p>
+          <h2 data-i18n="d.title">Up and running in a minute</h2>
+        </div>
+        <div class="dl reveal">
+          <div class="dl-main">
+            <div class="dl-ver"><img src="img/icon.png" alt="" width="44" height="44"><div><b>PricePin</b><span id="version-line" data-i18n="d.latest">Latest release</span></div></div>
+            <a class="btn btn-primary btn-lg" id="download-main" href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin-win-x64-Setup.exe">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
+              <span id="download-main-text" data-i18n="d.x64">Download for Windows (x64)</span>
+            </a>
+            <ol class="steps">
+              <li><b>1</b><span data-i18n="d.s1">Run the installer. No admin rights needed.</span></li>
+              <li><b>2</b><span data-i18n="d.s2">A widget with the top coins appears.</span></li>
+              <li><b>3</b><span data-i18n="d.s3">Right-click it to add coins and change the look.</span></li>
+            </ol>
+          </div>
+          <div class="dl-list">
+            <a href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin-win-arm64-Setup.exe" id="dl-other">
+              <div><b data-i18n="d.arm">ARM64 installer</b><span data-i18n="d.armb">Snapdragon and other ARM laptops</span></div><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
+            </a>
+            <a href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin-win-x64-Portable.zip">
+              <div><b data-i18n="d.port">Portable (x64)</b><span data-i18n="d.portb">No install, unzip and run</span></div><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
+            </a>
+            <a href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin-win-arm64-Portable.zip">
+              <div><b data-i18n="d.portarm">Portable (ARM64)</b><span data-i18n="d.portb">No install, unzip and run</span></div><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
+            </a>
+            <a href="https://github.com/4U0/PricePin-Next/releases/latest/download/PricePin.streamDeckPlugin">
+              <div><b data-i18n="d.sd">Stream Deck plugin</b><span data-i18n="d.sdb">Double-click to install</span></div><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
+            </a>
+          </div>
+        </div>
+        <div class="note reveal">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+          <p data-i18n="d.note">The installer isn't code-signed yet, so Windows SmartScreen may warn the first time. Click <b>More info</b>, then <b>Run anyway</b>. Every release is built in the open by GitHub Actions.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FAQ ================= -->
+    <section class="section" id="faq">
+      <div class="wrap faq-grid">
+        <div class="head reveal">
+          <p class="kicker" data-i18n="q.kicker">Questions</p>
+          <h2 data-i18n="q.title">Good to know</h2>
+          <p class="sub"><span data-i18n="q.more">Something else?</span> <a href="https://github.com/4U0/PricePin-Next/issues" rel="noopener" data-i18n="q.ask">Ask on GitHub</a></p>
+        </div>
+        <div class="faq reveal">
+          <details><summary data-i18n="q1.q">Is PricePin really free?</summary><p data-i18n="q1.a">Yes. It's open source under the MIT license, with no ads, no trial and no paid tier.</p></details>
+          <details><summary data-i18n="q2.q">Do I need an exchange account or API key?</summary><p data-i18n="q2.a">No. PricePin reads public market data only. It never asks for keys, passwords or wallets, and it can't trade.</p></details>
+          <details><summary data-i18n="q3.q">Will it work in my country?</summary><p data-i18n="q3.a">Most likely. If an exchange is blocked where you are, PricePin switches to another one by itself. You can also pick the source in Settings.</p></details>
+          <details><summary data-i18n="q4.q">What does it send over the internet?</summary><p data-i18n="q4.a">It downloads prices, charts and news from public sources. Once a day it sends one anonymous count with the app and Windows version, which you can turn off. Your coins, alerts and holdings never leave your PC.</p></details>
+          <details><summary data-i18n="q5.q">Is there a Mac or Linux version?</summary><p data-i18n="q5.a">Not yet. PricePin is built for Windows 10 and 11, on both x64 and ARM64.</p></details>
+          <details><summary data-i18n="q6.q">How do updates work?</summary><p data-i18n="q6.a">The installed version updates itself in the background when a new release is out. The portable version is updated by downloading it again.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Final call ================= -->
+    <section class="wrap final reveal">
+      <h2 data-i18n="end.title">Keep your market in view.</h2>
+      <p data-i18n="end.sub">Free forever. Installs in seconds. Uninstalls just as fast.</p>
+      <a class="btn btn-primary btn-lg" href="#download" data-i18n="end.cta">Get PricePin</a>
     </section>
   </main>
 
   <footer class="footer">
-    <div class="wrap foot-row">
-      <div class="brand small"><img src="img/icon.png" alt="" width="20" height="20"><span>PricePin</span></div>
-      <p data-i18n="foot.note">Not financial advice. Prices may be delayed or wrong, so check with your exchange before you trade.</p>
-      <nav aria-label="Footer">
-        <a href="https://github.com/4U0/PricePin-Next" rel="noopener">GitHub</a>
-        <a href="https://github.com/4U0/PricePin-Next/issues" rel="noopener" data-i18n="foot.issues">Report a problem</a>
-        <a href="https://github.com/4U0/PricePin-Next/blob/main/LICENSE" rel="noopener" data-i18n="foot.license">MIT license</a>
-      </nav>
+    <div class="wrap foot">
+      <div class="foot-brand">
+        <a class="brand" href="#top"><img src="img/icon.png" alt="" width="22" height="22"><span>PricePin</span></a>
+        <p data-i18n="foot.note">Not financial advice. Prices may be delayed or wrong, so check with your exchange before you trade.</p>
+      </div>
+      <div class="foot-cols">
+        <div><b data-i18n="foot.product">Product</b><a href="#features" data-i18n="nav.features">Features</a><a href="#download" data-i18n="nav.download">Download</a><a href="https://github.com/4U0/PricePin-Next/blob/main/CHANGELOG.md" rel="noopener" data-i18n="foot.changelog">Changelog</a></div>
+        <div><b data-i18n="foot.project">Project</b><a href="https://github.com/4U0/PricePin-Next" rel="noopener">GitHub</a><a href="https://github.com/4U0/PricePin-Next/issues" rel="noopener" data-i18n="foot.issues">Report a problem</a><a href="https://github.com/4U0/PricePin-Next/blob/main/LICENSE" rel="noopener" data-i18n="foot.license">MIT license</a></div>
+      </div>
     </div>
   </footer>
 
