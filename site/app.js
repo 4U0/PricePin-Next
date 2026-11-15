@@ -174,14 +174,27 @@
     return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path class="area" d="${line(pts)} L${w} ${h} L0 ${h} Z" fill="${color}" stroke="none"/><path d="${line(pts)}" stroke="${color}"/></svg>`;
   }
 
-  function areaChart(svg, values, up, w, h, gradId) {
+  // Builds the chart once, then only moves the line on later calls, so live ticks don't
+  // restart the draw-in animation. Pass replay to draw the line in again (a new range).
+  function areaChart(svg, values, up, w, h, gradId, replay = false) {
     const pts = path(values, w, h, 6);
     const color = up ? "#22D399" : "#F43F5E";
     const last = pts[pts.length - 1];
-    svg.innerHTML = `<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".35"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
-      <path d="${line(pts)} L${w} ${h} L0 ${h} Z" fill="url(#${gradId})" stroke="none"/>
-      <path class="draw" d="${line(pts)}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-      <circle cx="${last[0]}" cy="${last[1]}" r="4" fill="${color}"/><circle cx="${last[0]}" cy="${last[1]}" r="9" fill="${color}" opacity=".2"/>`;
+    if (!svg.querySelector(".line")) {
+      svg.innerHTML = `<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-opacity=".35"/><stop offset="1" stop-opacity="0"/></linearGradient></defs>
+        <path class="fill" fill="url(#${gradId})" stroke="none"/>
+        <path class="line draw" fill="none" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        <circle class="dot" r="4"/><circle class="halo" r="9" opacity=".2"/>`;
+      // Once drawn in, drop the dash trick so the line stays whole however wide it renders.
+      svg.querySelector(".line").addEventListener("animationend", e => e.target.classList.remove("draw"));
+    }
+    const ln = svg.querySelector(".line");
+    svg.querySelectorAll("stop").forEach(st => st.setAttribute("stop-color", color));
+    svg.querySelector(".fill").setAttribute("d", `${line(pts)} L${w} ${h} L0 ${h} Z`);
+    ln.setAttribute("d", line(pts));
+    ln.setAttribute("stroke", color);
+    for (const c of svg.querySelectorAll("circle")) { c.setAttribute("cx", last[0]); c.setAttribute("cy", last[1]); c.setAttribute("fill", color); }
+    if (replay) { ln.classList.remove("draw"); void ln.getBoundingClientRect(); ln.classList.add("draw"); }
   }
 
   // ---- Hero scene ---------------------------------------------------------------------
@@ -208,12 +221,12 @@
   let chartRange = "day";
   const demoChart = { day: walk(64410, 65240, 96, 3), week: walk(61900, 65240, 168, 5, 0.02), month: walk(70300, 65240, 120, 9, 0.03) };
 
-  function renderChart() {
+  function renderChart(replay = false) {
     const values = (chartData[chartRange] || demoChart[chartRange]).slice();
     const btc = byId.BTC;
     values[values.length - 1] = btc.price;
     const up = btc.price >= values[0];
-    areaChart($("hero-chart"), values, up, 400, 150, "hg");
+    areaChart($("hero-chart"), values, up, 400, 150, "hg", replay);
     $("hero-chart").parentElement.classList.add("in");
     $("chart-price").textContent = money(btc.price);
     const change = (btc.price / values[0] - 1) * 100;
@@ -238,10 +251,11 @@
     if (!b) return;
     chartRange = b.dataset.range;
     $("chart-tabs").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
-    renderChart();
+    renderChart(true);
     if (!chartData[chartRange]) {
-      chartData[chartRange] = await candles("BTC", chartRange);
-      if (chartData[chartRange]) renderChart();
+      const range = chartRange;
+      chartData[range] = await candles("BTC", range);
+      if (chartData[range] && range === chartRange) renderChart();
     }
   });
 
