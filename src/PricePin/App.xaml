@@ -20,6 +20,7 @@
             <MenuItem Header="{DynamicResource Menu.Alerts}" Tag="&#xEA8F;" Command="{Binding App.OpenAlertsCommand}" />
             <MenuItem Header="{DynamicResource Menu.Market}" Tag="&#xE9D2;" Command="{Binding App.OpenMarketCommand}" />
             <MenuItem Header="{DynamicResource Menu.Pulse}" Tag="&#xE789;" Command="{Binding App.OpenPulseCommand}" CommandParameter="News" />
+            <MenuItem Header="{DynamicResource Menu.Calendar}" Tag="&#xE787;" Command="{Binding App.OpenPulseCommand}" CommandParameter="Calendar" />
             <MenuItem Header="{DynamicResource Menu.QuickSearch}" Tag="&#xE721;" Command="{Binding App.OpenQuickSearchCommand}"
                       InputGestureText="{Binding App.HotkeyQuickSearch}" />
             <Separator />
@@ -45,6 +46,7 @@
             </MenuItem>
             <MenuItem Header="{DynamicResource Menu.ShowNews}" Tag="&#xE789;" IsCheckable="True" IsChecked="{Binding ShowNews}" />
             <MenuItem Header="{DynamicResource Menu.ShowFees}" Tag="&#xE8C7;" IsCheckable="True" IsChecked="{Binding ShowFees}" />
+            <MenuItem Header="{DynamicResource Menu.ShowEvents}" Tag="&#xE787;" IsCheckable="True" IsChecked="{Binding ShowEvents}" />
             <MenuItem Header="{DynamicResource Menu.Topmost}" Tag="&#xE718;" IsCheckable="True" IsChecked="{Binding Topmost}" />
             <MenuItem StaysOpenOnClick="True" Tag="&#xE793;">
                 <MenuItem.Header>
@@ -91,6 +93,7 @@
             <MenuItem Header="{DynamicResource Menu.Alerts}" Tag="&#xEA8F;" Command="{Binding OpenAlertsCommand}" />
             <MenuItem Header="{DynamicResource Menu.Market}" Tag="&#xE9D2;" Command="{Binding OpenMarketCommand}" />
             <MenuItem Header="{DynamicResource Menu.Pulse}" Tag="&#xE789;" Command="{Binding OpenPulseCommand}" CommandParameter="News" />
+            <MenuItem Header="{DynamicResource Menu.Calendar}" Tag="&#xE787;" Command="{Binding OpenPulseCommand}" CommandParameter="Calendar" />
             <MenuItem Header="{DynamicResource Menu.QuickSearch}" Tag="&#xE721;" Command="{Binding OpenQuickSearchCommand}"
                       InputGestureText="{Binding HotkeyQuickSearch}" />
             <MenuItem Header="{DynamicResource Menu.Privacy}" Tag="&#xED1A;" IsCheckable="True" IsChecked="{Binding Portfolio.PrivacyMode}" />

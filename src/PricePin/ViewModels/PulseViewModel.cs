@@ -149,6 +149,9 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
         LiquidationOptions = Options(PulseSettings.LiquidationThresholds, _minLiquidation, v => MinLiquidation = v);
         NotifyOptions = Options(PulseSettings.NotifyThresholds, _notifyRadarAt, v => NotifyRadarAt = v);
 
+        Calendar = new CalendarViewModel(app, () => IsWindowOpen);
+        Calendar.NotificationRequested += (title, body) => NotificationRequested?.Invoke(title, body);
+
         _radar.EventReceived += e => _incoming.Enqueue(e);
         _radar.SourceChanged += OnRadarSourceChanged;
 
@@ -175,17 +178,21 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
 
     // ---- Window tabs --------------------------------------------------------------------
 
-    /// <summary>"News", "Radar" or "Fees".</summary>
+    /// <summary>"News", "Radar", "Fees" or "Calendar".</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsNewsTab), nameof(IsRadarTab), nameof(IsFeesTab))]
+    [NotifyPropertyChangedFor(nameof(IsNewsTab), nameof(IsRadarTab), nameof(IsFeesTab), nameof(IsCalendarTab))]
     private string _tab = "News";
 
     public bool IsNewsTab => Tab == "News";
     public bool IsRadarTab => Tab == "Radar";
     public bool IsFeesTab => Tab == "Fees";
+    public bool IsCalendarTab => Tab == "Calendar";
+
+    /// <summary>Upcoming market events, the halving countdown and reminders.</summary>
+    public CalendarViewModel Calendar { get; }
 
     [RelayCommand]
-    private Task Reload() => IsFeesTab ? LoadFeesAsync() : IsNewsTab ? LoadNewsAsync() : Task.CompletedTask;
+    private Task Reload() => IsFeesTab ? LoadFeesAsync() : IsNewsTab ? LoadNewsAsync() : IsCalendarTab ? Calendar.Reload() : Task.CompletedTask;
 
     // ---- Who needs what -----------------------------------------------------------------
 
@@ -246,6 +253,7 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
         PruneLastHour();
         if (_feesAt != DateTime.MinValue)
             UpdateFeeCosts();
+        Calendar.OnTick();
     }
 
     // ---- News ---------------------------------------------------------------------------
@@ -729,6 +737,7 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
         OnTick();
         ShowFees();
         RefilterRadar();
+        Calendar.RefreshText();
         RadarSources = Loc.F("Radar.Sources", _whaleSource ?? "—", _liquidationSource ?? "—");
     }
 
@@ -760,6 +769,7 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _lifetime.Cancel();
+        Calendar.Stop();
         _tick.Stop();
         _radarFlush.Stop();
         _ = _radar.DisposeAsync();

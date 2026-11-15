@@ -42,6 +42,7 @@ public sealed partial class WidgetViewModel : ObservableObject
         _changePeriod = settings.ChangePeriod;
         _showNews = settings.ShowNews;
         _showFees = settings.ShowFees;
+        _showEvents = settings.ShowEvents;
         _headlineTimer = new DispatcherTimer(HeadlineEvery, DispatcherPriority.Background, (_, _) => NextHeadline(), Dispatcher.CurrentDispatcher);
         _headlineTimer.Stop();
     }
@@ -56,6 +57,7 @@ public sealed partial class WidgetViewModel : ObservableObject
 
     [ObservableProperty] private bool _showNews;
     [ObservableProperty] private bool _showFees;
+    [ObservableProperty] private bool _showEvents;
 
     /// <summary>The headline a list widget shows under its coins; changes every few seconds.</summary>
     [ObservableProperty] private HeadlineViewModel? _currentHeadline;
@@ -71,6 +73,13 @@ public sealed partial class WidgetViewModel : ObservableObject
     {
         Save(s => s.ShowFees = value);
         App.Pulse.UpdateDemand();
+        RebuildTickerItems();
+    }
+
+    partial void OnShowEventsChanged(bool value)
+    {
+        Save(s => s.ShowEvents = value);
+        App.Pulse.Calendar.OnTick();
         RebuildTickerItems();
     }
 
@@ -105,6 +114,8 @@ public sealed partial class WidgetViewModel : ObservableObject
         var items = new List<object>(Coins);
         if (ShowFees)
             items.Add(App.Pulse.Fees);
+        if (ShowEvents && App.Pulse.Calendar.Next.HasEvent)
+            items.Add(App.Pulse.Calendar.Next);
         if (IsTickerBar)
             items.AddRange(_headlines.Take(5));
         if (items.SequenceEqual(TickerItems))

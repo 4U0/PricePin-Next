@@ -23,6 +23,15 @@
         <ctl:CoinSymbolConverter x:Key="CoinSymbol" />
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
+        <!-- A row of choices (3%, 5%, ...) from a list of ChoiceOption. -->
+        <DataTemplate x:Key="ChoiceSegment" DataType="{x:Type vm:ChoiceOption}">
+            <RadioButton Style="{StaticResource Segment}" Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=OneWay}"
+                         Command="{Binding SelectCommand}" Padding="0" FontSize="11.5" />
+        </DataTemplate>
+        <ItemsPanelTemplate x:Key="Horizontal">
+            <StackPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+
         <!-- Shows a page when Page equals its Tag. -->
         <Style x:Key="PageHost" TargetType="ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
@@ -381,6 +390,7 @@
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowHoldings}" IsChecked="{Binding SelectedWidget.ShowHoldings}" />
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowNews}" IsChecked="{Binding SelectedWidget.ShowNews}" />
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowFees}" IsChecked="{Binding SelectedWidget.ShowFees}" />
+                                    <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.ShowEvents}" IsChecked="{Binding SelectedWidget.ShowEvents}" />
                                     <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Common.Snap}" IsChecked="{Binding SelectedWidget.SnapToEdges}" />
                                     <TextBlock Style="{StaticResource Hint}" Text="{DynamicResource Common.SnapTip}" Margin="0,-2,0,6" />
                                 </StackPanel>
@@ -669,6 +679,38 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Smart alerts: unusual activity rather than a fixed price -->
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="{DynamicResource Smart.Title}" />
+                        <Border Style="{StaticResource Card}" Padding="16,12" DataContext="{Binding DataContext.App.SmartAlerts, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,8" Text="{DynamicResource Smart.Hint}" />
+
+                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Smart.FastMove}" IsChecked="{Binding FastMove}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,10" Visibility="{Binding FastMove, Converter={StaticResource BoolToVisibility}}">
+                                    <Border Style="{StaticResource SegmentedPanel}">
+                                        <ItemsControl ItemsSource="{Binding MoveOptions}" ItemTemplate="{StaticResource ChoiceSegment}" ItemsPanel="{StaticResource Horizontal}" />
+                                    </Border>
+                                    <TextBlock Text="{DynamicResource Smart.Within}" Margin="10,0" FontSize="12.5" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <Border Style="{StaticResource SegmentedPanel}">
+                                        <ItemsControl ItemsSource="{Binding WindowOptions}" ItemTemplate="{StaticResource ChoiceSegment}" ItemsPanel="{StaticResource Horizontal}" />
+                                    </Border>
+                                </StackPanel>
+
+                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Smart.VolumeSpike}" IsChecked="{Binding VolumeSpike}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,10" Visibility="{Binding VolumeSpike, Converter={StaticResource BoolToVisibility}}">
+                                    <Border Style="{StaticResource SegmentedPanel}">
+                                        <ItemsControl ItemsSource="{Binding SpikeOptions}" ItemTemplate="{StaticResource ChoiceSegment}" ItemsPanel="{StaticResource Horizontal}" />
+                                    </Border>
+                                    <TextBlock Text="{DynamicResource Smart.NormalVolume}" Margin="10,0" FontSize="12.5" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </StackPanel>
+
+                                <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Smart.NewListings}" IsChecked="{Binding NewListings}" />
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,2,0,0" Text="{DynamicResource Smart.ListingsHint}" />
                             </StackPanel>
                         </Border>
 

@@ -101,6 +101,9 @@ public sealed class WidgetSettings
     /// <summary>Show Bitcoin and Ethereum network fees in the widget.</summary>
     public bool ShowFees { get; set; }
 
+    /// <summary>Show a countdown to the next big market event in the widget.</summary>
+    public bool ShowEvents { get; set; }
+
     public void Normalize()
     {
         if (string.IsNullOrWhiteSpace(Id)) Id = Guid.NewGuid().ToString("N")[..8];
@@ -205,8 +208,11 @@ public sealed class AppSettings
     /// <summary>When the last usage ping was accepted, so only one goes out a day.</summary>
     public DateTimeOffset? UsageLastSent { get; set; }
 
-    /// <summary>News, whale and liquidation radar, and network fees.</summary>
+    /// <summary>News, whale and liquidation radar, network fees and the event calendar.</summary>
     public PulseSettings Pulse { get; set; } = new();
+
+    /// <summary>Fast-move, volume-spike and new-listing alerts.</summary>
+    public SmartAlertSettings SmartAlerts { get; set; } = new();
 
     // ---- Version 1 fields, read once to migrate and never written again ----
     [JsonPropertyName("Topmost"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public bool? V1Topmost { get; set; }
@@ -268,6 +274,8 @@ public sealed class AppSettings
             CoinCatalog.Register(t);
         Pulse ??= new PulseSettings();
         Pulse.Normalize();
+        SmartAlerts ??= new SmartAlertSettings();
+        SmartAlerts.Normalize();
         Language = string.IsNullOrWhiteSpace(Language) ? SystemLanguage : Language.Trim().ToLowerInvariant();
         SchemaVersion = CurrentSchemaVersion;
     }

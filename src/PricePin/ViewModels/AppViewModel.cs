@@ -91,6 +91,12 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
             foreach (var w in Widgets)
                 w.RefreshPulse();
         };
+        SmartAlerts = new SmartAlertsViewModel(this);
+        Pulse.Calendar.NextChanged += (_, _) =>
+        {
+            foreach (var w in Widgets)
+                w.RefreshPulse();
+        };
         _trayCoin = s.TrayCoin;
         RebuildTrayCoinOptions();
 
@@ -123,8 +129,11 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     public AlertsViewModel Alerts { get; }
     public PortfolioViewModel Portfolio { get; }
 
-    /// <summary>News, whale and liquidation radar, and network fees.</summary>
+    /// <summary>News, whale and liquidation radar, network fees and the event calendar.</summary>
     public PulseViewModel Pulse { get; }
+
+    /// <summary>Fast-move, volume-spike and new-listing alerts.</summary>
+    public SmartAlertsViewModel SmartAlerts { get; }
 
     /// <summary>Shortcut that hides or shows portfolio amounts.</summary>
     [ObservableProperty]
@@ -241,6 +250,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _ = Alerts.LoadLogosAsync();
         _ = Portfolio.LoadLogosAsync();
         Pulse.Start();
+        SmartAlerts.Start();
         _ = UsageLoopAsync(_lifetime.Token);
     }
 
@@ -371,6 +381,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         foreach (var w in Widgets)
             w.ApplyCoinSettings(currencyChanged: true);
         Alerts.OnQuoteChanged();
+        SmartAlerts.OnQuoteChanged();
         Portfolio.OnQuoteChanged();
         TrayIconText = null;
         RequestFeedRestart();
@@ -520,6 +531,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         Alerts.RefreshText();
         Portfolio.RefreshText();
         Pulse.RefreshText();
+        SmartAlerts.RefreshText();
         foreach (var o in TrayCoinOptions)
             o.RefreshText();
     }
@@ -618,6 +630,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         foreach (var w in Widgets)
             w.Apply(batch);
         Alerts.OnPrices(batch);
+        SmartAlerts.OnPrices(batch);
         Portfolio.Recalculate();
         UpdateTrayIcon();
         PricesUpdated?.Invoke(this, EventArgs.Empty);
@@ -766,6 +779,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _dex.TickReceived -= OnTickReceived;
         _ = _dex.DisposeAsync();
         Pulse.Dispose();
+        SmartAlerts.Dispose();
         Loc.Changed -= OnLanguageChanged;
     }
 

@@ -103,6 +103,8 @@
                              IsChecked="{Binding Tab, Converter={StaticResource EqualsConverter}, ConverterParameter=Radar}" />
                 <RadioButton Style="{StaticResource Segment}" GroupName="PulseTab" Content="{DynamicResource Pulse.Fees}"
                              IsChecked="{Binding Tab, Converter={StaticResource EqualsConverter}, ConverterParameter=Fees}" />
+                <RadioButton Style="{StaticResource Segment}" GroupName="PulseTab" Content="{DynamicResource Pulse.Calendar}"
+                             IsChecked="{Binding Tab, Converter={StaticResource EqualsConverter}, ConverterParameter=Calendar}" />
             </StackPanel>
         </Border>
 
@@ -344,6 +346,91 @@
                     <TextBlock Style="{StaticResource Small}" Foreground="{DynamicResource TextTertiaryBrush}" Text="{DynamicResource Fees.Sources}" Margin="2,0,0,0" />
                 </StackPanel>
             </ScrollViewer>
+
+            <!-- ================= Calendar ================= -->
+            <DockPanel DataContext="{Binding Calendar}"
+                       Visibility="{Binding DataContext.IsCalendarTab, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+
+                <!-- Halving countdown -->
+                <Border DockPanel.Dock="Top" Style="{StaticResource Tile}"
+                        Visibility="{Binding HasHalving, Converter={StaticResource BoolToVisibility}}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="&#xE916;" FontFamily="{StaticResource IconFont}" FontSize="26"
+                                   VerticalAlignment="Center" Foreground="{DynamicResource AccentBrush}" Margin="10,0,4,0" />
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource TileLabel}" Text="{DynamicResource Calendar.NextHalving}" />
+                            <TextBlock Text="{Binding HalvingCountdown}" FontFamily="{StaticResource DisplayFont}" FontSize="22" FontWeight="SemiBold"
+                                       Margin="0,2,0,0" Typography.NumeralAlignment="Tabular" />
+                            <TextBlock Style="{StaticResource Small}" Text="{Binding HalvingDate}" />
+                            <TextBlock Style="{StaticResource Small}" Text="{Binding HalvingDetail}" Foreground="{DynamicResource TextTertiaryBrush}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Reminders and filter -->
+                <StackPanel DockPanel.Dock="Top" Margin="2,0,0,8">
+                    <TextBlock Style="{StaticResource Small}" Text="{DynamicResource Calendar.Remind}" Margin="0,0,0,4" />
+                    <Border Style="{StaticResource SegmentedPanel}" HorizontalAlignment="Left" Margin="0,0,0,6">
+                        <ItemsControl ItemsSource="{Binding RemindOptions}" ItemTemplate="{StaticResource ChoiceSegment}" ItemsPanel="{StaticResource Horizontal}" />
+                    </Border>
+                    <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Calendar.AllCountries}" IsChecked="{Binding AllCountries}" />
+                </StackPanel>
+
+                <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Small}" Foreground="{DynamicResource TextTertiaryBrush}"
+                           Text="{DynamicResource Calendar.Sources}" Margin="2,8,0,0" />
+                <TextBlock DockPanel.Dock="Top" Text="{Binding Status}" Margin="2,0,0,6">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource Small}">
+                            <Style.Triggers>
+                                <Trigger Property="Text" Value="">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <!-- Events, soonest first, with a heading for each day -->
+                <Border Style="{StaticResource Card}" Padding="4" Margin="0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Events}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:CalendarEventViewModel}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding DayText}" Style="{StaticResource TileLabel}" Margin="10,10,0,2"
+                                                   Visibility="{Binding ShowDay, Converter={StaticResource BoolToVisibility}}" />
+                                        <Button Style="{StaticResource RowButton}" Command="{Binding OpenCommand}" ToolTip="{Binding Event.Source}">
+                                            <DockPanel>
+                                                <TextBlock x:Name="Countdown" DockPanel.Dock="Right" Text="{Binding CountdownText}" FontSize="11.5"
+                                                           VerticalAlignment="Center" Margin="10,0,0,0" Typography.NumeralAlignment="Tabular"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                <TextBlock DockPanel.Dock="Left" Text="{Binding TimeText}" Width="62" FontSize="11.5" VerticalAlignment="Center"
+                                                           Typography.NumeralAlignment="Tabular" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                <Border DockPanel.Dock="Left" CornerRadius="4" Padding="5,1" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                        Background="{DynamicResource HoverBrush}"
+                                                        Visibility="{Binding HasBadge, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding Badge}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding DetailText}" FontSize="10.5" Foreground="{DynamicResource TextTertiaryBrush}"
+                                                               Visibility="{Binding HasDetail, Converter={StaticResource BoolToVisibility}}" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Button>
+                                    </StackPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsSoon}" Value="True">
+                                            <Setter TargetName="Countdown" Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                            <Setter TargetName="Countdown" Property="FontWeight" Value="SemiBold" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+            </DockPanel>
         </Grid>
     </DockPanel>
 </Window>

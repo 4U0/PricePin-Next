@@ -283,6 +283,46 @@
                     </DockPanel>
                 </Border>
 
+                <!-- Next market event with a countdown; click opens the calendar. -->
+                <Border Margin="12,4,12,2" Padding="10,6" CornerRadius="10" Background="{DynamicResource HoverBrush}"
+                        ToolTip="{Binding App.Pulse.Calendar.Next.ToolTip}" Cursor="Hand">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding ShowEvents}" Value="True" />
+                                        <Condition Binding="{Binding App.Pulse.Calendar.Next.HasEvent}" Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Border.InputBindings>
+                        <MouseBinding MouseAction="LeftClick" Command="{Binding App.OpenPulseCommand}" CommandParameter="Calendar" />
+                    </Border.InputBindings>
+                    <DockPanel>
+                        <TextBlock Text="&#xE787;" FontFamily="{StaticResource IconFont}" FontSize="11" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,0,8,0" />
+                        <TextBlock x:Name="NextEventCountdown" DockPanel.Dock="Right" Text="{Binding App.Pulse.Calendar.Next.CountdownText}" FontSize="11"
+                                   FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0" Typography.NumeralAlignment="Tabular">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding App.Pulse.Calendar.Next.IsSoon}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{Binding App.Pulse.Calendar.Next.Title}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                </Border>
+
                 <!-- Latest headline, changing every few seconds; click to read it. -->
                 <Border Margin="12,4,12,2" Padding="10,6" CornerRadius="10" Background="{DynamicResource HoverBrush}" Cursor="Hand"
                         ToolTip="{Binding CurrentHeadline.SourceLine}"

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "UUID": "com.pricepin.streamdeck",
+  "Name": "PricePin",
+  "Version": "1.7.0.0",
+  "Author": "PricePin contributors",
+  "Description": "Live crypto prices on your Stream Deck keys, from Binance, Coinbase or Kraken. Press a key to switch between the 24h change and the 24h range.",
+  "URL": "https://github.com/4U0/PricePin-Next",
+  "Icon": "imgs/plugin",
+  "Category": "PricePin",
+  "CategoryIcon": "imgs/category",
+  "CodePathWin": "PricePin.StreamDeck.exe",
+  "SDKVersion": 2,
+  "Software": { "MinimumVersion": "6.4" },
+  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Actions": [
+    {
+      "UUID": "com.pricepin.streamdeck.price",
+      "Name": "Coin price",
+      "Tooltip": "Shows a coin's live price. Press to switch between the 24h change and range.",
+      "Icon": "imgs/action",
+      "PropertyInspectorPath": "pi/index.html",
+      "SupportedInMultiActions": false,
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/key", "ShowTitle": false }]
+    }
+  ]
+}
