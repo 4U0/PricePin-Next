@@ -242,7 +242,7 @@ catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException o
 }
 
 Console.WriteLine("\nWhale and liquidation streams (every trade counted, no size filter):");
-async Task ProbeStream(string name, Uri uri, IReadOnlyList<string> subscribe, Func<ReadOnlyMemory<byte>, int> parse, int secs)
+async Task ProbeStream(string name, Uri uri, IReadOnlyList<string> subscribe, Func<ReadOnlyMemory<byte>, int> parse, int secs, string? ping = null)
 {
     var events = 0;
     var messages = 0;
@@ -254,7 +254,7 @@ async Task ProbeStream(string name, Uri uri, IReadOnlyList<string> subscribe, Fu
         {
             messages++;
             try { events += parse(span.ToArray()); } catch (System.Text.Json.JsonException) { }
-        }, TimeSpan.FromSeconds(secs + 5), TimeSpan.FromHours(1), cts.Token);
+        }, TimeSpan.FromSeconds(secs + 5), TimeSpan.FromHours(1), cts.Token, ping, TimeSpan.FromSeconds(20));
         result = "OK";
     }
     catch (OperationCanceledException)
@@ -268,11 +268,23 @@ async Task ProbeStream(string name, Uri uri, IReadOnlyList<string> subscribe, Fu
     Console.WriteLine($"  {name,-22} {result}, {messages} messages, {events} events");
 }
 await ProbeStream("Binance trades", RadarService.BinanceTradesUri(["BTC", "ETH"]), [], m => RadarService.ParseBinanceAggTrade(m.Span) is null ? 0 : 1, 10);
+// Fills joined into whole orders, the way the radar counts whale trades.
+var grouped = new FillGrouper();
+var orders = new List<RadarEvent>();
 await ProbeStream("Coinbase trades", new Uri("wss://ws-feed.exchange.coinbase.com"), [RadarService.CoinbaseSubscribe(["BTC", "ETH"])],
-    m => RadarService.ParseCoinbaseMatch(m.Span) is null ? 0 : 1, 10);
+    m =>
+    {
+        if (RadarService.ParseCoinbaseMatch(m.Span, out var order) is not { } fill)
+            return 0;
+        if (grouped.Add(fill, order ?? RadarService.SameMomentKey(fill)) is { } done)
+            orders.Add(done);
+        return 1;
+    }, 10);
+orders.AddRange(grouped.Flush(long.MaxValue));
+Console.WriteLine($"  {"  as whole orders",-22} {orders.Count} orders, biggest {RadarService.FormatUsd(orders.Select(o => o.ValueUsd).DefaultIfEmpty().Max())}");
 await ProbeStream("Binance liquidations", new Uri("wss://fstream.binance.com/ws/!forceOrder@arr"), [], m => RadarService.ParseBinanceForceOrder(m.Span) is null ? 0 : 1, 30);
 await ProbeStream("Bybit liquidations", new Uri("wss://stream.bybit.com/v5/public/linear"), [RadarService.BybitSubscribe(["BTC", "ETH", "SOL", "XRP", "DOGE"])],
-    m => RadarService.ParseBybitLiquidations(m.Span).Count(), 30);
+    m => RadarService.ParseBybitLiquidations(m.Span).Count(), 45, RadarService.BybitPing);
 
 Console.WriteLine($"\n{streamingOk} of 3 streaming feeds delivered data.");
 return streamingOk > 0 ? 0 : 1;

@@ -68,7 +68,9 @@ internal static class WebSocketSession
         SpanAction onMessage,
         TimeSpan staleAfter,
         TimeSpan maxSessionLength,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? ping = null,
+        TimeSpan pingEvery = default)
     {
         using var session = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         session.CancelAfter(maxSessionLength);
@@ -85,6 +87,10 @@ internal static class WebSocketSession
             await ws.SendAsync(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text, true, session.Token)
                 .ConfigureAwait(false);
         }
+
+        // Some servers (Bybit) want a text ping now and then or they hang up on a quiet stream.
+        using var pinging = CancellationTokenSource.CreateLinkedTokenSource(session.Token);
+        var pingLoop = ping is null || pingEvery <= TimeSpan.Zero ? Task.CompletedTask : PingAsync(ws, ping, pingEvery, pinging.Token);
 
         // Watchdog: abort the socket if the server goes quiet.
         var lastMessage = Environment.TickCount64;
@@ -151,6 +157,26 @@ internal static class WebSocketSession
             if (stale)
                 throw new FeedException(FeedFailure.Stale, $"{name} went quiet for {staleAfter.TotalSeconds:0}s", ex);
             throw new FeedException(FeedFailure.Transient, $"{name} connection lost: {ex.Message}", ex);
+        }
+        finally
+        {
+            pinging.Cancel();
+            await pingLoop.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        }
+    }
+
+    private static async Task PingAsync(ClientWebSocket ws, string ping, TimeSpan every, CancellationToken ct)
+    {
+        var bytes = Encoding.UTF8.GetBytes(ping);
+        using var timer = new PeriodicTimer(every);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+                await ws.SendAsync(bytes, WebSocketMessageType.Text, true, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or WebSocketException or IOException or ObjectDisposedException or InvalidOperationException)
+        {
+            // The receive loop notices a dead socket; pinging just stops.
         }
     }
 

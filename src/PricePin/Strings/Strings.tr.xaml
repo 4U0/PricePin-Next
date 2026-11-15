@@ -354,6 +354,9 @@
     <sys:String x:Key="Radar.OnlyMyCoins">Yalnızca coinlerim</sys:String>
     <sys:String x:Key="Radar.Notify">Çok büyük olaylarda bildir</sys:String>
     <sys:String x:Key="Radar.Sources">İşlemler {0} spot, likidasyonlar {1} vadeli piyasasından.</sys:String>
+    <sys:String x:Key="Radar.Waiting">Henüz veri gelmedi: {0}. Hâlâ bağlanıyor ya da bu ağda engelli.</sys:String>
+    <sys:String x:Key="Radar.WaitingTrades">işlemler</sys:String>
+    <sys:String x:Key="Radar.WaitingLiquidations">likidasyonlar</sys:String>
     <sys:String x:Key="Fees.Title">Ağ ücretleri</sys:String>
     <sys:String x:Key="Fees.Bitcoin">BITCOIN · SAT/VB</sys:String>
     <sys:String x:Key="Fees.Ethereum">ETHEREUM GAS</sys:String>

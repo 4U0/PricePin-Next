@@ -114,6 +114,7 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
     private readonly DispatcherTimer _radarFlush;
     private readonly ConcurrentQueue<RadarEvent> _incoming = new();
     private readonly List<RadarEvent> _lastHour = [];
+    private readonly LiquidationTally _liquidationTally = new();
     private readonly HashSet<string> _seenUrls = new(StringComparer.Ordinal);
     private readonly FeeAlarm _gasAlarm = new();
     private readonly FeeAlarm _btcAlarm = new();
@@ -493,13 +494,14 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
         // Ask for the lowest of the shown and notified sizes, so notifications still work
         // when the list shows only bigger events.
         var minWhale = NotifyRadar ? Math.Min(MinWhale, NotifyRadarAt) : MinWhale;
-        var minLiquidation = NotifyRadar ? Math.Min(MinLiquidation, NotifyRadarAt) : MinLiquidation;
-        var config = $"{string.Join(",", whales)}|{minWhale}|{minLiquidation}";
+        // Liquidations come in at every size: the hourly totals count them all, and the list
+        // and notifications pick the big ones.
+        var config = $"{string.Join(",", whales)}|{minWhale}";
         if (_radarRunning && config == _radarConfig)
             return;
         _radarConfig = config;
         _radarRunning = true;
-        _radar.Start(whales, minWhale, minLiquidation);
+        _radar.Start(whales, minWhale, 0m);
         _radarFlush.Start();
         if (RadarEvents.Count == 0)
             RadarStatus = Loc.T("Radar.Listening");
@@ -533,15 +535,29 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _radarSources = "";
 
+    /// <summary>Where data is coming from, or which part has not received any yet.</summary>
+    private string SourcesText()
+    {
+        if (_whaleSource is not null && _liquidationSource is not null)
+            return Loc.F("Radar.Sources", _whaleSource, _liquidationSource);
+        var waiting = new[] { _whaleSource is null ? Loc.T("Radar.WaitingTrades") : null, _liquidationSource is null ? Loc.T("Radar.WaitingLiquidations") : null };
+        return Loc.F("Radar.Waiting", string.Join(", ", waiting.OfType<string>()));
+    }
+
     private void FlushRadar()
     {
-        RadarSources = Loc.F("Radar.Sources", _whaleSource ?? "—", _liquidationSource ?? "—");
+        RadarSources = SourcesText();
         if (_incoming.IsEmpty)
             return;
         var mine = MyCoins();
         var batch = new List<RadarEvent>();
         while (_incoming.TryDequeue(out var e))
-            batch.Add(e);
+        {
+            _liquidationTally.Add(e);
+            // Keep what the list could show at its smallest setting; smaller ones only count.
+            if (e.IsWhale || e.ValueUsd >= PulseSettings.LiquidationThresholds[0])
+                batch.Add(e);
+        }
         _lastHour.AddRange(batch);
         PruneLastHour();
 
@@ -587,10 +603,11 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
     private void UpdateRadarTotals(HashSet<string> mine)
     {
         decimal Sum(RadarKind kind) => _lastHour
-            .Where(e => e.Kind == kind && (!RadarOnlyMyCoins || mine.Contains(e.Symbol)) && e.ValueUsd >= (e.IsWhale ? MinWhale : MinLiquidation))
+            .Where(e => e.Kind == kind && (!RadarOnlyMyCoins || mine.Contains(e.Symbol)) && e.ValueUsd >= MinWhale)
             .Sum(e => e.ValueUsd);
-        LongsLiquidatedText = RadarText.Usd(Sum(RadarKind.LongLiquidated));
-        ShortsLiquidatedText = RadarText.Usd(Sum(RadarKind.ShortLiquidated));
+        var (longs, shorts) = _liquidationTally.LastHour(DateTimeOffset.UtcNow, RadarOnlyMyCoins ? mine.Contains : null);
+        LongsLiquidatedText = RadarText.Usd(longs);
+        ShortsLiquidatedText = RadarText.Usd(shorts);
         WhaleBuysText = RadarText.Usd(Sum(RadarKind.WhaleBuy));
         WhaleSellsText = RadarText.Usd(Sum(RadarKind.WhaleSell));
     }
@@ -746,7 +763,7 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
         RefilterRadar();
         Calendar.RefreshText();
         Odds.RefreshText();
-        RadarSources = Loc.F("Radar.Sources", _whaleSource ?? "—", _liquidationSource ?? "—");
+        RadarSources = SourcesText();
     }
 
     /// <summary>"just now", "12m ago", "3h ago".</summary>
