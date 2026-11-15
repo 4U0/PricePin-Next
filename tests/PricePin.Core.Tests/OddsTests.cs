@@ -105,6 +105,15 @@ public class OddsTests
         Assert.Equal(new DateTimeOffset(2026, 12, 31, 23, 59, 0, TimeSpan.Zero), m.Ends);
     }
 
+    [Theory]
+    [InlineData("Above $99,999.99", "Above $100,000")]
+    [InlineData("Below $45,000.00", "Below $45,000")]
+    [InlineData("$64,750 or above", "$64,750 or above")]
+    [InlineData("$1,639.50 or above", "$1,639.50 or above")]
+    [InlineData("Between $999.99 and $1,999.99", "Between $1,000 and $2,000")]
+    public void KalshiStrikes_AreRounded(string raw, string expected) =>
+        Assert.Equal(expected, OddsService.TidyAmounts(raw));
+
     [Fact]
     public void Parsers_RejectOtherShapes()
     {
