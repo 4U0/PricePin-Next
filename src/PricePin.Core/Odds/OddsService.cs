@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using PricePin.Core.Feeds;
 using PricePin.Core.News;
 
@@ -59,7 +60,7 @@ public sealed record OddsBoard(IReadOnlyList<OddsMarket> Markets, DateTimeOffset
 /// </list>
 /// Very short "up or down in the next 15 minutes" markets are left out; they are coin flips, not opinions.
 /// </summary>
-public sealed class OddsService
+public sealed partial class OddsService
 {
     public const string PolymarketUrl =
         "https://gamma-api.polymarket.com/events?tag_slug=crypto&active=true&closed=false&archived=false&order=volume24hr&ascending=false&limit=100";
@@ -298,7 +299,7 @@ public sealed class OddsService
                 var close = Json.Iso(m, "close_time");
                 if (close is { } c && c - now < MinTimeLeft)
                     continue;
-                var label = Json.String(m, "yes_sub_title")?.Trim() is { Length: > 0 } y ? y : Json.String(m, "subtitle")?.Trim();
+                var label = TidyAmounts(Json.String(m, "yes_sub_title")?.Trim() is { Length: > 0 } y ? y : Json.String(m, "subtitle")?.Trim());
                 if (string.IsNullOrEmpty(label))
                     continue;
                 var last = Dollars(m, "last_price");
@@ -328,6 +329,21 @@ public sealed class OddsService
         }
         return list;
     }
+
+    /// <summary>Kalshi writes strikes as "Above $99,999.99" and "Below $45,000.00"; shown as "$100,000" and "$45,000".</summary>
+    internal static string? TidyAmounts(string? label) => label is null ? null : AmountRegex().Replace(label, m =>
+    {
+        if (!decimal.TryParse(m.Groups[1].Value.Replace(",", ""), NumberStyles.Number, CultureInfo.InvariantCulture, out var v))
+            return m.Value;
+        if (m.Groups[2].Value == "99")
+            v += 1;
+        else if (m.Groups[2].Value != "00")
+            return m.Value;
+        return "$" + v.ToString("#,0", CultureInfo.InvariantCulture);
+    });
+
+    [GeneratedRegex(@"\$(\d{1,3}(?:,\d{3})*|\d+)\.(\d{2})\b")]
+    private static partial Regex AmountRegex();
 
     /// <summary>The middle of the best bid and ask when both are there, otherwise the last trade.</summary>
     private static decimal? KalshiChance(JsonElement m)
