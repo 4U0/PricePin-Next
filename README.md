@@ -65,7 +65,7 @@ A fast, good-looking price widget that floats on your desktop, stays on top if y
 
 ### News, whales and fees
 - **Crypto headlines** from CoinDesk, Cointelegraph, Decrypt, The Block and Bitcoin Magazine, each tagged with the coins it mentions. Mix them into a ticker bar or show one at a time under a list widget, and click one to read it. Filter to news about your own coins, and optionally get notified about news on coins you hold
-- **Whale and liquidation radar:** big spot trades on Binance (or Coinbase) and futures liquidations on Binance (or Bybit) as they happen, with last-hour totals of longs and shorts wiped out. Pick the sizes that count, and get notified about very large ones
+- **Whale and liquidation radar:** big spot trades on Binance (or Coinbase) and futures liquidations on Binance and Bybit as they happen, with last-hour totals of longs and shorts wiped out. Pick the sizes that count, and get notified about very large ones
 - **Network fees:** Bitcoin fees in sat/vB for the next block, 30 minutes, an hour or economy, and Ethereum gas in gwei, with what a payment costs in your currency. Show them in a widget, and get notified when gas or the Bitcoin fee falls below a level you choose
 
 ### Alerts
@@ -139,9 +139,9 @@ PricePin has no account, no telemetry and no analytics. It only talks to the pub
 | [GeckoTerminal](https://www.geckoterminal.com) | Charts and sparklines for tokens on decentralised exchanges |
 | Coinbase, [open.er-api.com](https://www.exchangerate-api.com/docs/free) | Dollar exchange rates, to show DEX token prices in EUR, TRY or GBP |
 | CoinDesk, Cointelegraph, Decrypt, The Block, Bitcoin Magazine | Headlines, from their public RSS feeds |
-| Binance, Coinbase, Bybit | Whale trades (spot) and liquidations (futures) for the radar |
+| Binance, Coinbase, Bybit | Whale trades (Binance spot, or Coinbase where Binance is blocked) and liquidations (Binance and Bybit futures) for the radar |
 | [mempool.space](https://mempool.space) | Bitcoin fee rates |
-| Public Ethereum nodes ([PublicNode](https://ethereum-rpc.publicnode.com), Cloudflare, LlamaRPC) | Ethereum gas |
+| Public Ethereum nodes ([PublicNode](https://ethereum-rpc.publicnode.com), dRPC, 1RPC, LlamaRPC) | Ethereum gas |
 
 All of these are public endpoints, so no account or API key is needed. To check which sources work from your network:
 

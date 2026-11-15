@@ -148,13 +148,20 @@ Console.WriteLine($"  DEX prices {(dexOk ? "OK" : "NOT WORKING")}");
 
 Console.WriteLine("\nNews feeds:");
 var newsOk = 0;
-foreach (var (name, url) in NewsService.Feeds)
+foreach (var (name, urls) in NewsService.Feeds)
 {
-    var items = await NewsService.FetchFeedAsync(name, url, CancellationToken.None);
-    if (items is not null) newsOk++;
-    var dated = items?.Count(i => i.Published != DateTimeOffset.MinValue) ?? 0;
-    Console.WriteLine($"  {name,-17} {(items is null ? "FAILED" : $"{items.Count} items, {dated} dated")}" +
-                      (items is { Count: > 0 } ? $", newest \"{items.OrderByDescending(i => i.Published).First().Title}\"" : ""));
+    foreach (var url in urls)
+    {
+        var (items, error) = await NewsService.FetchFeedAsync(name, url, CancellationToken.None);
+        var dated = items?.Count(i => i.Published != DateTimeOffset.MinValue) ?? 0;
+        Console.WriteLine($"  {name,-17} {(items is null ? $"FAILED ({error})" : $"{items.Count} items, {dated} dated")}  {url}" +
+                          (items is { Count: > 0 } ? $"\n{"",-19}newest \"{items.OrderByDescending(i => i.Published).First().Title}\"" : ""));
+        if (items is not null)
+        {
+            newsOk++;
+            break;
+        }
+    }
 }
 var newsCoins = PricePin.Core.Coins.CoinCatalog.All.Select(c => new NewsCoin(c.Symbol, c.Symbol, c.Name)).ToList();
 var (merged, okFeeds) = await new NewsService().FetchAsync(newsCoins);
@@ -168,8 +175,8 @@ var btcFees = await fees.FetchBitcoinAsync();
 Console.WriteLine($"  mempool.space   {(btcFees is null ? "FAILED" : $"fastest {btcFees.Fastest}, 30m {btcFees.HalfHour}, 1h {btcFees.Hour}, economy {btcFees.Economy} sat/vB")}");
 foreach (var rpc in FeeService.EthereumRpcUrls)
 {
-    var gas = await FeeService.FetchEthereumAsync(rpc, CancellationToken.None);
-    Console.WriteLine($"  {new Uri(rpc).Host,-28} {(gas is null ? "FAILED" : $"base {gas.BaseFeeGwei} + tip {gas.PriorityFeeGwei} gwei")}");
+    var (gas, gasError) = await FeeService.FetchEthereumAsync(rpc, CancellationToken.None);
+    Console.WriteLine($"  {new Uri(rpc).Host,-28} {(gas is null ? $"FAILED ({gasError})" : $"base {gas.BaseFeeGwei} + tip {gas.PriorityFeeGwei} gwei")}");
 }
 
 Console.WriteLine("\nWhale and liquidation streams (every trade counted, no size filter):");

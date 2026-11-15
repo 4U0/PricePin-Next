@@ -499,14 +499,20 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
         _radar.Stop();
         _radarFlush.Stop();
         _whaleSource = _liquidationSource = null;
+        _liquidationSources.Clear();
     }
+
+    private readonly ConcurrentDictionary<string, string> _liquidationSources = new();
 
     private void OnRadarSourceChanged(string part, string? name)
     {
         if (part == "whales")
             _whaleSource = name;
+        else if (name is null)
+            _liquidationSources.TryRemove(part, out _);
         else
-            _liquidationSource = name;
+            _liquidationSources[part] = name;
+        _liquidationSource = _liquidationSources.IsEmpty ? null : string.Join(" + ", _liquidationSources.Values.Order());
     }
 
     [ObservableProperty]

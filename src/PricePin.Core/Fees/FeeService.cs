@@ -32,7 +32,8 @@ public sealed class FeeService
     public static IReadOnlyList<string> EthereumRpcUrls { get; } =
     [
         "https://ethereum-rpc.publicnode.com",
-        "https://cloudflare-eth.com",
+        "https://eth.drpc.org",
+        "https://1rpc.io/eth",
         "https://eth.llamarpc.com",
     ];
 
@@ -71,7 +72,7 @@ public sealed class FeeService
         for (var attempt = 0; attempt < EthereumRpcUrls.Count; attempt++)
         {
             var index = (_rpcIndex + attempt) % EthereumRpcUrls.Count;
-            var gas = await FetchEthereumAsync(EthereumRpcUrls[index], ct).ConfigureAwait(false);
+            var (gas, _) = await FetchEthereumAsync(EthereumRpcUrls[index], ct).ConfigureAwait(false);
             if (gas is not null)
             {
                 _rpcIndex = index;
@@ -81,25 +82,30 @@ public sealed class FeeService
         return null;
     }
 
-    internal static async Task<EthereumGas?> FetchEthereumAsync(string url, CancellationToken ct)
+    /// <returns>The gas, or null and why (for the feed probe).</returns>
+    internal static async Task<(EthereumGas? Gas, string? Error)> FetchEthereumAsync(string url, CancellationToken ct)
     {
         try
         {
-            // One batch: the latest block (for its base fee) and the suggested tip.
+            // One batch: the latest block (for its base fee), the node's suggested tip, and the
+            // tips actually paid in the last few blocks (the median is a better guide).
             var body = """
                 [{"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["latest",false]},
-                 {"jsonrpc":"2.0","id":2,"method":"eth_maxPriorityFeePerGas","params":[]}]
+                 {"jsonrpc":"2.0","id":2,"method":"eth_maxPriorityFeePerGas","params":[]},
+                 {"jsonrpc":"2.0","id":3,"method":"eth_feeHistory","params":["0x5","latest",[50]]}]
                 """;
             using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
             using var response = await Http.Client.PostAsync(url, content, ct).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
-                return null;
-            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false), cancellationToken: ct).ConfigureAwait(false);
-            return ParseRpcBatch(doc.RootElement);
+                return (null, $"HTTP {(int)response.StatusCode}");
+            var text = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            using var doc = JsonDocument.Parse(text);
+            var gas = ParseRpcBatch(doc.RootElement);
+            return (gas, gas is null ? "unexpected answer: " + (text.Length > 160 ? text[..160] : text) : null);
         }
         catch (Exception ex) when (IsNetworkFailure(ex, ct))
         {
-            return null;
+            return (null, $"{ex.GetType().Name}: {ex.Message}");
         }
     }
 
@@ -123,7 +129,7 @@ public sealed class FeeService
     {
         if (root.ValueKind != JsonValueKind.Array)
             return null;
-        BigInteger? baseFee = null, tip = null;
+        BigInteger? baseFee = null, tip = null, paid = null;
         foreach (var r in root.EnumerateArray())
         {
             if (!r.TryGetProperty("result", out var result) || !r.TryGetProperty("id", out var idEl) || !idEl.TryGetInt32(out var id))
@@ -132,12 +138,28 @@ public sealed class FeeService
                 baseFee = ParseHex(b);
             else if (id == 2 && result.ValueKind == JsonValueKind.String)
                 tip = ParseHex(result.GetString());
+            else if (id == 3 && result.ValueKind == JsonValueKind.Object)
+                paid = MedianReward(result);
         }
         if (baseFee is not { } baseWei)
             return null;
-        // Some nodes do not offer the tip call; 0.1 gwei is a fair default today.
-        var tipWei = tip ?? new BigInteger(100_000_000);
+        // Prefer what was really paid; some nodes suggest 0 or don't offer the tip call at all.
+        var tipWei = paid ?? (tip is { } t && t > 0 ? t : new BigInteger(100_000_000));
         return new EthereumGas(WeiToGwei(baseWei), WeiToGwei(tipWei));
+    }
+
+    // {"baseFeePerGas":[...],"reward":[["0x3b9aca00"],["0x5f5e100"],...]}: the 50th percentile tip of each block.
+    private static BigInteger? MedianReward(JsonElement history)
+    {
+        if (!history.TryGetProperty("reward", out var rewards) || rewards.ValueKind != JsonValueKind.Array)
+            return null;
+        var values = rewards.EnumerateArray()
+            .Where(r => r.ValueKind == JsonValueKind.Array && r.GetArrayLength() > 0 && r[0].ValueKind == JsonValueKind.String)
+            .Select(r => ParseHex(r[0].GetString()))
+            .OfType<BigInteger>()
+            .Order()
+            .ToList();
+        return values.Count == 0 ? null : values[values.Count / 2];
     }
 
     internal static BigInteger? ParseHex(string? hex)

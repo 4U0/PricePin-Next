@@ -20,30 +20,52 @@ public sealed record NewsCoin(string Key, string Symbol, string Name);
 /// </summary>
 public sealed partial class NewsService
 {
-    public static IReadOnlyList<(string Name, string Url)> Feeds { get; } =
+    /// <summary>Each site's feed, with other addresses to try when the first one fails.</summary>
+    public static IReadOnlyList<(string Name, string[] Urls)> Feeds { get; } =
     [
-        ("CoinDesk", "https://www.coindesk.com/arc/outboundfeeds/rss/"),
-        ("Cointelegraph", "https://cointelegraph.com/rss"),
-        ("Decrypt", "https://decrypt.co/feed"),
-        ("The Block", "https://www.theblock.co/rss.xml"),
-        ("Bitcoin Magazine", "https://bitcoinmagazine.com/.rss/full/"),
+        ("CoinDesk", ["https://www.coindesk.com/arc/outboundfeeds/rss/"]),
+        ("Cointelegraph", ["https://cointelegraph.com/rss"]),
+        ("Decrypt", ["https://decrypt.co/feed"]),
+        ("The Block", ["https://www.theblock.co/rss.xml"]),
+        ("Bitcoin Magazine", ["https://bitcoinmagazine.com/feed", "https://bitcoinmagazine.com/.rss/full/"]),
     ];
 
     /// <summary>Headlines older than this are dropped.</summary>
     public static readonly TimeSpan MaxAge = TimeSpan.FromDays(2);
 
+    // The address that last worked for each site, so later refreshes go straight to it.
+    private readonly Dictionary<string, string> _working = [];
+
     /// <summary>Fetches every feed in parallel. A feed that fails is skipped; the rest still count.</summary>
     /// <returns>Headlines newest first, and how many feeds answered.</returns>
     public async Task<(IReadOnlyList<NewsItem> Items, int FeedsOk)> FetchAsync(IReadOnlyList<NewsCoin> coins, CancellationToken ct = default)
     {
-        var tasks = Feeds.Select(f => FetchFeedAsync(f.Name, f.Url, ct)).ToList();
+        var tasks = Feeds.Select(f => FetchSiteAsync(f.Name, f.Urls, ct)).ToList();
         await Task.WhenAll(tasks).ConfigureAwait(false);
         var all = tasks.Where(t => t.Result is not null).SelectMany(t => t.Result!).ToList();
         var ok = tasks.Count(t => t.Result is not null);
         return (Merge(all, coins, DateTimeOffset.UtcNow), ok);
     }
 
-    internal static async Task<IReadOnlyList<NewsItem>?> FetchFeedAsync(string source, string url, CancellationToken ct)
+    private async Task<IReadOnlyList<NewsItem>?> FetchSiteAsync(string source, string[] urls, CancellationToken ct)
+    {
+        string? known;
+        lock (_working)
+            _working.TryGetValue(source, out known);
+        foreach (var url in known is null ? urls : urls.Where(u => u == known).Concat(urls.Where(u => u != known)))
+        {
+            var (items, _) = await FetchFeedAsync(source, url, ct).ConfigureAwait(false);
+            if (items is null)
+                continue;
+            lock (_working)
+                _working[source] = url;
+            return items;
+        }
+        return null;
+    }
+
+    /// <returns>The headlines, or null and why (for the feed probe).</returns>
+    internal static async Task<(IReadOnlyList<NewsItem>? Items, string? Error)> FetchFeedAsync(string source, string url, CancellationToken ct)
     {
         try
         {
@@ -51,13 +73,13 @@ public sealed partial class NewsService
             request.Headers.Accept.ParseAdd("application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8");
             using var response = await Http.Client.SendAsync(request, ct).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
-                return null;
+                return (null, $"HTTP {(int)response.StatusCode}");
             var xml = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            return ParseFeed(xml, source);
+            return (ParseFeed(xml, source), null);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or XmlException && !ct.IsCancellationRequested)
         {
-            return null;
+            return (null, $"{ex.GetType().Name}: {ex.Message}");
         }
     }
 

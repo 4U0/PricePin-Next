@@ -199,6 +199,15 @@ public class PulseTests
         Assert.Equal(0.1m, gas.PriorityFeeGwei);
         Assert.Equal(10.1m * 21_000m / 1_000_000_000m, gas.TransferCostEth);
 
+        // The median tip actually paid wins over the node's suggestion, which can be 0.
+        var paid = FeeService.ParseRpcBatch(J("""
+            [{"id":1,"result":{"baseFeePerGas":"0x3b9aca00"}},{"id":2,"result":"0x0"},
+             {"id":3,"result":{"baseFeePerGas":["0x1"],"reward":[["0x3b9aca00"],["0x1"],["0x5f5e100"]]}}]
+            """))!;
+        Assert.Equal(0.1m, paid.PriorityFeeGwei);
+        var zero = FeeService.ParseRpcBatch(J("""[{"id":1,"result":{"baseFeePerGas":"0x3b9aca00"}},{"id":2,"result":"0x0"}]"""))!;
+        Assert.Equal(0.1m, zero.PriorityFeeGwei);
+
         var noTip = FeeService.ParseRpcBatch(J("""[{"id":1,"result":{"baseFeePerGas":"0x3b9aca00"}},{"id":2,"error":{"code":-32601}}]"""))!;
         Assert.Equal((1m, 0.1m), (noTip.BaseFeeGwei, noTip.PriorityFeeGwei));
         Assert.Null(FeeService.ParseRpcBatch(J("""{"id":1,"result":null}""")));

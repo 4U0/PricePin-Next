@@ -31,7 +31,7 @@ public sealed record RadarEvent(RadarKind Kind, string Symbol, string Exchange, 
 /// Watches for whale trades and liquidations as they happen:
 /// <list type="bullet">
 /// <item>big trades on Binance's spot market (falling back to Coinbase where Binance is blocked),</item>
-/// <item>futures liquidations across every coin on Binance (falling back to Bybit).</item>
+/// <item>futures liquidations on Binance (every coin) and Bybit (the biggest coins) at the same time.</item>
 /// </list>
 /// Only events at or above the thresholds are reported. Events fire on a background thread.
 /// </summary>
@@ -135,17 +135,22 @@ public sealed class RadarService : IAsyncDisposable
     private static readonly string[] BybitSymbols =
         ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "ADA", "AVAX", "LINK", "SUI", "LTC", "DOT", "TRX", "TON", "PEPE", "WIF", "NEAR", "APT", "ARB", "OP"];
 
+    // Both exchanges run at once: they are different markets, so together they show more of
+    // what is being wiped out. Binance futures can also connect and stay silent where it is
+    // not offered, so Bybit cannot wait for Binance to fail first.
     private Task RunLiquidationsAsync(decimal min, CancellationToken ct) =>
-        RunWithFailoverAsync("liquidations", ct,
-            ("Binance", () => WebSocketSession.RunAsync("Binance liquidations", new Uri("wss://fstream.binance.com/ws/!forceOrder@arr"), [],
-                span => Emit(ParseBinanceForceOrder(span), min), TimeSpan.FromMinutes(10), TimeSpan.FromHours(23), ct)),
-            ("Bybit", () => WebSocketSession.RunAsync("Bybit liquidations", new Uri("wss://stream.bybit.com/v5/public/linear"),
-                [BybitSubscribe(BybitSymbols)],
-                span =>
-                {
-                    foreach (var e in ParseBybitLiquidations(span))
-                        Emit(e, min);
-                }, TimeSpan.FromMinutes(10), TimeSpan.FromHours(23), ct)));
+        Task.WhenAll(
+            RunWithFailoverAsync("liquidations:Binance", ct,
+                ("Binance", () => WebSocketSession.RunAsync("Binance liquidations", new Uri("wss://fstream.binance.com/ws/!forceOrder@arr"), [],
+                    span => Emit(ParseBinanceForceOrder(span), min), TimeSpan.FromMinutes(10), TimeSpan.FromHours(23), ct))),
+            RunWithFailoverAsync("liquidations:Bybit", ct,
+                ("Bybit", () => WebSocketSession.RunAsync("Bybit liquidations", new Uri("wss://stream.bybit.com/v5/public/linear"),
+                    [BybitSubscribe(BybitSymbols)],
+                    span =>
+                    {
+                        foreach (var e in ParseBybitLiquidations(span))
+                            Emit(e, min);
+                    }, TimeSpan.FromMinutes(10), TimeSpan.FromHours(23), ct))));
 
     internal static string BybitSubscribe(IEnumerable<string> symbols) =>
         JsonSerializer.Serialize(new { op = "subscribe", args = symbols.Select(s => $"allLiquidation.{s}USDT").ToArray() });
@@ -222,6 +227,21 @@ public sealed class RadarService : IAsyncDisposable
             {
                 // A session that ran a while and then dropped is a normal reconnect.
                 failures = DateTime.UtcNow - started > TimeSpan.FromMinutes(2) ? 1 : failures + 1;
+                if (ex.Failure == FeedFailure.Blocked && sources.Length == 1)
+                {
+                    // Nothing to fall back to: try again much later in case the network changes.
+                    SourceChanged?.Invoke(part, null);
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromMinutes(30), ct).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                    failures = 0;
+                    continue;
+                }
                 if (ex.Failure == FeedFailure.Blocked || failures >= 3)
                 {
                     index = (index + 1) % sources.Length;
