@@ -21,8 +21,9 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
+        <!-- The strip mixes coins, the fee chip and headlines; each type has its own look. -->
         <!-- One coin in the strip: logo, symbol, price, 24h change, then a divider. -->
-        <DataTemplate x:Key="TickerItem" DataType="{x:Type vm:CoinRowViewModel}">
+        <DataTemplate DataType="{x:Type vm:CoinRowViewModel}">
             <StackPanel Orientation="Horizontal" Margin="0,0,18,0" VerticalAlignment="Center" ToolTip="{Binding DetailsText}">
                 <Grid Width="18" Height="18" VerticalAlignment="Center">
                     <Ellipse Fill="{Binding BadgeBrush}" />
@@ -44,6 +45,35 @@
                     <Setter TargetName="Change" Property="Foreground" Value="{DynamicResource DownBrush}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Network fees: "₿ 12 sat/vB · Ξ 10.1 gwei". -->
+        <DataTemplate DataType="{x:Type vm:FeeSummaryViewModel}">
+            <StackPanel Orientation="Horizontal" Margin="0,0,18,0" VerticalAlignment="Center" ToolTip="{Binding ToolTip}">
+                <TextBlock Text="&#xE8C7;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock FontSize="12" Margin="7,0,0,0" VerticalAlignment="Center" Typography.NumeralAlignment="Tabular">
+                    <Run Text="BTC" FontWeight="SemiBold" /> <Run Text="{Binding BitcoinText, Mode=OneWay}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <Run Text="  ETH" FontWeight="SemiBold" /> <Run Text="{Binding EthereumText, Mode=OneWay}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                </TextBlock>
+                <Ellipse Width="3" Height="3" Margin="18,0,0,0" Fill="{DynamicResource TextTertiaryBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- A headline: source badge and title; click opens the article. -->
+        <DataTemplate DataType="{x:Type vm:HeadlineViewModel}">
+            <StackPanel Orientation="Horizontal" Margin="0,0,18,0" VerticalAlignment="Center" Cursor="Hand"
+                        ToolTip="{Binding SourceLine}" Background="Transparent">
+                <StackPanel.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding OpenCommand}" />
+                </StackPanel.InputBindings>
+                <Border CornerRadius="4" Padding="5,1" VerticalAlignment="Center" Background="{DynamicResource HoverBrush}">
+                    <TextBlock Text="{Binding Source}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                </Border>
+                <TextBlock Text="{Binding Title}" FontSize="12" Margin="7,0,0,0" VerticalAlignment="Center" MaxWidth="560"
+                           TextTrimming="CharacterEllipsis" />
+                <Ellipse Width="3" Height="3" Margin="18,0,0,0" Fill="{DynamicResource TextTertiaryBrush}" VerticalAlignment="Center" />
+            </StackPanel>
         </DataTemplate>
 
         <ItemsPanelTemplate x:Key="Horizontal">
@@ -102,9 +132,9 @@
                     <StackPanel.RenderTransform>
                         <TranslateTransform x:Name="Offset" />
                     </StackPanel.RenderTransform>
-                    <ItemsControl x:Name="CopyA" ItemsSource="{Binding Coins}" ItemTemplate="{StaticResource TickerItem}"
+                    <ItemsControl x:Name="CopyA" ItemsSource="{Binding TickerItems}"
                                   ItemsPanel="{StaticResource Horizontal}" Focusable="False" VerticalAlignment="Center" />
-                    <ItemsControl x:Name="CopyB" ItemsSource="{Binding Coins}" ItemTemplate="{StaticResource TickerItem}"
+                    <ItemsControl x:Name="CopyB" ItemsSource="{Binding TickerItems}"
                                   ItemsPanel="{StaticResource Horizontal}" Focusable="False" VerticalAlignment="Center" />
                 </StackPanel>
             </Canvas>

@@ -82,6 +82,12 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         Widgets = new(s.Widgets.Select(w => new WidgetViewModel(this, w)));
         Alerts = new AlertsViewModel(this);
         Portfolio = new PortfolioViewModel(this);
+        Pulse = new PulseViewModel(this);
+        Pulse.HeadlinesChanged += (_, _) =>
+        {
+            foreach (var w in Widgets)
+                w.RefreshPulse();
+        };
         _trayCoin = s.TrayCoin;
         RebuildTrayCoinOptions();
 
@@ -113,6 +119,9 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
 
     public AlertsViewModel Alerts { get; }
     public PortfolioViewModel Portfolio { get; }
+
+    /// <summary>News, whale and liquidation radar, and network fees.</summary>
+    public PulseViewModel Pulse { get; }
 
     /// <summary>Shortcut that hides or shows portfolio amounts.</summary>
     [ObservableProperty]
@@ -228,6 +237,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _ = RefreshHistoryLoopAsync(_lifetime.Token);
         _ = Alerts.LoadLogosAsync();
         _ = Portfolio.LoadLogosAsync();
+        Pulse.Start();
     }
 
     public void Save() => _settings.ScheduleSave();
@@ -363,6 +373,12 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenMarket() => MarketRequested?.Invoke(this, EventArgs.Empty);
 
+    /// <summary>Asks the app to open the news, whales and fees window on a tab ("News", "Radar", "Fees").</summary>
+    public event EventHandler<string>? PulseRequested;
+
+    [RelayCommand]
+    private void OpenPulse(string? tab) => PulseRequested?.Invoke(this, tab ?? "News");
+
     [RelayCommand]
     private void Reconnect() => RestartFeed();
 
@@ -395,7 +411,9 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         if (Widgets.Count <= 1)
             return; // always keep one
         Widgets.Remove(widget);
+        widget.Detach();
         Settings.Widgets.Remove(widget.Settings);
+        Pulse.UpdateDemand();
         RequestFeedRestart();
         Save();
         RaiseWidgetStateChanged();
@@ -433,6 +451,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         Updates?.RefreshText();
         Alerts.RefreshText();
         Portfolio.RefreshText();
+        Pulse.RefreshText();
         foreach (var o in TrayCoinOptions)
             o.RefreshText();
     }
@@ -678,6 +697,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _market.StatusChanged -= OnStatusChanged;
         _dex.TickReceived -= OnTickReceived;
         _ = _dex.DisposeAsync();
+        Pulse.Dispose();
         Loc.Changed -= OnLanguageChanged;
     }
 

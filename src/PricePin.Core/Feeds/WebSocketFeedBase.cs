@@ -31,41 +31,12 @@ public abstract class WebSocketFeedBase : IMarketFeed
     /// <summary>Reads one message and reports any tickers in it.</summary>
     protected internal abstract void ParseMessage(ReadOnlySpan<byte> utf8Json, Action<Ticker> emit);
 
-    public async Task RunSessionAsync(
+    public Task RunSessionAsync(
         IReadOnlyList<MarketSymbol> symbols,
         Action<Ticker> onTick,
         Action onLive,
         CancellationToken cancellationToken)
     {
-        using var session = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        session.CancelAfter(MaxSessionLength);
-
-        using var ws = new ClientWebSocket();
-        ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-        ws.Options.CollectHttpResponseDetails = true;
-        ws.Options.SetRequestHeader("User-Agent", "PricePin");
-
-        await ConnectAsync(ws, BuildUri(symbols), session.Token).ConfigureAwait(false);
-
-        foreach (var message in BuildSubscribeMessages(symbols))
-        {
-            await ws.SendAsync(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text, true, session.Token)
-                .ConfigureAwait(false);
-        }
-
-        // Watchdog: abort the socket if the exchange goes quiet.
-        var lastMessage = Environment.TickCount64;
-        var stale = false;
-        using var watchdog = new Timer(_ =>
-        {
-            if (Environment.TickCount64 - Volatile.Read(ref lastMessage) > StaleAfter.TotalMilliseconds)
-            {
-                stale = true;
-                ws.Abort();
-            }
-        }, null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
-
-        var buffer = new ArrayBufferWriter<byte>(16 * 1024);
         var live = false;
 
         void Emit(Ticker t)
@@ -77,6 +48,57 @@ public abstract class WebSocketFeedBase : IMarketFeed
             }
             onTick(t);
         }
+
+        return WebSocketSession.RunAsync(Name, BuildUri(symbols), BuildSubscribeMessages(symbols).ToList(),
+            span => ParseMessage(span, Emit), StaleAfter, MaxSessionLength, cancellationToken);
+    }
+}
+
+/// <summary>
+/// One WebSocket connection from start to finish: connect, send the subscriptions, hand every
+/// whole message to <c>onMessage</c>, and abort if the server goes quiet. Every failure becomes a
+/// <see cref="FeedException"/>; it returns normally only when cancelled.
+/// </summary>
+internal static class WebSocketSession
+{
+    public static async Task RunAsync(
+        string name,
+        Uri uri,
+        IReadOnlyList<string> subscribeMessages,
+        SpanAction onMessage,
+        TimeSpan staleAfter,
+        TimeSpan maxSessionLength,
+        CancellationToken cancellationToken)
+    {
+        using var session = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        session.CancelAfter(maxSessionLength);
+
+        using var ws = new ClientWebSocket();
+        ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+        ws.Options.CollectHttpResponseDetails = true;
+        ws.Options.SetRequestHeader("User-Agent", "PricePin");
+
+        await ConnectAsync(name, ws, uri, session.Token).ConfigureAwait(false);
+
+        foreach (var message in subscribeMessages)
+        {
+            await ws.SendAsync(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text, true, session.Token)
+                .ConfigureAwait(false);
+        }
+
+        // Watchdog: abort the socket if the server goes quiet.
+        var lastMessage = Environment.TickCount64;
+        var stale = false;
+        using var watchdog = new Timer(_ =>
+        {
+            if (Environment.TickCount64 - Volatile.Read(ref lastMessage) > staleAfter.TotalMilliseconds)
+            {
+                stale = true;
+                ws.Abort();
+            }
+        }, null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+
+        var buffer = new ArrayBufferWriter<byte>(16 * 1024);
 
         try
         {
@@ -95,18 +117,18 @@ public abstract class WebSocketFeedBase : IMarketFeed
                 {
                     await CloseQuietlyAsync(ws).ConfigureAwait(false); // complete the close handshake
                     throw new FeedException(FeedFailure.Transient,
-                        $"{Name} closed the connection ({ws.CloseStatus}: {ws.CloseStatusDescription})");
+                        $"{name} closed the connection ({ws.CloseStatus}: {ws.CloseStatusDescription})");
                 }
 
                 Volatile.Write(ref lastMessage, Environment.TickCount64);
                 try
                 {
-                    ParseMessage(buffer.WrittenSpan, Emit);
+                    onMessage(buffer.WrittenSpan);
                 }
                 catch (Exception ex) when (ex is System.Text.Json.JsonException or FormatException or OverflowException or InvalidOperationException or KeyNotFoundException)
                 {
                     // One odd message must not kill the stream.
-                    System.Diagnostics.Debug.WriteLine($"{Name}: skipped unreadable message: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"{name}: skipped unreadable message: {ex.Message}");
                 }
             }
         }
@@ -116,23 +138,25 @@ public abstract class WebSocketFeedBase : IMarketFeed
         }
         catch (OperationCanceledException ex) when (stale)
         {
-            throw new FeedException(FeedFailure.Stale, $"{Name} went quiet for {StaleAfter.TotalSeconds:0}s", ex);
+            throw new FeedException(FeedFailure.Stale, $"{name} went quiet for {staleAfter.TotalSeconds:0}s", ex);
         }
         catch (OperationCanceledException)
         {
-            // MaxSessionLength reached: end this session so the service reconnects with a fresh one.
+            // The session length was reached: end it so the caller reconnects with a fresh one.
             await CloseQuietlyAsync(ws).ConfigureAwait(false);
-            throw new FeedException(FeedFailure.Transient, $"{Name} session refreshed");
+            throw new FeedException(FeedFailure.Transient, $"{name} session refreshed");
         }
         catch (Exception ex) when (ex is WebSocketException or IOException or ObjectDisposedException)
         {
             if (stale)
-                throw new FeedException(FeedFailure.Stale, $"{Name} went quiet for {StaleAfter.TotalSeconds:0}s", ex);
-            throw new FeedException(FeedFailure.Transient, $"{Name} connection lost: {ex.Message}", ex);
+                throw new FeedException(FeedFailure.Stale, $"{name} went quiet for {staleAfter.TotalSeconds:0}s", ex);
+            throw new FeedException(FeedFailure.Transient, $"{name} connection lost: {ex.Message}", ex);
         }
     }
 
-    private async Task ConnectAsync(ClientWebSocket ws, Uri uri, CancellationToken ct)
+    public delegate void SpanAction(ReadOnlySpan<byte> utf8);
+
+    private static async Task ConnectAsync(string name, ClientWebSocket ws, Uri uri, CancellationToken ct)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(15));
@@ -142,13 +166,13 @@ public abstract class WebSocketFeedBase : IMarketFeed
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            throw new FeedException(FeedFailure.Transient, $"{Name} did not answer in time");
+            throw new FeedException(FeedFailure.Transient, $"{name} did not answer in time");
         }
         catch (WebSocketException ex)
         {
             throw ws.HttpStatusCode is HttpStatusCode.UnavailableForLegalReasons or HttpStatusCode.Forbidden
-                ? new FeedException(FeedFailure.Blocked, $"{Name} is not available in your region (HTTP {(int)ws.HttpStatusCode})", ex)
-                : new FeedException(FeedFailure.Transient, $"Could not reach {Name}: {ex.Message}", ex);
+                ? new FeedException(FeedFailure.Blocked, $"{name} is not available in your region (HTTP {(int)ws.HttpStatusCode})", ex)
+                : new FeedException(FeedFailure.Transient, $"Could not reach {name}: {ex.Message}", ex);
         }
     }
 

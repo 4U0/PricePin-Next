@@ -6,6 +6,9 @@ using PricePin.Core.Feeds;
 using PricePin.Core.History;
 using PricePin.Core.Icons;
 using PricePin.Core.Market;
+using PricePin.Core.Fees;
+using PricePin.Core.News;
+using PricePin.Core.Radar;
 
 var seconds = args.Length > 0 && int.TryParse(args[0], out var s) ? s : 12;
 var coins = args.Skip(1).DefaultIfEmpty("BTC").Concat(args.Length > 1 ? [] : ["ETH", "SOL"]).ToArray();
@@ -144,6 +147,72 @@ catch (Exception ex)
     Console.WriteLine($"  FAILED: {ex.GetType().Name}: {ex.Message}");
 }
 Console.WriteLine($"  DEX prices {(dexOk ? "OK" : "NOT WORKING")}");
+
+Console.WriteLine("\nNews feeds:");
+var newsOk = 0;
+foreach (var (name, urls) in NewsService.Feeds)
+{
+    foreach (var url in urls)
+    {
+        var (items, error) = await NewsService.FetchFeedAsync(name, url, CancellationToken.None);
+        var dated = items?.Count(i => i.Published != DateTimeOffset.MinValue) ?? 0;
+        Console.WriteLine($"  {name,-17} {(items is null ? $"FAILED ({error})" : $"{items.Count} items, {dated} dated")}  {url}" +
+                          (items is { Count: > 0 } ? $"\n{"",-19}newest \"{items.OrderByDescending(i => i.Published).First().Title}\"" : ""));
+        if (items is not null)
+        {
+            newsOk++;
+            break;
+        }
+    }
+}
+var newsCoins = PricePin.Core.Coins.CoinCatalog.All.Select(c => new NewsCoin(c.Symbol, c.Symbol, c.Name)).ToList();
+var (merged, okFeeds) = await new NewsService().FetchAsync(newsCoins);
+Console.WriteLine($"  merged: {merged.Count} headlines from {okFeeds} feeds, {merged.Count(i => i.Coins.Count > 0)} tagged with coins");
+foreach (var item in merged.Take(5))
+    Console.WriteLine($"    [{string.Join(",", item.Coins)}] {item.Source}: {item.Title}");
+
+Console.WriteLine("\nNetwork fees:");
+var fees = new FeeService();
+var btcFees = await fees.FetchBitcoinAsync();
+Console.WriteLine($"  mempool.space   {(btcFees is null ? "FAILED" : $"fastest {btcFees.Fastest}, 30m {btcFees.HalfHour}, 1h {btcFees.Hour}, economy {btcFees.Economy} sat/vB")}");
+foreach (var rpc in FeeService.EthereumRpcUrls)
+{
+    var (gas, gasError) = await FeeService.FetchEthereumAsync(rpc, CancellationToken.None);
+    Console.WriteLine($"  {new Uri(rpc).Host,-28} {(gas is null ? $"FAILED ({gasError})" : $"base {gas.BaseFeeGwei} + tip {gas.PriorityFeeGwei} gwei")}");
+}
+
+Console.WriteLine("\nWhale and liquidation streams (every trade counted, no size filter):");
+async Task ProbeStream(string name, Uri uri, IReadOnlyList<string> subscribe, Func<ReadOnlyMemory<byte>, int> parse, int secs)
+{
+    var events = 0;
+    var messages = 0;
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(secs));
+    string result;
+    try
+    {
+        await WebSocketSession.RunAsync(name, uri, subscribe, span =>
+        {
+            messages++;
+            try { events += parse(span.ToArray()); } catch (System.Text.Json.JsonException) { }
+        }, TimeSpan.FromSeconds(secs + 5), TimeSpan.FromHours(1), cts.Token);
+        result = "OK";
+    }
+    catch (OperationCanceledException)
+    {
+        result = "OK";
+    }
+    catch (FeedException ex)
+    {
+        result = $"{ex.Failure.ToString().ToUpperInvariant()}: {ex.Message}";
+    }
+    Console.WriteLine($"  {name,-22} {result}, {messages} messages, {events} events");
+}
+await ProbeStream("Binance trades", RadarService.BinanceTradesUri(["BTC", "ETH"]), [], m => RadarService.ParseBinanceAggTrade(m.Span) is null ? 0 : 1, 10);
+await ProbeStream("Coinbase trades", new Uri("wss://ws-feed.exchange.coinbase.com"), [RadarService.CoinbaseSubscribe(["BTC", "ETH"])],
+    m => RadarService.ParseCoinbaseMatch(m.Span) is null ? 0 : 1, 10);
+await ProbeStream("Binance liquidations", new Uri("wss://fstream.binance.com/ws/!forceOrder@arr"), [], m => RadarService.ParseBinanceForceOrder(m.Span) is null ? 0 : 1, 30);
+await ProbeStream("Bybit liquidations", new Uri("wss://stream.bybit.com/v5/public/linear"), [RadarService.BybitSubscribe(["BTC", "ETH", "SOL", "XRP", "DOGE"])],
+    m => RadarService.ParseBybitLiquidations(m.Span).Count(), 30);
 
 Console.WriteLine($"\n{streamingOk} of 3 streaming feeds delivered data.");
 return streamingOk > 0 ? 0 : 1;
