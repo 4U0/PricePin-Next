@@ -4,6 +4,7 @@ using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PricePin.Core.Alerts;
+using PricePin.Core.Coins;
 using PricePin.Core.Market;
 using PricePin.Core.Settings;
 using PricePin.Services;
@@ -25,8 +26,11 @@ public sealed partial class AlertItemViewModel : ObservableObject
     }
 
     public PriceAlert Alert { get; }
-    public string Symbol => Alert.Symbol;
-    public string Initial => Symbol[..1];
+
+    /// <summary>The coin key ("BTC" or "dex:chain:address").</summary>
+    public string Key => Alert.Symbol;
+    public string Symbol => CoinCatalog.DisplaySymbol(Key);
+    public string Initial => Symbol.Length > 0 ? Symbol[..1] : "?";
 
     [ObservableProperty]
     private ImageSource? _logo;
@@ -93,6 +97,7 @@ public sealed partial class AlertsViewModel : ObservableObject
         Items = new(app.Settings.Alerts.Select(a => new AlertItemViewModel(a, this, app.Logos.GetLocal(a.Symbol))));
         Items.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasAlerts));
         _newSymbol = app.Widgets.SelectMany(w => w.Settings.Coins).FirstOrDefault() ?? "BTC";
+        _newSymbolText = CoinCatalog.DisplaySymbol(_newSymbol);
     }
 
     /// <summary>Raised on the UI thread with every alert that fired in one price update.</summary>
@@ -122,9 +127,22 @@ public sealed partial class AlertsViewModel : ObservableObject
 
     // ---- New alert form ------------------------------------------------------------------
 
+    /// <summary>Coin key of the form; set from the chips or the coin chart.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CurrentPriceText))]
     private string _newSymbol;
+
+    /// <summary>What the coin box shows: the symbol, even for DEX tokens.</summary>
+    [ObservableProperty]
+    private string _newSymbolText = "";
+
+    private bool _syncingSymbolText;
+
+    partial void OnNewSymbolTextChanged(string value)
+    {
+        if (!_syncingSymbolText)
+            NewSymbol = CoinCatalog.ResolveTyped(value, SymbolChoices);
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPercent), nameof(ValueSuffix))]
@@ -151,6 +169,9 @@ public sealed partial class AlertsViewModel : ObservableObject
 
     partial void OnNewSymbolChanged(string value)
     {
+        _syncingSymbolText = true;
+        NewSymbolText = value.Length == 0 ? "" : CoinCatalog.DisplaySymbol(value);
+        _syncingSymbolText = false;
         NewError = null;
         _valueEdited = false;
         PrefillValue();
@@ -175,8 +196,8 @@ public sealed partial class AlertsViewModel : ObservableObject
     [RelayCommand]
     private void Add()
     {
-        var symbol = (NewSymbol ?? "").Trim().ToUpperInvariant();
-        if (symbol.Length is < 2 or > 12 || !symbol.All(char.IsAsciiLetterOrDigit))
+        var symbol = CoinCatalog.ResolveTyped(NewSymbol, SymbolChoices);
+        if (!CoinCatalog.IsValidKey(symbol))
         {
             NewError = Loc.T("Alerts.BadSymbol");
             return;
@@ -223,7 +244,7 @@ public sealed partial class AlertsViewModel : ObservableObject
         item.Refresh();
         _app.Save();
         if (enabled)
-            _app.EnsureSubscribed(item.Symbol);
+            _app.EnsureSubscribed(item.Key);
     }
 
     internal void Remove(AlertItemViewModel item)
@@ -297,7 +318,7 @@ public sealed partial class AlertsViewModel : ObservableObject
             AlertCondition.Below => "Alerts.DescBelow",
             AlertCondition.RisesBy => "Alerts.DescRises",
             _ => "Alerts.DescFalls",
-        }, a.Symbol, value);
+        }, CoinCatalog.DisplaySymbol(a.Symbol), value);
     }
 
     private void Check(string symbol, decimal price, decimal? change) =>
@@ -331,7 +352,7 @@ public sealed partial class AlertsViewModel : ObservableObject
             return;
         try
         {
-            item.Logo = await _app.Logos.GetAsync(item.Symbol, CancellationToken.None);
+            item.Logo = await _app.Logos.GetAsync(item.Key, CancellationToken.None);
         }
         catch (Exception)
         {

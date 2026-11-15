@@ -1,36 +1,54 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using PricePin.Core.Coins;
+using PricePin.Core.Dex;
 using PricePin.Core.Feeds;
 using PricePin.Core.Market;
 
 namespace PricePin.Core.History;
 
 /// <summary>
-/// Fetches the last 24 hours of prices (48 half-hour closes) for the sparklines.
-/// Tries Binance, then Coinbase, then Kraken, so it works wherever the user is.
+/// Fetches recent closes for the sparklines: the last hour, day or week. Tries Binance, then
+/// Coinbase, then Kraken, so it works wherever the user is. DEX tokens come from GeckoTerminal.
 /// </summary>
 public sealed class PriceHistoryService
 {
     public const int Points = 48;
 
-    private readonly Func<MarketSymbol, CancellationToken, Task<IReadOnlyList<decimal>?>>[] _sources;
+    private sealed record Spec(string Binance, int BinanceLimit, int CoinbaseSeconds, int CoinbasePoints,
+        int KrakenMinutes, TimeSpan Span, string GeckoFrame, int GeckoAggregate, int GeckoLimit);
 
-    public PriceHistoryService()
+    private static readonly Dictionary<ChangePeriod, Spec> Specs = new()
     {
-        _sources = [FromBinanceAsync, FromCoinbaseAsync, FromKrakenAsync];
-    }
+        [ChangePeriod.Hour] = new("1m", 61, 60, 61, 1, TimeSpan.FromHours(1), "minute", 1, 61),
+        [ChangePeriod.Day] = new("30m", Points, 900, 96, 30, TimeSpan.FromDays(1), "minute", 15, 96),
+        [ChangePeriod.Week] = new("4h", 42, 21600, 28, 240, TimeSpan.FromDays(7), "hour", 4, 42),
+    };
+
+    private readonly FiatRates _rates;
+
+    public PriceHistoryService(FiatRates? rates = null) => _rates = rates ?? FiatRates.Shared;
 
     /// <summary>Returns oldest-to-newest closes, or an empty list if no source has the coin.</summary>
-    public async Task<IReadOnlyList<decimal>> GetLast24hAsync(MarketSymbol symbol, CancellationToken ct = default)
+    public Task<IReadOnlyList<decimal>> GetLast24hAsync(MarketSymbol symbol, CancellationToken ct = default) =>
+        GetAsync(symbol, ChangePeriod.Day, ct);
+
+    /// <summary>Oldest-to-newest closes covering <paramref name="period"/>, or empty if no source has the coin.</summary>
+    public async Task<IReadOnlyList<decimal>> GetAsync(MarketSymbol symbol, ChangePeriod period, CancellationToken ct = default)
     {
-        foreach (var source in _sources)
+        var spec = Specs[period];
+        Func<Task<IReadOnlyList<decimal>?>>[] sources = CoinKey.IsDex(symbol.Base)
+            ? [() => FromGeckoTerminalAsync(symbol, spec, ct)]
+            : [() => FromBinanceAsync(symbol, spec, ct), () => FromCoinbaseAsync(symbol, spec, ct), () => FromKrakenAsync(symbol, spec, ct)];
+        foreach (var source in sources)
         {
             try
             {
-                if (await source(symbol, ct).ConfigureAwait(false) is { Count: > 1 } closes)
+                if (await source().ConfigureAwait(false) is { Count: > 1 } closes)
                     return closes;
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException
+                                           or FormatException or IndexOutOfRangeException
                                        && !ct.IsCancellationRequested)
             {
                 // Try the next source.
@@ -39,26 +57,37 @@ public sealed class PriceHistoryService
         return [];
     }
 
-    private static async Task<IReadOnlyList<decimal>?> FromBinanceAsync(MarketSymbol s, CancellationToken ct)
+    private async Task<IReadOnlyList<decimal>?> FromGeckoTerminalAsync(MarketSymbol s, Spec spec, CancellationToken ct)
+    {
+        if (CoinCatalog.GetToken(s.Base) is not { PairAddress: { } pool } token)
+            return null;
+        if (await _rates.UsdToAsync(s.Quote, ct).ConfigureAwait(false) is not { } rate)
+            return null;
+        var candles = await GeckoTerminalClient.GetCandlesAsync(token.Chain, pool, spec.GeckoFrame, spec.GeckoAggregate, spec.GeckoLimit, ct)
+            .ConfigureAwait(false);
+        return candles?.Select(c => c.Close * rate).ToList();
+    }
+
+    private static async Task<IReadOnlyList<decimal>?> FromBinanceAsync(MarketSymbol s, Spec spec, CancellationToken ct)
     {
         var symbol = BinanceFeed.ToExchangeSymbol(s).ToUpperInvariant();
-        var json = await GetJsonAsync($"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval=30m&limit={Points}", ct)
+        var json = await GetJsonAsync($"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={spec.Binance}&limit={spec.BinanceLimit}", ct)
             .ConfigureAwait(false);
-        return json is { } j ? ParseBinanceKlines(j) : null;
+        return json is { } j ? ParseBinanceKlines(j, spec.BinanceLimit) : null;
     }
 
-    private static async Task<IReadOnlyList<decimal>?> FromCoinbaseAsync(MarketSymbol s, CancellationToken ct)
+    private static async Task<IReadOnlyList<decimal>?> FromCoinbaseAsync(MarketSymbol s, Spec spec, CancellationToken ct)
     {
         var product = CoinbaseFeed.ToExchangeSymbol(s);
-        var json = await GetJsonAsync($"https://api.exchange.coinbase.com/products/{product}/candles?granularity=1800", ct)
+        var json = await GetJsonAsync($"https://api.exchange.coinbase.com/products/{product}/candles?granularity={spec.CoinbaseSeconds}", ct)
             .ConfigureAwait(false);
-        return json is { } j ? ParseCoinbaseCandles(j) : null;
+        return json is { } j ? ParseCoinbaseCandles(j, spec.CoinbasePoints) : null;
     }
 
-    private static async Task<IReadOnlyList<decimal>?> FromKrakenAsync(MarketSymbol s, CancellationToken ct)
+    private static async Task<IReadOnlyList<decimal>?> FromKrakenAsync(MarketSymbol s, Spec spec, CancellationToken ct)
     {
-        var since = DateTimeOffset.UtcNow.AddHours(-24).ToUnixTimeSeconds();
-        var json = await GetJsonAsync($"https://api.kraken.com/0/public/OHLC?pair={s.Base}{s.Quote}&interval=30&since={since}", ct)
+        var since = (DateTimeOffset.UtcNow - spec.Span).ToUnixTimeSeconds();
+        var json = await GetJsonAsync($"https://api.kraken.com/0/public/OHLC?pair={s.Base}{s.Quote}&interval={spec.KrakenMinutes}&since={since}", ct)
             .ConfigureAwait(false);
         return json is { } j ? ParseKrakenOhlc(j) : null;
     }
@@ -72,17 +101,17 @@ public sealed class PriceHistoryService
     }
 
     // [[openTime, open, high, low, close, volume, closeTime, ...], ...] oldest first
-    internal static IReadOnlyList<decimal> ParseBinanceKlines(JsonElement json) =>
+    internal static IReadOnlyList<decimal> ParseBinanceKlines(JsonElement json, int max = Points) =>
         json.EnumerateArray()
             .Select(k => ParseNumber(k[4]))
             .OfType<decimal>()
-            .TakeLast(Points)
+            .TakeLast(max)
             .ToList();
 
     // [[time, low, high, open, close, volume], ...] newest first
-    internal static IReadOnlyList<decimal> ParseCoinbaseCandles(JsonElement json) =>
+    internal static IReadOnlyList<decimal> ParseCoinbaseCandles(JsonElement json, int max = Points) =>
         json.EnumerateArray()
-            .Take(Points)
+            .Take(max)
             .Select(k => ParseNumber(k[4]))
             .OfType<decimal>()
             .Reverse()
@@ -100,7 +129,6 @@ public sealed class PriceHistoryService
                 return prop.Value.EnumerateArray()
                     .Select(k => ParseNumber(k[4]))
                     .OfType<decimal>()
-                    .TakeLast(Points)
                     .ToList();
             }
         }

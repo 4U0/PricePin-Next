@@ -38,7 +38,7 @@
         <DataTemplate x:Key="Mover" DataType="{x:Type vm:MoverItem}">
             <Button Style="{StaticResource TextButton}" HorizontalContentAlignment="Stretch" Padding="8,5" Margin="0,2"
                     Command="{Binding DataContext.OpenCoinCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                    CommandParameter="{Binding Symbol}">
+                    CommandParameter="{Binding Key}">
                 <DockPanel>
                     <TextBlock x:Name="Change" DockPanel.Dock="Right" Text="{Binding ChangeText}" FontWeight="SemiBold" FontSize="12"
                                Foreground="{DynamicResource UpBrush}" />

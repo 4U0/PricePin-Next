@@ -1,0 +1,58 @@
+using System.Globalization;
+using System.Net.Http.Json;
+using System.Text.Json;
+using PricePin.Core.Feeds;
+using PricePin.Core.History;
+
+namespace PricePin.Core.Dex;
+
+/// <summary>
+/// Price history for DEX pools from GeckoTerminal's free public API (no key, about 30
+/// requests a minute), used for DEX tokens' sparklines and charts. Prices are in US dollars.
+/// </summary>
+public static class GeckoTerminalClient
+{
+    /// <param name="timeframe">"minute", "hour" or "day".</param>
+    /// <param name="aggregate">Candle size in that unit: minute 1/5/15, hour 1/4/12, day 1.</param>
+    /// <returns>Oldest-first candles, or null if GeckoTerminal doesn't have the pool.</returns>
+    public static async Task<IReadOnlyList<Candle>?> GetCandlesAsync(
+        string chain, string poolAddress, string timeframe, int aggregate, int limit, CancellationToken ct = default)
+    {
+        var network = DexChains.GeckoTerminalNetwork(chain);
+        var url = $"https://api.geckoterminal.com/api/v2/networks/{Uri.EscapeDataString(network)}/pools/{Uri.EscapeDataString(poolAddress)}" +
+                  $"/ohlcv/{timeframe}?aggregate={aggregate}&limit={limit}&currency=usd&token=base";
+        using var response = await Http.Client.GetAsync(url, ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+            return null;
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(ct).ConfigureAwait(false);
+        return ParseOhlcv(json);
+    }
+
+    // {"data":{"attributes":{"ohlcv_list":[[timeSec, open, high, low, close, volumeUsd], ...]}}} newest first
+    internal static IReadOnlyList<Candle>? ParseOhlcv(JsonElement json)
+    {
+        if (!json.TryGetProperty("data", out var data)
+            || !data.TryGetProperty("attributes", out var attributes)
+            || !attributes.TryGetProperty("ohlcv_list", out var list)
+            || list.ValueKind != JsonValueKind.Array)
+            return null;
+        return list.EnumerateArray()
+            .Where(k => k.ValueKind == JsonValueKind.Array && k.GetArrayLength() >= 6)
+            .Select(k => new Candle(DateTimeOffset.FromUnixTimeSeconds((long)Num(k[0])), Num(k[1]), Num(k[2]), Num(k[3]), Num(k[4]), Num(k[5])))
+            .OrderBy(c => c.Time)
+            .ToList();
+    }
+
+    private static decimal Num(JsonElement e) => e.ValueKind switch
+    {
+        JsonValueKind.Number => e.TryGetDecimal(out var d) ? d : (decimal)e.GetDouble(),
+        JsonValueKind.String => decimal.Parse(e.GetString()!, NumberStyles.Float, CultureInfo.InvariantCulture),
+        _ => throw new FormatException("Not a number"),
+    };
+
+    /// <summary>Turns dollar candles into another currency; volume becomes an amount of the token.</summary>
+    public static IReadOnlyList<Candle> Convert(IReadOnlyList<Candle> usd, decimal usdToQuote) =>
+        usd.Select(c => new Candle(c.Time, c.Open * usdToQuote, c.High * usdToQuote, c.Low * usdToQuote, c.Close * usdToQuote,
+                c.Close > 0 ? c.Volume / c.Close : 0))
+            .ToList();
+}

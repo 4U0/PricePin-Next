@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using PricePin.Core.Coins;
 using PricePin.Core.Icons;
 
 namespace PricePin.Services;
@@ -20,10 +21,23 @@ public sealed class LogoProvider(CoinIconService icons)
         if (_cache.TryGetValue(symbol, out var cached) && cached is not null)
             return cached;
 
-        var image = TryLoadBundled(symbol)
-                    ?? (icons.TryGetCachedPath(symbol) is { } path ? Load(new Uri(path)) : null);
+        var image = CoinKey.IsDex(symbol)
+            ? icons.TryGetCachedTokenPath(symbol) is { } tokenPath ? Load(new Uri(tokenPath)) : null
+            : TryLoadBundled(symbol) ?? (icons.TryGetCachedPath(symbol) is { } path ? Load(new Uri(path)) : null);
         if (image is not null)
             _cache[symbol] = image;
+        return image;
+    }
+
+    /// <summary>Logo for a DEX search result that isn't saved yet.</summary>
+    public async Task<ImageSource?> GetForUrlAsync(string key, string? imageUrl, CancellationToken ct)
+    {
+        if (GetLocal(key) is { } local)
+            return local;
+        var path = await icons.GetTokenIconPathAsync(key, imageUrl, ct);
+        var image = path is null ? null : Load(new Uri(path));
+        if (image is not null)
+            _cache[key] = image;
         return image;
     }
 
@@ -33,7 +47,9 @@ public sealed class LogoProvider(CoinIconService icons)
         if (GetLocal(symbol) is { } local)
             return local;
 
-        var path = await icons.GetIconPathAsync(symbol, ct);
+        var path = CoinKey.IsDex(symbol)
+            ? await icons.GetTokenIconPathAsync(symbol, CoinCatalog.GetToken(symbol)?.ImageUrl, ct)
+            : await icons.GetIconPathAsync(symbol, ct);
         var image = path is null ? null : Load(new Uri(path));
         if (image is not null)
             _cache[symbol] = image;

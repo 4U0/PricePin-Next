@@ -24,7 +24,7 @@ A fast, good-looking price widget that floats on your desktop, stays on top if y
 
 - **Real time.** Prices stream over WebSocket and change on every trade, not every minute.
 - **Works anywhere.** If an exchange is blocked or down where you are, PricePin moves to the next one by itself.
-- **Every coin.** Pick from every coin listed on Binance, Coinbase and Kraken, in the order you like.
+- **Every coin.** Pick from every coin listed on Binance, Coinbase and Kraken, plus any token on a decentralised exchange by name or contract address.
 - **Out of your way.** Stay on top, see-through, click-through, and lockable in place.
 - **Private.** No account, no API key, no tracking. Your portfolio never leaves your PC.
 
@@ -46,6 +46,18 @@ A fast, good-looking price widget that floats on your desktop, stays on top if y
 - Real coin logos, 24h sparklines, green and red flashes on every move, and a live 24h change
 - Hover a coin for its 24h high, low and volume
 - Prices in **USD, USDT, EUR, TRY or GBP**
+- Change over the **last hour, 24 hours or 7 days**, per widget, with a sparkline to match
+
+### Any token, on any chain
+- Search by name or paste a **contract address** to add tokens from decentralised exchanges on Solana, Base, BNB Chain, Ethereum, Arbitrum and dozens more chains
+- Prices from DexScreener every few seconds, charts and sparklines from GeckoTerminal
+- Hover a token for its chain, market cap and liquidity; tiny, illiquid pools are left out of searches
+- Works with alerts, the portfolio and the tray icon like any other coin
+
+### Quick search
+- Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd> anywhere to look up any coin's live price and sparkline
+- Built-in converter: type an amount of the coin or of your currency
+- Open the chart, add it to a widget, set an alert or add it to your portfolio straight from there
 
 ### Charts and market
 - **Coin charts:** double-click any coin for a 1D, 1W, 1M or 1Y chart that follows the live price. It has a crosshair, plus the range's high, low, change and volume
@@ -96,12 +108,13 @@ To remove PricePin, uninstall it from *Settings → Apps* like any other app. Yo
 | Show or hide all widgets | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd> |
 | Toggle click-through | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> |
 | Toggle privacy mode | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>H</kbd> |
+| Quick search | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd> |
 | Change opacity | <kbd>Ctrl</kbd> + mouse wheel over a widget |
 | Place freely without snapping | Hold <kbd>Shift</kbd> while dragging |
 | Open a coin's chart | Double-click the coin |
 | Show or hide from the tray | Left-click the tray icon (right-click for the menu) |
 
-All three global shortcuts can be changed in *Settings → General*.
+All four global shortcuts can be changed in *Settings → General*.
 
 ## Privacy
 
@@ -117,6 +130,9 @@ PricePin has no account, no telemetry and no analytics. It only talks to the pub
 | [cryptocurrency-icons](https://github.com/spothq/cryptocurrency-icons) (CC0) | Coin logos. Popular coins are bundled; others download once and are cached. |
 | CoinGecko | Logos for newer coins, plus market cap and dominance from its public `/global` endpoint |
 | [alternative.me](https://alternative.me/crypto/fear-and-greed-index/) | Fear & Greed Index |
+| [DexScreener](https://dexscreener.com) | Prices, search and logos for tokens on decentralised exchanges |
+| [GeckoTerminal](https://www.geckoterminal.com) | Charts and sparklines for tokens on decentralised exchanges |
+| Coinbase, [open.er-api.com](https://www.exchangerate-api.com/docs/free) | Dollar exchange rates, to show DEX token prices in EUR, TRY or GBP |
 
 All of these are public endpoints, so no account or API key is needed. To check which sources work from your network:
 
@@ -196,8 +212,10 @@ See [docs/RELEASING.md](docs/RELEASING.md).
 - [x] Portfolio and privacy mode
 - [x] Coin charts and market overview
 - [ ] Code signing and a winget listing
-- [ ] Any token by contract address (DexScreener)
-- [ ] Currency converter
+- [x] Any token by contract address, quick search and converter, 1h/7d change
+- [ ] News headlines about your coins in the ticker bar
+- [ ] Whale trades and liquidations radar
+- [ ] Exchange price compare
 - [ ] Stocks and forex
 
 ## License

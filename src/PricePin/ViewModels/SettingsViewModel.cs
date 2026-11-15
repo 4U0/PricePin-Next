@@ -6,33 +6,85 @@ using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PricePin.Core.Coins;
+using PricePin.Core.Dex;
 using PricePin.Core.Settings;
 using PricePin.Services;
 
 namespace PricePin.ViewModels;
 
 /// <summary>A coin in "Your coins".</summary>
-public sealed partial class CoinEntryViewModel(string symbol, string name) : ObservableObject
+public sealed partial class CoinEntryViewModel(string key, string name) : ObservableObject
 {
-    public string Symbol { get; } = symbol;
+    /// <summary>The coin key ("BTC" or "dex:chain:address").</summary>
+    public string Key { get; } = key;
+    public string Symbol { get; } = CoinCatalog.DisplaySymbol(key);
     public string Name { get; } = name;
-    public string Initial => Symbol[..1];
+    public string Initial => Symbol.Length > 0 ? Symbol[..1] : "?";
 
     [ObservableProperty]
     private ImageSource? _logo;
 }
 
-/// <summary>A search result in the coin picker.</summary>
-public sealed partial class CatalogItemViewModel(CatalogCoin coin, ImageSource? logo) : ObservableObject
+/// <summary>A search result in the coin picker: an exchange coin, or a DEX token from DexScreener.</summary>
+public sealed partial class CatalogItemViewModel : ObservableObject
 {
-    public string Symbol { get; } = coin.Symbol;
-    public string Name { get; } = coin.Name;
-    public string Exchanges => coin.Exchanges.Count > 0 ? string.Join(" · ", coin.Exchanges) : Loc.T("Coins.NotListed");
-    public ImageSource? Logo { get; } = logo;
-    public string Initial => Symbol[..1];
+    public CatalogItemViewModel(CatalogCoin coin, ImageSource? logo)
+    {
+        Key = coin.Symbol;
+        Symbol = coin.Symbol;
+        Name = coin.Name;
+        Exchanges = coin.Exchanges.Count > 0 ? string.Join(" · ", coin.Exchanges) : Loc.T("Coins.NotListed");
+        _logo = logo;
+    }
+
+    /// <summary>A coin the user already has, by key.</summary>
+    public CatalogItemViewModel(string key, string name, string subtitle, ImageSource? logo)
+    {
+        Key = key;
+        Symbol = CoinCatalog.DisplaySymbol(key);
+        Name = name;
+        Exchanges = subtitle;
+        _logo = logo;
+    }
+
+    public CatalogItemViewModel(DexPair pair, ImageSource? logo)
+    {
+        Pair = pair;
+        Key = pair.Key;
+        Symbol = pair.BaseSymbol;
+        Name = pair.BaseName;
+        Exchanges = DexSummary(pair);
+        _logo = logo;
+    }
+
+    public string Key { get; }
+    public string Symbol { get; }
+    public string Name { get; }
+
+    /// <summary>"Binance · Coinbase", or "Solana · raydium · Liquidity $1.2M" for a DEX token.</summary>
+    public string Exchanges { get; }
+
+    /// <summary>The pool a DEX result was found in; null for exchange coins.</summary>
+    public DexPair? Pair { get; }
+
+    public bool IsDex => Pair is not null;
+    public string Initial => Symbol.Length > 0 ? Symbol[..1] : "?";
+
+    [ObservableProperty]
+    private ImageSource? _logo;
 
     [ObservableProperty]
     private bool _isAdded;
+
+    public static string DexSummary(DexPair p)
+    {
+        var parts = new List<string> { DexChains.DisplayName(p.Chain) };
+        if (p.DexId.Length > 0)
+            parts.Add(p.DexId);
+        if (p.LiquidityUsd is { } liq)
+            parts.Add(Loc.F("Coins.DexLiquidity", "$" + CoinRowViewModel.FormatCompact(liq)));
+        return string.Join(" · ", parts);
+    }
 }
 
 public sealed partial class AccentOption(string name, string hex) : ObservableObject
@@ -67,6 +119,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly CancellationTokenSource _lifetime = new();
     private IReadOnlyList<CatalogCoin> _allCoins = [];
     private int _catalogRequest;
+    private CancellationTokenSource? _dexSearch;
+    private IReadOnlyList<DexPair> _dexResults = [];
 
     public SettingsViewModel(AppViewModel app, SettingsService settings, CoinCatalogService catalog, LogoProvider logos, ThemeService theme)
     {
@@ -95,6 +149,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CatalogStatus));
         OnPropertyChanged(nameof(CoinCountText));
         OnPropertyChanged(nameof(AddCustomText));
+        OnPropertyChanged(nameof(DexStatus));
     }
 
     public AppViewModel App { get; }
@@ -119,7 +174,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             SelectedCoins.Add(CreateEntry(symbol));
         OnPropertyChanged(nameof(CoinCountText));
         foreach (var r in SearchResults)
-            r.IsAdded = SelectedCoins.Any(c => c.Symbol == r.Symbol);
+            r.IsAdded = SelectedCoins.Any(c => c.Key == r.Key);
         UpdateCustomSymbol();
     }
 
@@ -176,6 +231,25 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         var n => Loc.F("Coins.Loaded", n, QuoteCurrency),
     };
 
+    /// <summary>State of the DEX token search under the results; empty when idle.</summary>
+    public string DexStatus => _dexState switch
+    {
+        DexSearchState.Searching => Loc.T("Coins.DexSearching"),
+        DexSearchState.Failed => Loc.T("Coins.DexFailed"),
+        DexSearchState.None => Loc.T("Coins.DexNone"),
+        _ => Loc.T("Coins.DexHint"),
+    };
+
+    private enum DexSearchState { Idle, Searching, Failed, None, Found }
+
+    private DexSearchState _dexState;
+
+    private void SetDexState(DexSearchState state)
+    {
+        _dexState = state;
+        OnPropertyChanged(nameof(DexStatus));
+    }
+
     [ObservableProperty]
     private string _page = "General";
 
@@ -209,15 +283,54 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _ = LoadCatalogAsync();
     }
 
-    partial void OnSearchTextChanged(string value) => RefreshSearch();
+    partial void OnSearchTextChanged(string value)
+    {
+        _dexResults = [];
+        RefreshSearch();
+        _ = SearchDexAsync(value);
+    }
+
+    /// <summary>Looks the text up on DexScreener too, after a short pause in typing.</summary>
+    private async Task SearchDexAsync(string text)
+    {
+        _dexSearch?.Cancel();
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _dexSearch = cts;
+        text = text.Trim();
+        if (text.Length < 2)
+        {
+            SetDexState(DexSearchState.Idle);
+            return;
+        }
+        SetDexState(DexSearchState.Searching);
+        try
+        {
+            await Task.Delay(350, cts.Token);
+            var pairs = await DexScreenerClient.SearchAsync(text, cts.Token);
+            if (cts.IsCancellationRequested)
+                return;
+            _dexResults = pairs;
+            SetDexState(pairs.Count > 0 ? DexSearchState.Found : DexSearchState.None);
+            RefreshSearch();
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or System.Net.Http.HttpRequestException or System.Text.Json.JsonException)
+        {
+            // A timeout is a failure too; a newer search or closing the window is not.
+            if (!cts.IsCancellationRequested)
+                SetDexState(DexSearchState.Failed);
+        }
+    }
 
     // ---- Coins -------------------------------------------------------------------------
 
     [RelayCommand]
     private void AddCoin(CatalogItemViewModel? item)
     {
-        if (item is not null)
-            Add(item.Symbol);
+        if (item is null)
+            return;
+        if (item.Pair is { } pair)
+            App.AddToken(pair.ToToken());
+        Add(item.Key);
     }
 
     [RelayCommand]
@@ -264,8 +377,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void Add(string symbol)
     {
-        symbol = symbol.Trim().ToUpperInvariant();
-        if (symbol.Length == 0 || SelectedCoins.Count >= MaxCoins || SelectedCoins.Any(c => c.Symbol == symbol))
+        symbol = CoinKey.Normalize(symbol);
+        if (symbol.Length == 0 || SelectedCoins.Count >= MaxCoins
+            || SelectedCoins.Any(c => string.Equals(c.Key, symbol, StringComparison.OrdinalIgnoreCase)))
             return;
         SelectedCoins.Add(CreateEntry(symbol));
         CommitCoins();
@@ -279,19 +393,21 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void CommitCoins()
     {
-        SelectedWidget.Settings.Coins = SelectedCoins.Select(c => c.Symbol).ToList();
+        SelectedWidget.Settings.Coins = SelectedCoins.Select(c => c.Key).ToList();
         _settings.ScheduleSave();
         SelectedWidget.ApplyCoinSettings();
         App.RequestFeedRestart();
         OnPropertyChanged(nameof(CoinCountText));
         foreach (var r in SearchResults)
-            r.IsAdded = SelectedCoins.Any(c => c.Symbol == r.Symbol);
+            r.IsAdded = SelectedCoins.Any(c => c.Key == r.Key);
         UpdateCustomSymbol();
     }
 
     private CoinEntryViewModel CreateEntry(string symbol)
     {
-        var name = _allCoins.FirstOrDefault(c => c.Symbol == symbol)?.Name ?? CoinCatalog.Get(symbol).Name;
+        var name = CoinKey.TryParseDex(symbol, out var chain, out _)
+            ? $"{CoinCatalog.Get(symbol).Name} · {DexChains.DisplayName(chain)}"
+            : _allCoins.FirstOrDefault(c => c.Symbol == symbol)?.Name ?? CoinCatalog.Get(symbol).Name;
         var entry = new CoinEntryViewModel(symbol, name) { Logo = _logos.GetLocal(symbol) };
         if (entry.Logo is null)
             _ = LoadLogoAsync(entry);
@@ -302,7 +418,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     {
         try
         {
-            entry.Logo = await _logos.GetAsync(entry.Symbol, _lifetime.Token);
+            entry.Logo = await _logos.GetAsync(entry.Key, _lifetime.Token);
         }
         catch (OperationCanceledException)
         {
@@ -332,14 +448,37 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private void RefreshSearch()
     {
         SearchResults.Clear();
-        foreach (var coin in CoinCatalogService.Search(_allCoins, SearchText))
+        IReadOnlyList<CatalogCoin> exchange = CoinKey.LooksLikeAddress(SearchText) ? [] : CoinCatalogService.Search(_allCoins, SearchText);
+        foreach (var coin in exchange)
         {
             SearchResults.Add(new CatalogItemViewModel(coin, _logos.GetLocal(coin.Symbol))
             {
-                IsAdded = SelectedCoins.Any(c => c.Symbol == coin.Symbol),
+                IsAdded = SelectedCoins.Any(c => c.Key == coin.Symbol),
             });
         }
+        // DEX tokens after the exchange coins: a coin on Binance is usually the one people mean.
+        foreach (var pair in _dexResults)
+        {
+            var item = new CatalogItemViewModel(pair, _logos.GetLocal(pair.Key))
+            {
+                IsAdded = SelectedCoins.Any(c => string.Equals(c.Key, pair.Key, StringComparison.OrdinalIgnoreCase)),
+            };
+            SearchResults.Add(item);
+            if (item.Logo is null)
+                _ = LoadResultLogoAsync(item);
+        }
         UpdateCustomSymbol();
+    }
+
+    private async Task LoadResultLogoAsync(CatalogItemViewModel item)
+    {
+        try
+        {
+            item.Logo = await _logos.GetForUrlAsync(item.Key, item.Pair?.ImageUrl, _lifetime.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     private void UpdateCustomSymbol()
@@ -347,8 +486,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         var text = SearchText.Trim().ToUpperInvariant();
         CustomSymbol = text.Length is >= 2 and <= 12
                        && text.All(char.IsAsciiLetterOrDigit)
-                       && SearchResults.All(r => r.Symbol != text)
-                       && SelectedCoins.All(c => c.Symbol != text)
+                       && !CoinKey.LooksLikeAddress(SearchText)
+                       && SearchResults.All(r => r.IsDex || r.Symbol != text)
+                       && SelectedCoins.All(c => c.Key != text)
             ? text
             : null;
     }
@@ -383,6 +523,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        _dexSearch?.Cancel();
         Loc.Changed -= OnLanguageChanged;
         _lifetime.Cancel();
     }

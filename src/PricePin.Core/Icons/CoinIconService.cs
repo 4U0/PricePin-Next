@@ -82,6 +82,50 @@ public sealed class CoinIconService
         }
     }
 
+    /// <summary>File a DEX token's logo is cached in; the key contains characters no file name may have.</summary>
+    private string TokenPath(string key)
+    {
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key.ToLowerInvariant())));
+        return Path.Combine(_cacheDir, "dex-" + hash[..24].ToLowerInvariant() + ".img");
+    }
+
+    /// <summary>Path of an already-downloaded DEX token logo, or null.</summary>
+    public string? TryGetCachedTokenPath(string key)
+    {
+        var path = TokenPath(key);
+        return File.Exists(path) ? path : null;
+    }
+
+    /// <summary>Downloads a DEX token's logo from the URL DexScreener gave, and caches it.</summary>
+    public async Task<string?> GetTokenIconPathAsync(string key, string? imageUrl, CancellationToken ct = default)
+    {
+        var path = TokenPath(key);
+        if (File.Exists(path))
+            return path;
+        if (imageUrl is null || !imageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        await _throttle.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var (bytes, _) = await TryDownloadAsync(imageUrl, ct).ConfigureAwait(false);
+            if (bytes is null || bytes.Length > 2_000_000)
+                return null;
+            var tmp = path + ".tmp";
+            await File.WriteAllBytesAsync(tmp, bytes, ct).ConfigureAwait(false);
+            File.Move(tmp, path, overwrite: true);
+            return path;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException && !ct.IsCancellationRequested)
+        {
+            return null;
+        }
+        finally
+        {
+            _throttle.Release();
+        }
+    }
+
     /// <returns>The image, or null plus whether the server definitely has no such file (404).</returns>
     private static async Task<(byte[]? Bytes, bool Missing)> TryDownloadAsync(string url, CancellationToken ct)
     {

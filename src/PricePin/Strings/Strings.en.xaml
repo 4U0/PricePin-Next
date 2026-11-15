@@ -37,7 +37,6 @@
 
     <!-- Widget -->
     <sys:String x:Key="Widget.Asset">ASSET</sys:String>
-    <sys:String x:Key="Widget.Change">24H</sys:String>
     <sys:String x:Key="Widget.Price">PRICE</sys:String>
     <sys:String x:Key="Widget.Empty">No coins yet. Open Settings to add some.</sys:String>
     <sys:String x:Key="Widget.DefaultName">Widget {0}</sys:String>
@@ -166,7 +165,7 @@
     <sys:String x:Key="Coins.Yours">YOUR COINS</sys:String>
     <sys:String x:Key="Coins.DragHint">Drag to reorder. Each widget has its own list.</sys:String>
     <sys:String x:Key="Coins.Add">ADD COINS</sys:String>
-    <sys:String x:Key="Coins.Search">Search by name or symbol</sys:String>
+    <sys:String x:Key="Coins.Search">Search coins, or paste a contract address</sys:String>
     <sys:String x:Key="Coins.Already">Already added</sys:String>
     <sys:String x:Key="Coins.AddAnyway">Add {0} anyway</sys:String>
     <sys:String x:Key="Coins.Count">{0} of {1}</sys:String>
@@ -281,4 +280,35 @@
     <sys:String x:Key="Market.Updated">Updated {0}.</sys:String>
     <sys:String x:Key="Market.Sources">Market data from CoinGecko, Fear &amp; Greed Index from alternative.me.</sys:String>
     <sys:String x:Key="Market.LoadFailed">Couldn't load market data right now. It will try again in a few minutes.</sys:String>
+
+    <!-- v1.4: DEX tokens, quick search, change period -->
+    <sys:String x:Key="Coin.Chain">Chain</sys:String>
+    <sys:String x:Key="Coin.MarketCap">Market cap</sys:String>
+    <sys:String x:Key="Coin.Liquidity">Liquidity</sys:String>
+    <sys:String x:Key="Period.Hour">1h</sys:String>
+    <sys:String x:Key="Period.Day">24h</sys:String>
+    <sys:String x:Key="Period.Week">7d</sys:String>
+    <sys:String x:Key="Period.HourLong">Last hour</sys:String>
+    <sys:String x:Key="Period.DayLong">Last 24 hours</sys:String>
+    <sys:String x:Key="Period.WeekLong">Last 7 days</sys:String>
+    <sys:String x:Key="Widgets.Change">Change over</sys:String>
+    <sys:String x:Key="Widgets.ChangeHint">The change and the sparkline cover this span. Alerts and the portfolio always use 24 hours.</sys:String>
+    <sys:String x:Key="Menu.ShowChange">Show change for</sys:String>
+    <sys:String x:Key="Menu.QuickSearch">Quick search…</sys:String>
+    <sys:String x:Key="General.QuickSearch">Open quick search</sys:String>
+    <sys:String x:Key="Coins.DexLiquidity">Liquidity {0}</sys:String>
+    <sys:String x:Key="Coins.DexSearching">Searching DEX tokens…</sys:String>
+    <sys:String x:Key="Coins.DexFailed">Couldn't reach DexScreener, so DEX tokens aren't shown right now.</sys:String>
+    <sys:String x:Key="Coins.DexNone">No DEX tokens with enough liquidity match.</sys:String>
+    <sys:String x:Key="Coins.DexHint">Tokens on Solana, Base, BNB Chain, Ethereum and other chains show up too. You can also paste a contract address.</sys:String>
+    <sys:String x:Key="Detail.OpenDex">Open this pool on DexScreener</sys:String>
+    <sys:String x:Key="Quick.Title">Quick search</sys:String>
+    <sys:String x:Key="Quick.Placeholder">Search any coin, or paste a contract address</sys:String>
+    <sys:String x:Key="Quick.Chart">Open chart</sys:String>
+    <sys:String x:Key="Quick.AddToWidget">Add to widget</sys:String>
+    <sys:String x:Key="Quick.Added">Added to {0}.</sys:String>
+    <sys:String x:Key="Quick.AlreadyIn">Already in {0}.</sys:String>
+    <sys:String x:Key="Quick.Full">{0} is full. Remove a coin in Settings first.</sys:String>
+    <sys:String x:Key="Quick.NothingFound">Nothing found.</sys:String>
+    <sys:String x:Key="Quick.Keys">↑↓ choose · Enter chart · Ctrl+Enter add · Esc close</sys:String>
 </ResourceDictionary>

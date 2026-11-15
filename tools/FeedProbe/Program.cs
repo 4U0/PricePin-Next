@@ -1,6 +1,7 @@
 // Usage: dotnet run --project tools/FeedProbe [seconds] [coins...]
 // Example: dotnet run --project tools/FeedProbe 10 BTC ETH SUI
 using System.Diagnostics;
+using PricePin.Core.Dex;
 using PricePin.Core.Feeds;
 using PricePin.Core.History;
 using PricePin.Core.Icons;
@@ -85,6 +86,61 @@ foreach (var coin in coins.Append("SUI").Distinct())
     var path = await icons.GetIconPathAsync(coin);
     Console.WriteLine($"  {coin,-5} {(path is null ? "not found" : new FileInfo(path).Length + " bytes")}");
 }
+
+Console.WriteLine("\nSparkline history by period:");
+foreach (var period in Enum.GetValues<ChangePeriod>())
+{
+    var closes = await history.GetAsync(symbols[0], period);
+    Console.WriteLine($"  {symbols[0],-9} {period,-5} {closes.Count} points" + (closes.Count > 0 ? $", {closes[0]} → {closes[^1]}" : ""));
+}
+
+Console.WriteLine("\nFiat rates (USD →):");
+foreach (var q in new[] { "EUR", "TRY", "GBP" })
+    Console.WriteLine($"  {q} {(await FiatRates.Shared.UsdToAsync(q))?.ToString("0.####") ?? "unavailable"}");
+
+Console.WriteLine("\nDEX tokens (DexScreener + GeckoTerminal):");
+var dexOk = false;
+try
+{
+    foreach (var query in new[] { "bonk", "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", "0x6982508145454Ce325dDbE47a25d4ec3d2311933" })
+    {
+        var found = await DexScreenerClient.SearchAsync(query);
+        Console.WriteLine($"  search \"{query}\": {found.Count} tokens");
+        foreach (var p in found.Take(3))
+            Console.WriteLine($"    {p.BaseSymbol,-8} {p.Chain,-9} {p.DexId,-12} ${p.PriceUsd} 1h {p.Change1h?.ToString("0.00") ?? "?"}% 24h {p.Change24h?.ToString("0.00") ?? "?"}% liq ${p.LiquidityUsd:N0} logo {(p.ImageUrl is null ? "no" : "yes")}");
+    }
+
+    var bonk = (await DexScreenerClient.SearchAsync("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263")).FirstOrDefault();
+    if (bonk is not null)
+    {
+        var token = bonk.ToToken();
+        PricePin.Core.Coins.CoinCatalog.Register(token);
+        var dex = new DexPriceService();
+        Ticker? tick = null;
+        dex.TickReceived += t => tick = t;
+        await dex.PollOnceAsync([token], "EUR", CancellationToken.None);
+        Console.WriteLine($"  poll {token.Symbol} in EUR: {(tick is null ? "no price" : $"{tick.Last} (24h {tick.ChangePercent24h}%, mcap {tick.MarketCap:N0})")}");
+        dexOk = tick is not null;
+
+        foreach (var period in Enum.GetValues<ChangePeriod>())
+        {
+            var closes = await history.GetAsync(new MarketSymbol(token.Key, "USD"), period);
+            Console.WriteLine($"  sparkline {period,-5} {closes.Count} points");
+        }
+        foreach (var range in Enum.GetValues<ChartRange>())
+        {
+            var series = await candles.GetAsync(new MarketSymbol(token.Key, "USD"), range);
+            Console.WriteLine($"  chart {range,-6} " + (series is null ? "none" : $"{series.Candles.Count} candles from {series.Source}"));
+        }
+        var logo = await icons.GetTokenIconPathAsync(token.Key, token.ImageUrl);
+        Console.WriteLine($"  logo {(logo is null ? "not found" : new FileInfo(logo).Length + " bytes")}");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"  FAILED: {ex.GetType().Name}: {ex.Message}");
+}
+Console.WriteLine($"  DEX prices {(dexOk ? "OK" : "NOT WORKING")}");
 
 Console.WriteLine($"\n{streamingOk} of 3 streaming feeds delivered data.");
 return streamingOk > 0 ? 0 : 1;

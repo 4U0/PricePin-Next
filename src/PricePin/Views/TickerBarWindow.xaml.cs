@@ -229,7 +229,7 @@ public partial class TickerBarWindow : Window
         if (e.ClickCount == 2 && WidgetWindow.CoinUnder(e.OriginalSource) is { } row)
         {
             e.Handled = true;
-            _vm.App.OpenCoinDetail(row.Symbol);
+            _vm.App.OpenCoinDetail(row.Key);
             return;
         }
         if (!_vm.IsFloating || _vm.LockPosition || e.ButtonState != MouseButtonState.Pressed || e.OriginalSource is ButtonBase)

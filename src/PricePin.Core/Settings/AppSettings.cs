@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using PricePin.Core.Alerts;
 using PricePin.Core.Coins;
+using PricePin.Core.Dex;
 using PricePin.Core.Portfolio;
 using PricePin.Core.Market;
 
@@ -53,7 +54,7 @@ public sealed class WidgetSettings
     public WidgetLayout Layout { get; set; } = WidgetLayout.List;
     public bool Visible { get; set; } = true;
 
-    /// <summary>Base symbols to show, in display order.</summary>
+    /// <summary>Coin keys to show, in display order: symbols like "BTC", or "dex:chain:address" for DEX tokens.</summary>
     public List<string> Coins { get; set; } = [.. CoinCatalog.Defaults];
 
     // Window behaviour
@@ -72,6 +73,9 @@ public sealed class WidgetSettings
     public bool ShowNames { get; set; } = true;
     public bool ShowSparklines { get; set; } = true;
     public bool ShowColumnHeadings { get; set; } = true;
+
+    /// <summary>Time span of the change and sparkline: the last hour, day or week.</summary>
+    public ChangePeriod ChangePeriod { get; set; } = ChangePeriod.Day;
 
     /// <summary>Show what the user holds of each coin, and the portfolio total, in a list widget.</summary>
     public bool ShowHoldings { get; set; } = true;
@@ -99,12 +103,13 @@ public sealed class WidgetSettings
         if (!Enum.IsDefined(Layout)) Layout = WidgetLayout.List;
         if (!Enum.IsDefined(Size)) Size = WidgetSize.Medium;
         if (!Enum.IsDefined(Dock)) Dock = BarDock.Top;
+        if (!Enum.IsDefined(ChangePeriod)) ChangePeriod = ChangePeriod.Day;
         Opacity = double.IsFinite(Opacity) ? Math.Clamp(Opacity, OpacityLimits.Min, OpacityLimits.Max) : 0.95;
         ScrollSpeed = double.IsFinite(ScrollSpeed) ? Math.Clamp(ScrollSpeed, 10, 200) : 45;
         FloatingWidth = double.IsFinite(FloatingWidth) ? Math.Clamp(FloatingWidth, 320, 4000) : 720;
         Coins = (Coins ?? [])
             .Where(c => !string.IsNullOrWhiteSpace(c))
-            .Select(c => c.Trim().ToUpperInvariant())
+            .Select(CoinKey.Normalize)
             .Distinct()
             .ToList();
         if (Left is { } l && !double.IsFinite(l)) Left = null;
@@ -122,6 +127,9 @@ public sealed class HotkeySettings
 
     /// <summary>Hides or shows portfolio amounts.</summary>
     public string TogglePrivacy { get; set; } = "Ctrl+Alt+H";
+
+    /// <summary>Opens the quick search window.</summary>
+    public string QuickSearch { get; set; } = "Ctrl+Alt+K";
 }
 
 /// <summary>
@@ -176,6 +184,11 @@ public sealed class AppSettings
     /// <summary>Coin whose price is drawn in the tray icon; empty shows the PricePin logo.</summary>
     public string TrayCoin { get; set; } = "";
 
+    public const int MaxTokens = 200;
+
+    /// <summary>DEX tokens the user added, so their names, logos and pools are known offline.</summary>
+    public List<DexToken> Tokens { get; set; } = [];
+
     // ---- Version 1 fields, read once to migrate and never written again ----
     [JsonPropertyName("Topmost"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public bool? V1Topmost { get; set; }
     [JsonPropertyName("Opacity"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public double? V1Opacity { get; set; }
@@ -213,20 +226,27 @@ public sealed class AppSettings
         Alerts = (Alerts ?? []).Where(x => x is not null && x.IsValid).Take(MaxAlerts).ToList();
         foreach (var alert in Alerts)
         {
-            alert.Symbol = alert.Symbol.Trim().ToUpperInvariant();
+            alert.Symbol = CoinKey.Normalize(alert.Symbol);
             alert.Quote = alert.Quote.Trim().ToUpperInvariant();
         }
         foreach (var dup in Alerts.GroupBy(x => x.Id).SelectMany(g => g.Skip(1)))
             dup.Id = Guid.NewGuid().ToString("N")[..8];
-        TrayCoin = (TrayCoin ?? "").Trim().ToUpperInvariant();
+        TrayCoin = string.IsNullOrWhiteSpace(TrayCoin) ? "" : CoinKey.Normalize(TrayCoin);
         Holdings = (Holdings ?? []).Where(h => h is not null && h.IsValid).Take(MaxHoldings).ToList();
         foreach (var h in Holdings)
         {
-            h.Symbol = h.Symbol.Trim().ToUpperInvariant();
+            h.Symbol = CoinKey.Normalize(h.Symbol);
             h.CostQuote = string.IsNullOrWhiteSpace(h.CostQuote) ? QuoteCurrency : h.CostQuote.Trim().ToUpperInvariant();
         }
         // One entry per coin: merge duplicates (amounts add up, cost becomes the weighted average).
         Holdings = Holdings.GroupBy(h => h.Symbol).Select(MergeHoldings).ToList();
+        Tokens = (Tokens ?? []).Where(t => t is not null).ToList();
+        foreach (var t in Tokens)
+            t.Normalize();
+        Tokens = Tokens.Where(t => t.IsValid).DistinctBy(t => t.Key).Take(MaxTokens).ToList();
+        // Every window resolves token keys to names through the catalog.
+        foreach (var t in Tokens)
+            CoinCatalog.Register(t);
         Language = string.IsNullOrWhiteSpace(Language) ? SystemLanguage : Language.Trim().ToLowerInvariant();
         SchemaVersion = CurrentSchemaVersion;
     }

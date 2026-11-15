@@ -3,6 +3,7 @@ using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PricePin.Core.Coins;
+using PricePin.Core.Dex;
 using PricePin.Core.History;
 using PricePin.Core.Market;
 using PricePin.Services;
@@ -22,27 +23,45 @@ public sealed partial class CoinDetailViewModel : ObservableObject, IDisposable
     private int _request;
     private DateTime _lastLiveRedraw;
 
-    public CoinDetailViewModel(AppViewModel app, CandleService candles, string symbol)
+    public CoinDetailViewModel(AppViewModel app, CandleService candles, string key)
     {
         _app = app;
         _candles = candles;
-        var info = CoinCatalog.Get(symbol);
+        var info = CoinCatalog.Get(key);
+        Key = key;
         Symbol = info.Symbol;
-        Name = info.Name;
+        Name = CoinKey.TryParseDex(key, out var chain, out _) ? $"{info.Name} · {DexChains.DisplayName(chain)}" : info.Name;
+        if (CoinCatalog.GetToken(key) is { PairAddress: { } pool } token)
+            DexUrl = $"https://dexscreener.com/{Uri.EscapeDataString(token.Chain)}/{Uri.EscapeDataString(pool)}";
         BadgeBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(info.BrandColor));
         BadgeBrush.Freeze();
-        _logo = app.Logos.GetLocal(Symbol);
+        _logo = app.Logos.GetLocal(Key);
         Quote = app.Settings.QuoteCurrency;
         PriceFormatter = p => CoinRowViewModel.FormatPrice(p, Quote);
 
         app.PricesUpdated += OnPricesUpdated;
-        app.EnsureSubscribed(Symbol);
+        app.Watch(Key);
         UpdateLive();
         _ = LoadLogoAsync();
         _ = LoadAsync();
     }
 
+    /// <summary>The coin's key ("BTC" or "dex:chain:address").</summary>
+    public string Key { get; }
+
     public string Symbol { get; }
+
+    /// <summary>The token's page on DexScreener, for DEX tokens.</summary>
+    public string? DexUrl { get; }
+
+    public bool HasDexUrl => DexUrl is not null;
+
+    [RelayCommand]
+    private void OpenDexScreener()
+    {
+        if (DexUrl is not null)
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(DexUrl) { UseShellExecute = true });
+    }
     public string Name { get; }
     public string Initial => Symbol[..1];
     public Brush BadgeBrush { get; }
@@ -103,14 +122,14 @@ public sealed partial class CoinDetailViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void SetAlert()
     {
-        _app.Alerts.NewSymbol = Symbol;
+        _app.Alerts.NewSymbol = Key;
         _app.OpenSettingsPage("Alerts");
     }
 
     [RelayCommand]
     private void AddHolding()
     {
-        _app.Portfolio.NewSymbol = Symbol;
+        _app.Portfolio.NewSymbol = Key;
         _app.OpenSettingsPage("Portfolio");
     }
 
@@ -124,7 +143,7 @@ public sealed partial class CoinDetailViewModel : ObservableObject, IDisposable
         Message = null;
         try
         {
-            var series = await _candles.GetAsync(new MarketSymbol(Symbol, Quote), Range, _lifetime.Token);
+            var series = await _candles.GetAsync(new MarketSymbol(Key, Quote), Range, _lifetime.Token);
             if (request != _request)
                 return; // the range changed while loading
             if (series is null)
@@ -160,7 +179,7 @@ public sealed partial class CoinDetailViewModel : ObservableObject, IDisposable
 
     private void UpdateLive()
     {
-        if (!_app.Alerts.TryGetLatest(Symbol, out var price, out var change))
+        if (!_app.Alerts.TryGetLatest(Key, out var price, out var change))
             return;
         PriceText = CoinRowViewModel.FormatPrice(price, Quote);
         ChangeText = change is { } c ? (c >= 0 ? "▲ " : "▼ ") + Math.Abs(c).ToString("0.00", CultureInfo.InvariantCulture) + "% · 24h" : "";
@@ -173,7 +192,7 @@ public sealed partial class CoinDetailViewModel : ObservableObject, IDisposable
         if (_loaded.Count < 2)
             return;
         var candles = _loaded;
-        if (_app.Alerts.TryGetLatest(Symbol, out var price, out _))
+        if (_app.Alerts.TryGetLatest(Key, out var price, out _))
         {
             var last = candles[^1];
             if (!force && last.Close == price && Chart is not null)
@@ -210,7 +229,7 @@ public sealed partial class CoinDetailViewModel : ObservableObject, IDisposable
             return;
         try
         {
-            Logo = await _app.Logos.GetAsync(Symbol, _lifetime.Token);
+            Logo = await _app.Logos.GetAsync(Key, _lifetime.Token);
         }
         catch (Exception)
         {
@@ -220,6 +239,7 @@ public sealed partial class CoinDetailViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _app.PricesUpdated -= OnPricesUpdated;
+        _app.Unwatch(Key);
         _lifetime.Cancel();
     }
 }

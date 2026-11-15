@@ -2,6 +2,13 @@
 
 Each release's notes on GitHub come from its section here.
 
+## 1.4.0
+
+- **Any token, on any chain.** Search by name or paste a contract address in Settings → Coins or in quick search, and PricePin finds tokens on decentralised exchanges too: Solana, Base, BNB Chain, Ethereum, Arbitrum and dozens more, including brand-new meme coins. Their prices come from DexScreener and update every few seconds, charts and sparklines come from GeckoTerminal, and hovering one shows its chain, market cap and liquidity. Results with very little liquidity are left out of name searches to keep spam away. DEX tokens work in alerts, the portfolio and the tray icon like any other coin, and their chart has a link to the pool on DexScreener.
+- **Quick search** (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd>, or from the widget and tray menus): type any coin to see its live price, 24h change and sparkline, convert amounts both ways, and open its chart, add it to a widget, set an alert or add it to your portfolio. Arrow keys choose, Enter opens the chart, Ctrl+Enter adds it to your widget.
+- **1h, 24h or 7d change.** Each widget can show the change over the last hour, day or week (Settings → Widgets, or right-click → Show change for). The sparkline follows the same span.
+- Sparklines from Coinbase now load when Binance isn't available where you are.
+
 ## 1.3.0
 
 The first public release of PricePin, a live crypto price widget for Windows. It brings together everything built for versions 1.0 to 1.3; the full list is in [CHANGELOG.md](https://github.com/4U0/PricePin-Next/blob/main/CHANGELOG.md).

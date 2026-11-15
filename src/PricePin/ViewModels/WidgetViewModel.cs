@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PricePin.Core.Coins;
 using PricePin.Core.Market;
 using PricePin.Core.Settings;
 using PricePin.Services;
@@ -39,6 +38,7 @@ public sealed partial class WidgetViewModel : ObservableObject
         _scroll = settings.Scroll;
         _scrollSpeed = settings.ScrollSpeed;
         _floatingWidth = settings.FloatingWidth;
+        _changePeriod = settings.ChangePeriod;
     }
 
     /// <summary>Raised when the layout changes, so the app can swap the window type.</summary>
@@ -73,6 +73,30 @@ public sealed partial class WidgetViewModel : ObservableObject
     [ObservableProperty] private bool _scroll;
     [ObservableProperty] private double _scrollSpeed;
     [ObservableProperty] private double _floatingWidth;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ChangeHeading))] private ChangePeriod _changePeriod;
+
+    /// <summary>Column heading over the sparkline: "1H", "24H" or "7D".</summary>
+    public string ChangeHeading => Loc.T(ChangePeriod switch
+    {
+        ChangePeriod.Hour => "Period.Hour",
+        ChangePeriod.Week => "Period.Week",
+        _ => "Period.Day",
+    }).ToUpper(System.Globalization.CultureInfo.CurrentUICulture);
+
+    [RelayCommand]
+    private void SetChangePeriod(string? period)
+    {
+        if (Enum.TryParse<ChangePeriod>(period, out var p))
+            ChangePeriod = p;
+    }
+
+    partial void OnChangePeriodChanged(ChangePeriod value)
+    {
+        Save(s => s.ChangePeriod = value);
+        foreach (var row in Coins)
+            row.SetPeriod(value);
+        _ = App.LoadHistoryAsync(Coins.ToList(), value);
+    }
 
     public bool IsTickerBar => Layout == WidgetLayout.TickerBar;
     public bool IsFloating => Dock == BarDock.Floating;
@@ -82,6 +106,7 @@ public sealed partial class WidgetViewModel : ObservableObject
     public void RefreshText()
     {
         OnPropertyChanged(nameof(LayoutLabel));
+        OnPropertyChanged(nameof(ChangeHeading));
         foreach (var c in Coins)
             c.RefreshText();
     }
@@ -193,7 +218,7 @@ public sealed partial class WidgetViewModel : ObservableObject
         {
             if (!_rowsBySymbol.TryGetValue(symbol, out var row))
             {
-                row = new CoinRowViewModel(CoinCatalog.Get(symbol), quote) { Logo = App.Logos.GetLocal(symbol) };
+                row = new CoinRowViewModel(symbol, quote, ChangePeriod) { Logo = App.Logos.GetLocal(symbol) };
                 added.Add(row);
             }
             rows.Add(row);
@@ -203,12 +228,12 @@ public sealed partial class WidgetViewModel : ObservableObject
         Coins.Clear();
         foreach (var row in rows)
         {
-            _rowsBySymbol[row.Symbol] = row;
+            _rowsBySymbol[row.Key] = row;
             Coins.Add(row);
         }
 
         _ = App.LoadLogosAsync(added);
-        _ = App.LoadHistoryAsync(added);
+        _ = App.LoadHistoryAsync(added, ChangePeriod);
     }
 
     /// <summary>Called by the app with the latest merged updates.</summary>

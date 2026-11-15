@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
+using PricePin.Core.Coins;
+using PricePin.Core.Dex;
 using PricePin.Core.Feeds;
 using PricePin.Core.Market;
 
@@ -20,15 +22,20 @@ public sealed record CandleSeries(IReadOnlyList<Candle> Candles, string Source);
 /// </summary>
 public sealed class CandleService
 {
-    private sealed record Spec(string Binance, int BinanceLimit, int CoinbaseSeconds, int KrakenMinutes, TimeSpan Span, TimeSpan CacheFor);
+    private sealed record Spec(string Binance, int BinanceLimit, int CoinbaseSeconds, int KrakenMinutes, TimeSpan Span, TimeSpan CacheFor,
+        string GeckoFrame, int GeckoAggregate, int GeckoLimit);
 
     private static readonly Dictionary<ChartRange, Spec> Specs = new()
     {
-        [ChartRange.Day] = new("15m", 96, 900, 15, TimeSpan.FromDays(1), TimeSpan.FromMinutes(1)),
-        [ChartRange.Week] = new("1h", 168, 3600, 60, TimeSpan.FromDays(7), TimeSpan.FromMinutes(5)),
-        [ChartRange.Month] = new("4h", 180, 21600, 240, TimeSpan.FromDays(30), TimeSpan.FromMinutes(10)),
-        [ChartRange.Year] = new("1d", 365, 86400, 1440, TimeSpan.FromDays(365), TimeSpan.FromHours(1)),
+        [ChartRange.Day] = new("15m", 96, 900, 15, TimeSpan.FromDays(1), TimeSpan.FromMinutes(1), "minute", 15, 96),
+        [ChartRange.Week] = new("1h", 168, 3600, 60, TimeSpan.FromDays(7), TimeSpan.FromMinutes(5), "hour", 1, 168),
+        [ChartRange.Month] = new("4h", 180, 21600, 240, TimeSpan.FromDays(30), TimeSpan.FromMinutes(10), "hour", 4, 180),
+        [ChartRange.Year] = new("1d", 365, 86400, 1440, TimeSpan.FromDays(365), TimeSpan.FromHours(1), "day", 1, 365),
     };
+
+    private readonly FiatRates _rates;
+
+    public CandleService(FiatRates? rates = null) => _rates = rates ?? FiatRates.Shared;
 
     private readonly Dictionary<(string, ChartRange), (DateTime At, CandleSeries Series)> _cache = [];
 
@@ -43,12 +50,14 @@ public sealed class CandleService
                 return hit.Series;
         }
 
-        (string Name, Func<Task<IReadOnlyList<Candle>?>> Fetch)[] sources =
-        [
-            ("Binance", () => FromBinanceAsync(symbol, spec, ct)),
-            ("Coinbase", () => FromCoinbaseAsync(symbol, spec, ct)),
-            ("Kraken", () => FromKrakenAsync(symbol, spec, ct)),
-        ];
+        (string Name, Func<Task<IReadOnlyList<Candle>?>> Fetch)[] sources = CoinKey.IsDex(symbol.Base)
+            ? [("GeckoTerminal", () => FromGeckoTerminalAsync(symbol, spec, ct))]
+            :
+            [
+                ("Binance", () => FromBinanceAsync(symbol, spec, ct)),
+                ("Coinbase", () => FromCoinbaseAsync(symbol, spec, ct)),
+                ("Kraken", () => FromKrakenAsync(symbol, spec, ct)),
+            ];
         foreach (var (name, fetch) in sources)
         {
             try
@@ -69,6 +78,17 @@ public sealed class CandleService
             }
         }
         return null;
+    }
+
+    private async Task<IReadOnlyList<Candle>?> FromGeckoTerminalAsync(MarketSymbol s, Spec spec, CancellationToken ct)
+    {
+        if (CoinCatalog.GetToken(s.Base) is not { PairAddress: { } pool } token)
+            return null;
+        if (await _rates.UsdToAsync(s.Quote, ct).ConfigureAwait(false) is not { } rate)
+            return null;
+        var candles = await GeckoTerminalClient.GetCandlesAsync(token.Chain, pool, spec.GeckoFrame, spec.GeckoAggregate, spec.GeckoLimit, ct)
+            .ConfigureAwait(false);
+        return candles is null ? null : GeckoTerminalClient.Convert(candles, rate);
     }
 
     private static async Task<IReadOnlyList<Candle>?> FromBinanceAsync(MarketSymbol s, Spec spec, CancellationToken ct)
