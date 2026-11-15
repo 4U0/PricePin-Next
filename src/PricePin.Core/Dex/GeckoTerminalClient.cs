@@ -75,19 +75,36 @@ public static class GeckoTerminalClient
             || !attributes.TryGetProperty("ohlcv_list", out var list)
             || list.ValueKind != JsonValueKind.Array)
             return null;
-        return list.EnumerateArray()
-            .Where(k => k.ValueKind == JsonValueKind.Array && k.GetArrayLength() >= 6)
-            .Select(k => new Candle(DateTimeOffset.FromUnixTimeSeconds((long)Num(k[0])), Num(k[1]), Num(k[2]), Num(k[3]), Num(k[4]), Num(k[5])))
-            .OrderBy(c => c.Time)
-            .ToList();
+        var candles = new List<Candle>();
+        foreach (var k in list.EnumerateArray())
+        {
+            // A candle with a missing or unreadable value is skipped rather than losing the chart.
+            if (k.ValueKind != JsonValueKind.Array || k.GetArrayLength() < 6
+                || Num(k[0]) is not { } t || Num(k[1]) is not { } o || Num(k[2]) is not { } h
+                || Num(k[3]) is not { } l || Num(k[4]) is not { } c)
+                continue;
+            candles.Add(new Candle(DateTimeOffset.FromUnixTimeSeconds((long)t), o, h, l, c, Num(k[5]) ?? 0));
+        }
+        return candles.OrderBy(c => c.Time).ToList();
     }
 
-    private static decimal Num(JsonElement e) => e.ValueKind switch
+    private static decimal? Num(JsonElement e) => e.ValueKind switch
     {
-        JsonValueKind.Number => e.TryGetDecimal(out var d) ? d : (decimal)e.GetDouble(),
-        JsonValueKind.String => decimal.Parse(e.GetString()!, NumberStyles.Float, CultureInfo.InvariantCulture),
-        _ => throw new FormatException("Not a number"),
+        JsonValueKind.Number when e.TryGetDecimal(out var d) => d,
+        JsonValueKind.Number when double.IsFinite(e.GetDouble()) && Math.Abs(e.GetDouble()) < 1e27 => (decimal)e.GetDouble(),
+        JsonValueKind.String when decimal.TryParse(e.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var d) => d,
+        _ => null,
     };
+
+    /// <summary>The raw answer for one request, for the feed probe.</summary>
+    internal static async Task<string> DescribeAsync(string chain, string poolAddress, string timeframe, int aggregate, int limit)
+    {
+        var url = $"https://api.geckoterminal.com/api/v2/networks/{Uri.EscapeDataString(DexChains.GeckoTerminalNetwork(chain))}/pools/{Uri.EscapeDataString(poolAddress)}" +
+                  $"/ohlcv/{timeframe}?aggregate={aggregate}&limit={limit}&currency=usd&token=base";
+        using var response = await Http.Client.GetAsync(url).ConfigureAwait(false);
+        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        return $"HTTP {(int)response.StatusCode}: {(text.Length > 200 ? text[..200] : text)}";
+    }
 
     /// <summary>Turns dollar candles into another currency; volume becomes an amount of the token.</summary>
     public static IReadOnlyList<Candle> Convert(IReadOnlyList<Candle> usd, decimal usdToQuote) =>

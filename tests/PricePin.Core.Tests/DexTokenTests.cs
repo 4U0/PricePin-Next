@@ -116,6 +116,7 @@ public class DexTokenTests
         var candles = GeckoTerminalClient.ParseOhlcv(J("""
             {"data":{"id":"x","type":"ohlcv_request_response","attributes":{"ohlcv_list":[
               [1700003600, 2.0, 2.5, 1.9, 2.4, 1200.5],
+              [1699996400, null, 2.5, 1.9, 2.4, 1],
               [1700000000, 1.0, 2.1, 0.9, 2.0, 600]
             ]}},"meta":{}}
             """))!;

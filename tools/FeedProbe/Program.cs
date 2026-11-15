@@ -135,6 +135,8 @@ try
             var started = Stopwatch.StartNew();
             var series = await candles.GetAsync(new MarketSymbol(token.Key, "USD"), range);
             Console.WriteLine($"  chart {range,-6} " + (series is null ? "none" : $"{series.Candles.Count} candles from {series.Source}") + $" ({started.ElapsedMilliseconds} ms)");
+            if (series is null && token.PairAddress is { } pool)
+                Console.WriteLine("    " + await GeckoTerminalClient.DescribeAsync(token.Chain, pool, range == ChartRange.Year ? "day" : "hour", range == ChartRange.Year ? 1 : 4, range == ChartRange.Year ? 365 : 180));
         }
         var logo = await icons.GetTokenIconPathAsync(token.Key, token.ImageUrl);
         Console.WriteLine($"  logo {(logo is null ? "not found" : new FileInfo(logo).Length + " bytes")}");
