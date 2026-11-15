@@ -7,7 +7,7 @@ using PricePin.Core.History;
 namespace PricePin.Core.Dex;
 
 /// <summary>
-/// Price history for DEX pools from GeckoTerminal's free public API (no key, about 30
+/// Price history for DEX pools from GeckoTerminal's free public API (no key, about 10
 /// requests a minute), used for DEX tokens' sparklines and charts. Prices are in US dollars.
 /// </summary>
 public static class GeckoTerminalClient
@@ -28,8 +28,8 @@ public static class GeckoTerminalClient
             // The free API allows only a few calls in a burst; wait as asked and try once more.
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt == 0)
             {
-                var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(4);
-                await Task.Delay(wait > TimeSpan.FromSeconds(10) ? TimeSpan.FromSeconds(10) : wait, ct).ConfigureAwait(false);
+                var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(15);
+                await Task.Delay(wait > TimeSpan.FromSeconds(30) ? TimeSpan.FromSeconds(30) : wait, ct).ConfigureAwait(false);
                 continue;
             }
             if (!response.IsSuccessStatusCode)
@@ -39,20 +39,27 @@ public static class GeckoTerminalClient
         }
     }
 
-    // Calls are spaced out so a chart, a few sparklines and quick search stay under the limit.
+    // GeckoTerminal's free API allows about 10 calls a minute. Calls past that wait their turn
+    // instead of failing, so a chart, a few sparklines and quick search all still load.
+    public const int CallsPerMinute = 10;
     private static readonly SemaphoreSlim Gate = new(1, 1);
-    private static DateTime _lastCall = DateTime.MinValue;
-    private static readonly TimeSpan MinSpacing = TimeSpan.FromMilliseconds(1200);
+    private static readonly Queue<DateTime> RecentCalls = new();
 
     private static async Task WaitTurnAsync(CancellationToken ct)
     {
         await Gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            var wait = _lastCall + MinSpacing - DateTime.UtcNow;
-            if (wait > TimeSpan.Zero)
-                await Task.Delay(wait, ct).ConfigureAwait(false);
-            _lastCall = DateTime.UtcNow;
+            while (RecentCalls.Count > 0 && DateTime.UtcNow - RecentCalls.Peek() >= TimeSpan.FromMinutes(1))
+                RecentCalls.Dequeue();
+            if (RecentCalls.Count >= CallsPerMinute)
+            {
+                var wait = RecentCalls.Peek() + TimeSpan.FromMinutes(1) - DateTime.UtcNow;
+                if (wait > TimeSpan.Zero)
+                    await Task.Delay(wait, ct).ConfigureAwait(false);
+                RecentCalls.Dequeue();
+            }
+            RecentCalls.Enqueue(DateTime.UtcNow);
         }
         finally
         {

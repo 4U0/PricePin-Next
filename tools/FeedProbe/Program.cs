@@ -129,8 +129,9 @@ try
         }
         foreach (var range in Enum.GetValues<ChartRange>())
         {
+            var started = Stopwatch.StartNew();
             var series = await candles.GetAsync(new MarketSymbol(token.Key, "USD"), range);
-            Console.WriteLine($"  chart {range,-6} " + (series is null ? "none" : $"{series.Candles.Count} candles from {series.Source}"));
+            Console.WriteLine($"  chart {range,-6} " + (series is null ? "none" : $"{series.Candles.Count} candles from {series.Source}") + $" ({started.ElapsedMilliseconds} ms)");
         }
         var logo = await icons.GetTokenIconPathAsync(token.Key, token.ImageUrl);
         Console.WriteLine($"  logo {(logo is null ? "not found" : new FileInfo(logo).Length + " bytes")}");
