@@ -12,6 +12,7 @@ using PricePin.Core.Radar;
 using PricePin.Core.Events;
 using PricePin.Core.Alerts;
 using PricePin.Core.Listings;
+using PricePin.Core.Odds;
 
 var seconds = args.Length > 0 && int.TryParse(args[0], out var s) ? s : 12;
 var coins = args.Skip(1).DefaultIfEmpty("BTC").Concat(args.Length > 1 ? [] : ["ETH", "SOL"]).ToArray();
@@ -214,6 +215,30 @@ else
 {
     var ratio = VolumeSpikes.Check("BTC", day.Candles, 0.0001m, DateTimeOffset.UtcNow);
     Console.WriteLine($"  volume check    {day.Candles.Count} candles from {day.Source}, last hour is {(ratio is null ? "n/a" : $"{ratio.Ratio}x")} an average hour");
+}
+
+Console.WriteLine("\nPrediction odds:");
+var (poly, polyError) = await OddsService.FetchPolymarketWithErrorAsync(DateTimeOffset.UtcNow, CancellationToken.None);
+Console.WriteLine($"  Polymarket      {(poly is null ? $"FAILED ({polyError})" : $"{poly.Count} crypto markets")}");
+foreach (var m in poly?.Take(5) ?? [])
+    Console.WriteLine($"    {m.Title} | {string.Join(", ", m.Highlights(3).Select(o => $"{o.Label} {o.Chance:P0}"))} | ${m.Volume24hUsd:N0} today");
+foreach (var series in OddsService.KalshiSeries)
+{
+    var (km, kError) = await OddsService.FetchKalshiSeriesWithErrorAsync(series, DateTimeOffset.UtcNow, CancellationToken.None);
+    Console.WriteLine($"  Kalshi {series,-10} {(kError is not null ? $"FAILED ({kError})" : km is null ? "no open event" : $"{km.Title} | {string.Join(", ", km.Highlights(3).Select(o => $"{o.Label} {o.Chance:P0}"))} | ${km.Volume24hUsd:N0} today")}");
+}
+try
+{
+    // Which crypto series Kalshi has, to keep OddsService.KalshiSeries current.
+    using var seriesDoc = System.Text.Json.JsonDocument.Parse(await Http.Client.GetStringAsync(OddsService.KalshiBase + "/series?category=Crypto"));
+    var list = seriesDoc.RootElement.TryGetProperty("series", out var arr) && arr.ValueKind == System.Text.Json.JsonValueKind.Array
+        ? arr.EnumerateArray().Select(x => $"{x.GetProperty("ticker").GetString()} ({(x.TryGetProperty("frequency", out var f) ? f.GetString() : "?")})").ToList()
+        : [];
+    Console.WriteLine($"  Kalshi crypto series ({list.Count}): {string.Join(", ", list.Take(80))}");
+}
+catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException or KeyNotFoundException or InvalidOperationException)
+{
+    Console.WriteLine($"  Kalshi series   FAILED ({ex.GetType().Name}: {ex.Message})");
 }
 
 Console.WriteLine("\nWhale and liquidation streams (every trade counted, no size filter):");

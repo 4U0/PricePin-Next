@@ -2,6 +2,11 @@
 
 Each release's notes on GitHub come from its section here.
 
+## 1.8.0
+
+- **Prediction odds.** A new **Odds** tab in **News, whales, fees, calendar & odds** shows what traders on Polymarket and Kalshi, the two biggest prediction markets, give crypto questions: how high or low Bitcoin and Ethereum get this month or year, whether an ETF is approved, which coin ends the year bigger, and more. Each answer shows its chance and how many points it moved today, with the money traded and when the market ends; a click opens it in your browser. Pin markets with the star to keep them at the top, turn on **Show prediction odds** for a widget to keep the first pinned one in view, and get notified when a pinned market moves 10 points or more. You can keep only markets about your coins. Kalshi keeps the tab working in countries where Polymarket is blocked. Very short "up or down in 15 minutes" markets are left out. Odds refresh every five minutes.
+- The **Whales & liquidations** tab is now just **Whales**, to make room.
+
 ## 1.7.0
 
 - **Event calendar.** A new **Calendar** tab in **News, whales, fees & calendar** lists the week's high-impact economic releases (with forecast and previous values), upcoming Fed rate decisions and US inflation (CPI) days, and a live countdown to the next Bitcoin halving. Times are shown in your time zone. US releases are shown by default because they move crypto most; switch on other countries if you want them. Turn on **Show next event** for a widget to keep a countdown to the next one in view, and choose a reminder 15, 30 or 60 minutes before events start.

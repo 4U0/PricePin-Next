@@ -151,6 +151,8 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
 
         Calendar = new CalendarViewModel(app, () => IsWindowOpen);
         Calendar.NotificationRequested += (title, body) => NotificationRequested?.Invoke(title, body);
+        Odds = new OddsViewModel(app, () => IsWindowOpen, TaggableCoins);
+        Odds.NotificationRequested += (title, body) => NotificationRequested?.Invoke(title, body);
 
         _radar.EventReceived += e => _incoming.Enqueue(e);
         _radar.SourceChanged += OnRadarSourceChanged;
@@ -178,21 +180,25 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
 
     // ---- Window tabs --------------------------------------------------------------------
 
-    /// <summary>"News", "Radar", "Fees" or "Calendar".</summary>
+    /// <summary>"News", "Radar", "Fees", "Calendar" or "Odds".</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsNewsTab), nameof(IsRadarTab), nameof(IsFeesTab), nameof(IsCalendarTab))]
+    [NotifyPropertyChangedFor(nameof(IsNewsTab), nameof(IsRadarTab), nameof(IsFeesTab), nameof(IsCalendarTab), nameof(IsOddsTab))]
     private string _tab = "News";
 
     public bool IsNewsTab => Tab == "News";
     public bool IsRadarTab => Tab == "Radar";
     public bool IsFeesTab => Tab == "Fees";
     public bool IsCalendarTab => Tab == "Calendar";
+    public bool IsOddsTab => Tab == "Odds";
 
     /// <summary>Upcoming market events, the halving countdown and reminders.</summary>
     public CalendarViewModel Calendar { get; }
 
+    /// <summary>Prediction market odds from Polymarket and Kalshi.</summary>
+    public OddsViewModel Odds { get; }
+
     [RelayCommand]
-    private Task Reload() => IsFeesTab ? LoadFeesAsync() : IsNewsTab ? LoadNewsAsync() : IsCalendarTab ? Calendar.Reload() : Task.CompletedTask;
+    private Task Reload() => IsFeesTab ? LoadFeesAsync() : IsNewsTab ? LoadNewsAsync() : IsCalendarTab ? Calendar.Reload() : IsOddsTab ? Odds.Reload() : Task.CompletedTask;
 
     // ---- Who needs what -----------------------------------------------------------------
 
@@ -254,6 +260,7 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
         if (_feesAt != DateTime.MinValue)
             UpdateFeeCosts();
         Calendar.OnTick();
+        Odds.OnTick();
     }
 
     // ---- News ---------------------------------------------------------------------------
@@ -738,6 +745,7 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
         ShowFees();
         RefilterRadar();
         Calendar.RefreshText();
+        Odds.RefreshText();
         RadarSources = Loc.F("Radar.Sources", _whaleSource ?? "—", _liquidationSource ?? "—");
     }
 
@@ -770,6 +778,7 @@ public sealed partial class PulseViewModel : ObservableObject, IDisposable
     {
         _lifetime.Cancel();
         Calendar.Stop();
+        Odds.Stop();
         _tick.Stop();
         _radarFlush.Stop();
         _ = _radar.DisposeAsync();

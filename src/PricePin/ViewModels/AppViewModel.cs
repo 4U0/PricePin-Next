@@ -97,6 +97,11 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
             foreach (var w in Widgets)
                 w.RefreshPulse();
         };
+        Pulse.Odds.SummaryChanged += (_, _) =>
+        {
+            foreach (var w in Widgets)
+                w.RefreshPulse();
+        };
         _trayCoin = s.TrayCoin;
         RebuildTrayCoinOptions();
 

@@ -77,7 +77,7 @@ All four global shortcuts can be changed in *Settings → General*.
 | **⚡ Live markets** | Follow exchange prices and DEX tokens, with sparklines and five display currencies. |
 | **🔎 Search & charts** | Look up coins from anywhere, convert amounts, and explore charts from 1D to 1Y. |
 | **🔔 Alerts & portfolio** | Set price, fast-move, volume-spike and new-listing alerts, track holdings and profit/loss, and blur amounts for screen sharing. |
-| **📰 Beyond the price** | Follow crypto headlines, whale trades, liquidations, network fees, and a calendar of Fed, inflation and halving dates. |
+| **📰 Beyond the price** | Follow crypto headlines, whale trades, liquidations, network fees, a calendar of Fed, inflation and halving dates, and prediction market odds. |
 | **🎛️ Stream Deck** | Put live prices on your Elgato Stream Deck keys with the PricePin plugin. |
 | **🎨 Personal touches** | Pick dark, light or system themes, eight accent colours, three sizes, and English or Turkish. |
 
@@ -137,12 +137,13 @@ All four global shortcuts can be changed in *Settings → General*.
 </details>
 
 <details>
-<summary><strong>News, whales, fees and calendar</strong></summary>
+<summary><strong>News, whales, fees, calendar and odds</strong></summary>
 
 - **Crypto headlines** from CoinDesk, Cointelegraph, Decrypt, The Block and Bitcoin Magazine, each tagged with the coins it mentions. Mix them into a ticker bar or show one at a time under a list widget, and click one to read it. Filter to news about your own coins, and optionally get notified about news on coins you hold
 - **Whale and liquidation radar:** big spot trades on Binance (or Coinbase) and futures liquidations on Binance and Bybit as they happen, with last-hour totals of longs and shorts wiped out. Pick the sizes that count, and get notified about very large ones
 - **Network fees:** Bitcoin fees in sat/vB for the next block, 30 minutes, an hour or economy, and Ethereum gas in gwei, with what a payment costs in your currency. Show them in a widget, and get notified when gas or the Bitcoin fee falls below a level you choose
 - **Event calendar:** this week's high-impact economic releases, upcoming Fed rate decisions and US inflation (CPI) days, and a countdown to the next Bitcoin halving. Show the next event with a countdown in a widget, and get a reminder 15, 30 or 60 minutes before one starts
+- **Prediction odds:** what Polymarket and Kalshi traders give crypto questions, such as how high Bitcoin gets this month or whether an ETF is approved, with each answer's chance and how it moved today. Pin the markets you care about to the top, show the first one in a widget, and get notified when a pinned market moves 10 points. Kalshi keeps it working where Polymarket is blocked
 
 </details>
 
@@ -210,6 +211,7 @@ PricePin has no account and no tracking. Market data comes from the public sourc
 | [`data/events.json`](data/events.json) in this repository | Upcoming Fed decisions and US CPI days, from the [Federal Reserve](https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm) and [BLS](https://www.bls.gov/schedule/news_release/cpi.htm). The app downloads it from GitHub, so dates can be added without a new release. |
 | mempool.space | Block height and average block time for the halving countdown |
 | Binance, Coinbase, Kraken, Bybit | Market lists for new-listing alerts, and 15-minute candles for volume-spike alerts |
+| [Polymarket](https://docs.polymarket.com), [Kalshi](https://docs.kalshi.com) | Prediction market odds on crypto questions, from their public market data APIs |
 
 All of these are public endpoints, so no account or API key is needed. To check which sources work from your network:
 
@@ -254,7 +256,7 @@ dotnet publish src/PricePin -c Release -r win-x64 --self-contained `
 
 ```text
 src/PricePin          WPF app: windows, view models, controls, themes, strings
-src/PricePin.Core     Feeds, failover, alerts, portfolio, charts, news, radar, fees, calendar and settings (no UI)
+src/PricePin.Core     Feeds, failover, alerts, portfolio, charts, news, radar, fees, calendar, odds and settings (no UI)
 src/PricePin.StreamDeck  Stream Deck plugin: live prices on keys
 data/events.json      Known event dates the calendar downloads
 tests/                Unit tests for PricePin.Core, the Stream Deck plugin and the translations
@@ -304,6 +306,7 @@ Next up:
 - [x] Any token by contract address, quick search and converter, 1h/7d change
 - [x] News headlines, whale and liquidation radar, network fees and fee alerts
 - [x] Event calendar, smart alerts and a Stream Deck plugin
+- [x] Prediction market odds
 
 </details>
 

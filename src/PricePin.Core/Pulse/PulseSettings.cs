@@ -45,6 +45,19 @@ public sealed class PulseSettings
 
     public static IReadOnlyList<int> RemindOptions { get; } = [0, 15, 30, 60];
 
+    // ---- Prediction odds ----
+
+    /// <summary>Show only markets about a coin on the user's widgets or in their portfolio.</summary>
+    public bool OddsOnlyMyCoins { get; set; }
+
+    /// <summary>Notify when a pinned market's odds move by 10 points or more.</summary>
+    public bool NotifyOddsMoves { get; set; } = true;
+
+    /// <summary>Markets the user pinned to the top ("pm:123", "ks:KXBTCMAXY-26"), first one shown on widgets.</summary>
+    public List<string> PinnedOdds { get; set; } = [];
+
+    public const int MaxPinnedOdds = 20;
+
     public static IReadOnlyList<decimal> WhaleThresholds { get; } = [100_000m, 250_000m, 500_000m, 1_000_000m, 5_000_000m];
     public static IReadOnlyList<decimal> LiquidationThresholds { get; } = [10_000m, 50_000m, 100_000m, 500_000m, 1_000_000m];
     public static IReadOnlyList<decimal> NotifyThresholds { get; } = [1_000_000m, 5_000_000m, 10_000_000m, 25_000_000m];
@@ -57,6 +70,11 @@ public sealed class PulseSettings
         if (EthGasBelowGwei is { } g && (g <= 0 || g > 10_000)) EthGasBelowGwei = null;
         if (BtcFeeBelowSatVb is { } b && (b <= 0 || b > 10_000)) BtcFeeBelowSatVb = null;
         if (!RemindOptions.Contains(CalendarRemindMinutes)) CalendarRemindMinutes = 0;
+        PinnedOdds = (PinnedOdds ?? [])
+            .Where(id => id is { Length: > 3 and <= 120 } && (id.StartsWith("pm:", StringComparison.Ordinal) || id.StartsWith("ks:", StringComparison.Ordinal)))
+            .Distinct(StringComparer.Ordinal)
+            .Take(MaxPinnedOdds)
+            .ToList();
     }
 
     private static decimal Clamp(decimal v, decimal min, decimal max, decimal fallback) =>

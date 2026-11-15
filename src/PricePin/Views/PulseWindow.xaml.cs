@@ -4,7 +4,7 @@ using PricePin.ViewModels;
 
 namespace PricePin.Views;
 
-/// <summary>News, whale trades and liquidations, network fees and the event calendar.</summary>
+/// <summary>News, whale trades and liquidations, network fees, the event calendar and prediction odds.</summary>
 public partial class PulseWindow : Window
 {
     private readonly PulseViewModel _vm;
@@ -25,7 +25,7 @@ public partial class PulseWindow : Window
         };
     }
 
-    public void SelectTab(string tab) => _vm.Tab = tab is "Radar" or "Fees" or "Calendar" ? tab : "News";
+    public void SelectTab(string tab) => _vm.Tab = tab is "Radar" or "Fees" or "Calendar" or "Odds" ? tab : "News";
 
     protected override void OnSourceInitialized(EventArgs e)
     {
