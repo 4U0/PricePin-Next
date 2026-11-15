@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">PricePin — Your market, always in view</title>
+  <desc id="desc">A dark navy banner with mint green lettering and an abstract price line ending in a pin.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1200" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#151E2D"/>
+      <stop offset="1" stop-color="#0B1019"/>
+    </linearGradient>
+    <linearGradient id="area" x1="900" y1="104" x2="900" y2="310" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22D399" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#22D399" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="line" x1="680" y1="260" x2="1100" y2="130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22D399" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#65F0C0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(1030 150) rotate(90) scale(235 310)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22D399" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#22D399" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x=".5" y=".5" width="1199" height="359" rx="24" fill="url(#background)" stroke="#283447"/>
+  <rect x="620" y="1" width="579" height="358" rx="24" fill="url(#glow)"/>
+  <g stroke="#94A3B8" stroke-opacity=".09">
+    <path d="M696 80H1136M696 130H1136M696 180H1136M696 230H1136M696 280H1136"/>
+    <path d="M736 60V300M816 60V300M896 60V300M976 60V300M1056 60V300M1136 60V300"/>
+  </g>
+  <path d="M680 264L722 253L754 267L791 220L827 232L863 181L899 202L937 145L972 163L1010 116L1047 138L1090 100V310H680Z" fill="url(#area)"/>
+  <path d="M680 264L722 253L754 267L791 220L827 232L863 181L899 202L937 145L972 163L1010 116L1047 138L1090 100" stroke="url(#line)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="1090" cy="100" r="32" fill="#22D399" fill-opacity=".06"/>
+  <circle cx="1090" cy="100" r="18" fill="#22D399" fill-opacity=".1"/>
+  <path d="M1090 67C1080 67 1072 75 1072 85C1072 98 1090 113 1090 113C1090 113 1108 98 1108 85C1108 75 1100 67 1090 67Z" fill="#22D399"/>
+  <circle cx="1090" cy="85" r="6" fill="#0E171D"/>
+  <g font-family="Segoe UI, Inter, Arial, sans-serif">
+    <rect x="56" y="49" width="236" height="30" rx="15" fill="#22D399" fill-opacity=".08" stroke="#22D399" stroke-opacity=".22"/>
+    <circle cx="74" cy="64" r="4" fill="#22D399"/>
+    <text x="88" y="69" fill="#79EAC5" font-size="12" font-weight="600" letter-spacing="1.8">YOUR DESKTOP. LIVE.</text>
+    <text x="52" y="158" fill="#F1F5F9" font-size="66" font-weight="700" letter-spacing="-2">Price<tspan fill="#22D399">Pin</tspan></text>
+    <text x="56" y="207" fill="#F1F5F9" font-size="25" font-weight="500">Your market, always in view.</text>
+    <text x="56" y="243" fill="#94A3B8" font-size="18">Live crypto prices. Right on your desktop.</text>
+    <text x="56" y="307" fill="#94A3B8" font-size="12" font-weight="600" letter-spacing="2">WINDOWS 10 + 11</text>
+    <circle cx="210" cy="302" r="2" fill="#3E5464"/>
+    <text x="228" y="307" fill="#94A3B8" font-size="12" font-weight="600" letter-spacing="2">OPEN SOURCE</text>
+  </g>
+</svg>
