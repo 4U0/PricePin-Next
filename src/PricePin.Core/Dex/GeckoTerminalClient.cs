@@ -28,8 +28,10 @@ public static class GeckoTerminalClient
             // The free API allows only a few calls in a burst; wait as asked and try once more.
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt == 0)
             {
+                // Retry-After can be missing or 0; wait at least a few seconds either way.
                 var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(15);
-                await Task.Delay(wait > TimeSpan.FromSeconds(30) ? TimeSpan.FromSeconds(30) : wait, ct).ConfigureAwait(false);
+                wait = wait < TimeSpan.FromSeconds(5) ? TimeSpan.FromSeconds(5) : wait > TimeSpan.FromSeconds(30) ? TimeSpan.FromSeconds(30) : wait;
+                await Task.Delay(wait, ct).ConfigureAwait(false);
                 continue;
             }
             if (!response.IsSuccessStatusCode)
