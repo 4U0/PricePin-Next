@@ -2,30 +2,68 @@ using System.Globalization;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PricePin.Core.Coins;
+using PricePin.Core.Dex;
 using PricePin.Core.Market;
 using PricePin.Services;
 
 namespace PricePin.ViewModels;
 
-/// <summary>One coin row: live price, 24h stats, sparkline and logo.</summary>
+/// <summary>One coin row: live price, change, stats, sparkline and logo.</summary>
 public sealed partial class CoinRowViewModel : ObservableObject
 {
     private readonly string _currencyPrefix;
     private readonly string _currencySuffix;
     private decimal? _open24h;
+    private decimal? _change1h;
     private double[] _history = [];
 
-    public CoinRowViewModel(CoinInfo info, string quoteCurrency)
+    public CoinRowViewModel(string key, string quoteCurrency, ChangePeriod period = ChangePeriod.Day)
     {
+        var info = CoinCatalog.Get(key);
+        Key = key;
         Symbol = info.Symbol;
         Name = info.Name;
+        Period = period;
         BadgeBrush = Frozen(new SolidColorBrush((Color)ColorConverter.ConvertFromString(info.BrandColor)));
         (_currencyPrefix, _currencySuffix) = CurrencyAffixes(quoteCurrency);
+        if (CoinKey.TryParseDex(key, out var chain, out _))
+            Chain = DexChains.DisplayName(chain);
     }
 
+    /// <summary>The coin's key in the settings: "BTC", or "dex:chain:address" for a DEX token.</summary>
+    public string Key { get; }
+
+    /// <summary>What to show: "BTC", or a DEX token's own symbol.</summary>
     public string Symbol { get; }
     public string Name { get; }
-    public string Initial => Symbol[..1];
+    public string Initial => Symbol.Length > 0 ? Symbol[..1] : "?";
+
+    /// <summary>Chain of a DEX token ("Solana"), or null for exchange coins.</summary>
+    public string? Chain { get; }
+
+    public bool IsDex => Chain is not null;
+
+    /// <summary>Span the change and sparkline cover.</summary>
+    public ChangePeriod Period { get; private set; }
+
+    /// <summary>Switches the span; the caller loads the matching history.</summary>
+    public void SetPeriod(ChangePeriod period)
+    {
+        if (period == Period)
+            return;
+        Period = period;
+        _history = [];
+        Sparkline = [];
+        RaiseChange();
+    }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailsText))]
+    private decimal? _marketCap;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailsText))]
+    private decimal? _liquidity;
 
     /// <summary>Badge colour shown until (or instead of) a logo.</summary>
     public Brush BadgeBrush { get; }
@@ -43,7 +81,6 @@ public sealed partial class CoinRowViewModel : ObservableObject
     public bool HasPrice => Price is not null;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ChangeText), nameof(IsUp))]
     private decimal? _changePercent24h;
 
     [ObservableProperty]
@@ -82,27 +119,66 @@ public sealed partial class CoinRowViewModel : ObservableObject
     /// <summary>Direction of the last price move, read by the flash animation.</summary>
     public bool LastMoveUp { get; private set; }
 
-    public bool IsUp => (ChangePercent24h ?? 0) >= 0;
+    /// <summary>Change over <see cref="Period"/>: the exchange's 24h figure, or measured from the sparkline's first point.</summary>
+    public decimal? ChangePercent => Period switch
+    {
+        ChangePeriod.Day => ChangePercent24h,
+        ChangePeriod.Hour => _change1h ?? ChangeSinceHistoryStart(),
+        _ => ChangeSinceHistoryStart(),
+    };
+
+    public bool IsUp => (ChangePercent ?? 0) >= 0;
 
     public string PriceText => Price is { } p ? _currencyPrefix + FormatNumber(p) + _currencySuffix : "—";
 
-    public string ChangeText => ChangePercent24h is { } c
+    public string ChangeText => FormatChange(ChangePercent);
+
+    /// <summary>The 24h change whatever the widget shows, e.g. for the market overview.</summary>
+    public string ChangeText24h => FormatChange(ChangePercent24h);
+
+    public static string FormatChange(decimal? change) => change is { } c
         ? (c >= 0 ? "▲ " : "▼ ") + Math.Abs(c).ToString("0.00", CultureInfo.InvariantCulture) + "%"
         : "";
+
+    private decimal? ChangeSinceHistoryStart()
+    {
+        if (_history.Length < 2 || _history[0] <= 0 || Price is not { } p)
+            return null;
+        var first = (decimal)_history[0];
+        return Math.Round((p - first) / first * 100m, 2);
+    }
+
+    private void RaiseChange()
+    {
+        OnPropertyChanged(nameof(ChangePercent));
+        OnPropertyChanged(nameof(ChangeText));
+        OnPropertyChanged(nameof(ChangeText24h));
+        OnPropertyChanged(nameof(IsUp));
+    }
 
     public string DetailsText
     {
         get
         {
             string F(decimal? v) => v is { } d ? _currencyPrefix + FormatNumber(d) + _currencySuffix : "—";
+            string Big(decimal? v) => v is { } d ? _currencyPrefix + FormatCompact(d) + _currencySuffix : "—";
             var vol = Volume24h is { } v ? FormatCompact(v) + " " + Symbol : "—";
-            (string Label, string Value)[] lines =
-            [
-                (Loc.T("Coin.High"), F(High24h)),
-                (Loc.T("Coin.Low"), F(Low24h)),
-                (Loc.T("Coin.Volume"), vol),
-                (Loc.T("Coin.Source"), Source ?? "—"),
-            ];
+            (string Label, string Value)[] lines = IsDex
+                ?
+                [
+                    (Loc.T("Coin.Chain"), Chain!),
+                    (Loc.T("Coin.MarketCap"), Big(MarketCap)),
+                    (Loc.T("Coin.Liquidity"), Big(Liquidity)),
+                    (Loc.T("Coin.Volume"), vol),
+                    (Loc.T("Coin.Source"), Source ?? "—"),
+                ]
+                :
+                [
+                    (Loc.T("Coin.High"), F(High24h)),
+                    (Loc.T("Coin.Low"), F(Low24h)),
+                    (Loc.T("Coin.Volume"), vol),
+                    (Loc.T("Coin.Source"), Source ?? "—"),
+                ];
             var width = lines.Max(l => l.Label.Length) + 2;
             return $"{Name} ({Symbol})\n" + string.Join("\n", lines.Select(l => l.Label.PadRight(width) + l.Value))
                    + "\n\n" + Loc.T("Coin.ChartHint");
@@ -126,6 +202,9 @@ public sealed partial class CoinRowViewModel : ObservableObject
         if (t.High24h is { } h) High24h = Math.Max(h, t.Last);
         if (t.Low24h is { } l) Low24h = Math.Min(l, t.Last);
         if (t.Volume24h is { } v) Volume24h = v;
+        if (t.ChangePercent1h is { } h1) _change1h = h1;
+        if (t.MarketCap is { } mc) MarketCap = mc;
+        if (t.Liquidity is { } liq) Liquidity = liq;
         Source = t.Source;
 
         // Recompute the 24h change from the live price so it moves with every trade.
@@ -134,12 +213,14 @@ public sealed partial class CoinRowViewModel : ObservableObject
             : t.ChangePercent24h ?? ChangePercent24h;
 
         UpdateSparklineTail();
+        RaiseChange();
     }
 
     public void SetHistory(IReadOnlyList<decimal> closes)
     {
         _history = closes.Select(c => (double)c).ToArray();
         UpdateSparklineTail();
+        RaiseChange();
     }
 
     private void UpdateSparklineTail()

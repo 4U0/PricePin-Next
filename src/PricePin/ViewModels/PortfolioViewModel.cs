@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PricePin.Core.Coins;
 using PricePin.Core.Market;
 using PricePin.Core.Portfolio;
 using PricePin.Core.Settings;
@@ -25,8 +26,11 @@ public sealed partial class HoldingItemViewModel : ObservableObject
     }
 
     public Holding Holding { get; }
-    public string Symbol => Holding.Symbol;
-    public string Initial => Symbol[..1];
+
+    /// <summary>The coin key ("BTC" or "dex:chain:address").</summary>
+    public string Key => Holding.Symbol;
+    public string Symbol => CoinCatalog.DisplaySymbol(Key);
+    public string Initial => Symbol.Length > 0 ? Symbol[..1] : "?";
 
     [ObservableProperty]
     private ImageSource? _logo;
@@ -157,8 +161,28 @@ public sealed partial class PortfolioViewModel : ObservableObject
 
     // ---- Add form --------------------------------------------------------------------------
 
+    /// <summary>Coin key of the form; set from the chips or the coin chart.</summary>
     [ObservableProperty]
     private string _newSymbol;
+
+    /// <summary>What the coin box shows: the symbol, even for DEX tokens.</summary>
+    [ObservableProperty]
+    private string _newSymbolText = "";
+
+    private bool _syncingSymbolText;
+
+    partial void OnNewSymbolChanged(string value)
+    {
+        _syncingSymbolText = true;
+        NewSymbolText = value.Length == 0 ? "" : CoinCatalog.DisplaySymbol(value);
+        _syncingSymbolText = false;
+    }
+
+    partial void OnNewSymbolTextChanged(string value)
+    {
+        if (!_syncingSymbolText)
+            NewSymbol = CoinCatalog.ResolveTyped(value, SymbolChoices);
+    }
 
     [ObservableProperty]
     private string _newAmount = "";
@@ -175,8 +199,8 @@ public sealed partial class PortfolioViewModel : ObservableObject
     [RelayCommand]
     private void Add()
     {
-        var symbol = (NewSymbol ?? "").Trim().ToUpperInvariant();
-        if (symbol.Length is < 2 or > 12 || !symbol.All(char.IsAsciiLetterOrDigit))
+        var symbol = CoinCatalog.ResolveTyped(NewSymbol, SymbolChoices);
+        if (!CoinCatalog.IsValidKey(symbol))
         {
             NewError = Loc.T("Alerts.BadSymbol");
             return;
@@ -197,7 +221,7 @@ public sealed partial class PortfolioViewModel : ObservableObject
             cost = c;
         }
 
-        var existing = Items.FirstOrDefault(i => i.Symbol == symbol);
+        var existing = Items.FirstOrDefault(i => string.Equals(i.Key, symbol, StringComparison.OrdinalIgnoreCase));
         if (existing is not null)
         {
             // Buying more of a coin: amounts add up, cost becomes the weighted average.
@@ -217,7 +241,7 @@ public sealed partial class PortfolioViewModel : ObservableObject
         else
             _app.Settings.Holdings.Add(new Holding { Symbol = symbol, Amount = amount, AverageCost = cost, CostQuote = Quote });
 
-        var holding = _app.Settings.Holdings.First(h => h.Symbol == symbol);
+        var holding = _app.Settings.Holdings.First(h => string.Equals(h.Symbol, symbol, StringComparison.OrdinalIgnoreCase));
         var item = new HoldingItemViewModel(holding, this, _app.Logos.GetLocal(symbol));
         Items.Insert(0, item);
         _ = LoadLogoAsync(item);
@@ -276,7 +300,7 @@ public sealed partial class PortfolioViewModel : ObservableObject
         var bySymbol = lines.ToDictionary(l => l.Symbol, StringComparer.OrdinalIgnoreCase);
         foreach (var row in _app.Widgets.SelectMany(w => w.Coins))
         {
-            if (bySymbol.TryGetValue(row.Symbol, out var line))
+            if (bySymbol.TryGetValue(row.Key, out var line))
                 row.SetHolding(PrivacyMode
                     ? Mask
                     : $"{FormatAmount(line.Amount)} · {(line.Value is { } v ? CoinRowViewModel.FormatPrice(v, quote) : "—")}");
@@ -287,7 +311,7 @@ public sealed partial class PortfolioViewModel : ObservableObject
         // Rows on the Portfolio page.
         foreach (var item in Items)
         {
-            var line = bySymbol.GetValueOrDefault(item.Symbol);
+            var line = bySymbol.GetValueOrDefault(item.Key);
             if (line is null)
                 continue;
             var value = line.Value is { } v ? CoinRowViewModel.FormatPrice(v, quote) : "—";
@@ -339,7 +363,7 @@ public sealed partial class PortfolioViewModel : ObservableObject
             return;
         try
         {
-            item.Logo = await _app.Logos.GetAsync(item.Symbol, CancellationToken.None);
+            item.Logo = await _app.Logos.GetAsync(item.Key, CancellationToken.None);
         }
         catch (Exception)
         {

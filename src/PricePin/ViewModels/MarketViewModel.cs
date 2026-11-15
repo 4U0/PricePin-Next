@@ -9,7 +9,7 @@ using PricePin.Services;
 namespace PricePin.ViewModels;
 
 /// <summary>A coin in the "your coins today" lists of the market overview.</summary>
-public sealed record MoverItem(string Symbol, string PriceText, string ChangeText, bool IsUp);
+public sealed record MoverItem(string Key, string Symbol, string PriceText, string ChangeText, bool IsUp);
 
 /// <summary>
 /// The market overview window: total market cap and its 24h change, BTC and ETH dominance,
@@ -131,7 +131,7 @@ public sealed partial class MarketViewModel : ObservableObject, IDisposable
     {
         var rows = _app.Widgets.SelectMany(w => w.Coins)
             .Where(r => r.HasPrice && r.ChangePercent24h is not null)
-            .DistinctBy(r => r.Symbol)
+            .DistinctBy(r => r.Key)
             .OrderByDescending(r => r.ChangePercent24h)
             .ToList();
         Replace(Gainers, rows.Where(r => r.ChangePercent24h >= 0).Take(3));
@@ -140,7 +140,7 @@ public sealed partial class MarketViewModel : ObservableObject, IDisposable
 
     private static void Replace(ObservableCollection<MoverItem> target, IEnumerable<CoinRowViewModel> rows)
     {
-        var items = rows.Select(r => new MoverItem(r.Symbol, r.PriceText, r.ChangeText, r.IsUp)).ToList();
+        var items = rows.Select(r => new MoverItem(r.Key, r.Symbol, r.PriceText, r.ChangeText24h, r.ChangePercent24h >= 0)).ToList();
         if (target.SequenceEqual(items))
             return;
         target.Clear();

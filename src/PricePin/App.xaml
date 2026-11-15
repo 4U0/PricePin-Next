@@ -1,6 +1,7 @@
 <Application x:Class="PricePin.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:PricePin.Controls"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <ResourceDictionary>
@@ -10,13 +11,25 @@
                 <ResourceDictionary Source="Themes/Forms.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
+        <ctl:EqualsConverter x:Key="EqualsConverter" />
+
         <!-- Right-click menu of a widget. DataContext: WidgetViewModel. x:Shared="False": one copy per widget. -->
         <ContextMenu x:Key="WidgetMenu" x:Shared="False">
             <MenuItem Header="{DynamicResource Menu.HideWidget}" Tag="&#xE7B3;" Command="{Binding ToggleVisibilityCommand}" />
             <MenuItem Header="{DynamicResource Menu.Settings}" Tag="&#xE713;" Command="{Binding App.OpenSettingsCommand}" />
             <MenuItem Header="{DynamicResource Menu.Alerts}" Tag="&#xEA8F;" Command="{Binding App.OpenAlertsCommand}" />
             <MenuItem Header="{DynamicResource Menu.Market}" Tag="&#xE9D2;" Command="{Binding App.OpenMarketCommand}" />
+            <MenuItem Header="{DynamicResource Menu.QuickSearch}" Tag="&#xE721;" Command="{Binding App.OpenQuickSearchCommand}"
+                      InputGestureText="{Binding App.HotkeyQuickSearch}" />
             <Separator />
+            <MenuItem Header="{DynamicResource Menu.ShowChange}" Tag="&#xE9D9;">
+                <MenuItem Header="{DynamicResource Period.HourLong}" Command="{Binding SetChangePeriodCommand}" CommandParameter="Hour"
+                          IsChecked="{Binding ChangePeriod, Mode=OneWay, Converter={StaticResource EqualsConverter}, ConverterParameter=Hour}" />
+                <MenuItem Header="{DynamicResource Period.DayLong}" Command="{Binding SetChangePeriodCommand}" CommandParameter="Day"
+                          IsChecked="{Binding ChangePeriod, Mode=OneWay, Converter={StaticResource EqualsConverter}, ConverterParameter=Day}" />
+                <MenuItem Header="{DynamicResource Period.WeekLong}" Command="{Binding SetChangePeriodCommand}" CommandParameter="Week"
+                          IsChecked="{Binding ChangePeriod, Mode=OneWay, Converter={StaticResource EqualsConverter}, ConverterParameter=Week}" />
+            </MenuItem>
             <MenuItem Tag="&#xE8A9;" Command="{Binding SwitchLayoutCommand}">
                 <MenuItem.Style>
                     <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
@@ -74,6 +87,8 @@
             <MenuItem Header="{DynamicResource Menu.Settings}" Tag="&#xE713;" Command="{Binding OpenSettingsCommand}" />
             <MenuItem Header="{DynamicResource Menu.Alerts}" Tag="&#xEA8F;" Command="{Binding OpenAlertsCommand}" />
             <MenuItem Header="{DynamicResource Menu.Market}" Tag="&#xE9D2;" Command="{Binding OpenMarketCommand}" />
+            <MenuItem Header="{DynamicResource Menu.QuickSearch}" Tag="&#xE721;" Command="{Binding OpenQuickSearchCommand}"
+                      InputGestureText="{Binding HotkeyQuickSearch}" />
             <MenuItem Header="{DynamicResource Menu.Privacy}" Tag="&#xED1A;" IsCheckable="True" IsChecked="{Binding Portfolio.PrivacyMode}" />
             <Separator />
             <MenuItem Header="{DynamicResource Menu.DataSource}" Tag="&#xE774;" ItemsSource="{Binding DataSourceOptions}">

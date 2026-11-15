@@ -129,6 +129,9 @@
         <!-- Stats and actions -->
         <DockPanel Grid.Row="3" Margin="22,4,22,16">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Style="{StaticResource TextButton}" Content="DexScreener ↗" Command="{Binding OpenDexScreenerCommand}" Margin="0,0,8,0"
+                        ToolTip="{DynamicResource Detail.OpenDex}"
+                        Visibility="{Binding HasDexUrl, Converter={StaticResource BoolToVisibility}}" />
                 <Button Style="{StaticResource TextButton}" Content="{DynamicResource Detail.SetAlert}" Command="{Binding SetAlertCommand}" Margin="0,0,8,0" />
                 <Button Style="{StaticResource TextButton}" Content="{DynamicResource Detail.AddHolding}" Command="{Binding AddHoldingCommand}" />
             </StackPanel>

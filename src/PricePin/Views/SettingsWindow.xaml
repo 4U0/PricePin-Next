@@ -20,6 +20,7 @@
 
     <Window.Resources>
         <ctl:EqualsConverter x:Key="Equals" />
+        <ctl:CoinSymbolConverter x:Key="CoinSymbol" />
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
         <!-- Shows a page when Page equals its Tag. -->
@@ -212,6 +213,12 @@
                                              PreviewKeyDown="Hotkey_PreviewKeyDown" IsReadOnlyCaretVisible="False" />
                                     <TextBlock Text="{DynamicResource General.TogglePrivacy}" FontSize="13" VerticalAlignment="Center" />
                                 </DockPanel>
+                                <DockPanel Margin="0,4">
+                                    <TextBox x:Name="HotkeyQuickSearch" DockPanel.Dock="Right" Width="180" Style="{StaticResource FieldBox}" IsReadOnly="True"
+                                             Tag="{DynamicResource General.PressShortcut}" Text="{Binding App.HotkeyQuickSearch, Mode=OneWay}"
+                                             PreviewKeyDown="Hotkey_PreviewKeyDown" IsReadOnlyCaretVisible="False" />
+                                    <TextBlock Text="{DynamicResource General.QuickSearch}" FontSize="13" VerticalAlignment="Center" />
+                                </DockPanel>
                                 <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
                                            Text="{DynamicResource General.ShortcutHint}" />
                                 <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0" Foreground="{DynamicResource DownBrush}"
@@ -279,6 +286,20 @@
                                         </StackPanel>
                                     </Border>
                                 </DockPanel>
+                                <DockPanel Margin="0,8,0,4">
+                                    <TextBlock Text="{DynamicResource Widgets.Change}" FontSize="13" VerticalAlignment="Center" Width="120" />
+                                    <Border Style="{StaticResource SegmentedPanel}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton Style="{StaticResource Segment}" Content="{DynamicResource Period.Hour}" GroupName="Period"
+                                                         IsChecked="{Binding SelectedWidget.ChangePeriod, Converter={StaticResource Equals}, ConverterParameter=Hour}" />
+                                            <RadioButton Style="{StaticResource Segment}" Content="{DynamicResource Period.Day}" GroupName="Period"
+                                                         IsChecked="{Binding SelectedWidget.ChangePeriod, Converter={StaticResource Equals}, ConverterParameter=Day}" />
+                                            <RadioButton Style="{StaticResource Segment}" Content="{DynamicResource Period.Week}" GroupName="Period"
+                                                         IsChecked="{Binding SelectedWidget.ChangePeriod, Converter={StaticResource Equals}, ConverterParameter=Week}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DockPanel>
+                                <TextBlock Style="{StaticResource Hint}" Margin="120,0,0,6" Text="{DynamicResource Widgets.ChangeHint}" TextWrapping="Wrap" />
                                 <CheckBox Style="{StaticResource ToggleSwitch}" Content="{DynamicResource Widgets.Show}" IsChecked="{Binding SelectedWidget.IsWidgetVisible}" />
                             </StackPanel>
                         </Border>
@@ -482,6 +503,7 @@
                         <TextBox DockPanel.Dock="Top" Style="{StaticResource SearchBox}" Tag="{DynamicResource Coins.Search}"
                                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
                         <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Hint}" Margin="2,8,0,0" Text="{Binding CatalogStatus}" />
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Hint}" Margin="2,6,0,0" Text="{Binding DexStatus}" TextWrapping="Wrap" />
 
                         <!-- Typed a symbol that isn't listed: offer to add it anyway. -->
                         <Button DockPanel.Dock="Top" Style="{StaticResource TextButton}" Margin="0,8,0,0" HorizontalAlignment="Stretch"
@@ -553,8 +575,8 @@
                             <StackPanel>
                                 <DockPanel Margin="0,4">
                                     <TextBlock Text="{DynamicResource Alerts.Coin}" Width="90" FontSize="13" VerticalAlignment="Center" />
-                                    <TextBox Style="{StaticResource FieldBox}" Width="110" CharacterCasing="Upper" MaxLength="12"
-                                             Text="{Binding NewSymbol, UpdateSourceTrigger=PropertyChanged, Delay=250}" />
+                                    <TextBox Style="{StaticResource FieldBox}" Width="110" MaxLength="80"
+                                             Text="{Binding NewSymbolText, UpdateSourceTrigger=PropertyChanged, Delay=250}" />
                                     <ItemsControl ItemsSource="{Binding SymbolChoices}" Margin="8,0,0,0" VerticalAlignment="Center">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -564,7 +586,7 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Button Style="{StaticResource TextButton}" Padding="7,2" Margin="0,2,4,2" FontSize="11"
-                                                        Content="{Binding}" CommandParameter="{Binding}"
+                                                        Content="{Binding Converter={StaticResource CoinSymbol}}" CommandParameter="{Binding}"
                                                         Command="{Binding DataContext.PickSymbolCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -710,8 +732,8 @@
                             <StackPanel>
                                 <DockPanel Margin="0,4">
                                     <TextBlock Text="{DynamicResource Alerts.Coin}" Width="110" FontSize="13" VerticalAlignment="Center" />
-                                    <TextBox Style="{StaticResource FieldBox}" Width="110" CharacterCasing="Upper" MaxLength="12"
-                                             Text="{Binding NewSymbol, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBox Style="{StaticResource FieldBox}" Width="110" MaxLength="80"
+                                             Text="{Binding NewSymbolText, UpdateSourceTrigger=PropertyChanged, Delay=250}" />
                                     <ItemsControl ItemsSource="{Binding SymbolChoices}" Margin="8,0,0,0" VerticalAlignment="Center">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -721,7 +743,7 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Button Style="{StaticResource TextButton}" Padding="7,2" Margin="0,2,4,2" FontSize="11"
-                                                        Content="{Binding}" CommandParameter="{Binding}"
+                                                        Content="{Binding Converter={StaticResource CoinSymbol}}" CommandParameter="{Binding}"
                                                         Command="{Binding DataContext.PickSymbolCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>

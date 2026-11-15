@@ -72,6 +72,33 @@ internal static class NativeMethods
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int RegisterWindowMessage(string lpString);
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT
+    {
+        public int X, Y;
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+
+    [DllImport("user32.dll")]
+    private static extern nint MonitorFromPoint(POINT pt, uint dwFlags);
+
+    /// <summary>Work area (in physical pixels) of the monitor under the mouse.</summary>
+    public static bool TryGetWorkAreaAtCursor(out RECT work)
+    {
+        work = default;
+        if (!GetCursorPos(out var pt))
+            return false;
+        var handle = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+        var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+        if (handle == 0 || !GetMonitorInfo(handle, ref info))
+            return false;
+        work = info.rcWork;
+        return true;
+    }
+
     /// <summary>Monitor bounds and work area for the monitor a window is on (or nearest to).</summary>
     public static bool TryGetMonitor(nint hwnd, out RECT monitor, out RECT work)
     {

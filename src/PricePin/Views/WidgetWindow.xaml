@@ -117,7 +117,7 @@
                         <ColumnDefinition Width="104" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{DynamicResource Widget.Asset}" />
-                    <TextBlock Grid.Column="1" Text="{DynamicResource Widget.Change}" Width="64" TextAlignment="Center"
+                    <TextBlock Grid.Column="1" Text="{Binding ChangeHeading}" Width="64" TextAlignment="Center"
                                Visibility="{Binding ShowSparklines, Converter={StaticResource BoolToVisibility}}" />
                     <TextBlock Grid.Column="2" Text="{DynamicResource Widget.Price}" HorizontalAlignment="Right" />
                 </Grid>

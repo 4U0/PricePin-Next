@@ -3,6 +3,8 @@ using System.Globalization;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PricePin.Core.Coins;
+using PricePin.Core.Dex;
 using PricePin.Core.History;
 using PricePin.Core.Market;
 using PricePin.Core.Settings;
@@ -28,7 +30,9 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     private readonly DispatcherTimer _clockTimer;
     private readonly DispatcherTimer _restartTimer;
     private readonly Dictionary<string, Ticker> _pending = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, (DateTime At, IReadOnlyList<decimal> Closes)> _historyCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<(string Key, ChangePeriod Period), (DateTime At, IReadOnlyList<decimal> Closes)> _historyCache = new();
+    private readonly DexPriceService _dex = new();
+    private readonly Dictionary<string, int> _watched = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _lifetime = new();
     private FeedStatus _status = new(FeedState.Connecting, "—");
     private DateTimeOffset _lastTickAt;
@@ -73,6 +77,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _hotkeyToggleWidgets = s.Hotkeys.ToggleWidgets;
         _hotkeyToggleClickThrough = s.Hotkeys.ToggleClickThrough;
         _hotkeyTogglePrivacy = s.Hotkeys.TogglePrivacy;
+        _hotkeyQuickSearch = s.Hotkeys.QuickSearch;
 
         Widgets = new(s.Widgets.Select(w => new WidgetViewModel(this, w)));
         Alerts = new AlertsViewModel(this);
@@ -81,6 +86,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         RebuildTrayCoinOptions();
 
         _market.TickReceived += OnTickReceived;
+        _dex.TickReceived += OnTickReceived;
         _market.StatusChanged += OnStatusChanged;
 
         _restartTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(700), DispatcherPriority.Background, (_, _) =>
@@ -97,6 +103,9 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     public event EventHandler? SettingsRequested;
 
     public LogoProvider Logos { get; }
+
+    /// <summary>Sparkline history, shared with quick search.</summary>
+    public PriceHistoryService History => _history;
     public AppSettings Settings => _settings.Current;
     public ObservableCollection<WidgetViewModel> Widgets { get; }
     public IReadOnlyList<DataSourceOption> DataSourceOptions { get; }
@@ -113,6 +122,17 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     {
         Settings.Hotkeys.TogglePrivacy = value;
         Portfolio?.RaiseHintsChanged();
+        Save();
+        HotkeysChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Shortcut that opens quick search.</summary>
+    [ObservableProperty]
+    private string _hotkeyQuickSearch = "";
+
+    partial void OnHotkeyQuickSearchChanged(string value)
+    {
+        Settings.Hotkeys.QuickSearch = value;
         Save();
         HotkeysChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -228,6 +248,42 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
             RequestFeedRestart();
     }
 
+    /// <summary>True when the widgets' connection already delivers this coin.</summary>
+    public bool IsSubscribed(string key) => _subscribed.Contains(key);
+
+    /// <summary>
+    /// Streams a coin that no widget, alert or holding uses, while a window shows it
+    /// (quick search, a chart). Pair every call with <see cref="Unwatch"/>.
+    /// </summary>
+    public void Watch(string key)
+    {
+        _watched[key] = _watched.GetValueOrDefault(key) + 1;
+        EnsureSubscribed(key);
+    }
+
+    public void Unwatch(string key)
+    {
+        if (!_watched.TryGetValue(key, out var n))
+            return;
+        if (n > 1)
+            _watched[key] = n - 1;
+        else
+            _watched.Remove(key); // left subscribed until the next reconnect; harmless
+    }
+
+    /// <summary>Saves a DEX token the user picked so its name, logo and pool are remembered.</summary>
+    public void AddToken(DexToken token)
+    {
+        token.Normalize();
+        if (!token.IsValid)
+            return;
+        var key = token.Key;
+        Settings.Tokens.RemoveAll(t => string.Equals(t.Key, key, StringComparison.OrdinalIgnoreCase));
+        Settings.Tokens.Add(token);
+        CoinCatalog.Register(token);
+        Save();
+    }
+
     /// <summary>Re-reads the currency for every widget (prices start fresh).</summary>
     public void ApplyQuoteCurrency()
     {
@@ -299,6 +355,11 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
 
     public void OpenCoinDetail(string symbol) => CoinDetailRequested?.Invoke(this, symbol);
 
+    public event EventHandler? QuickSearchRequested;
+
+    [RelayCommand]
+    public void OpenQuickSearch() => QuickSearchRequested?.Invoke(this, EventArgs.Empty);
+
     [RelayCommand]
     private void OpenMarket() => MarketRequested?.Invoke(this, EventArgs.Empty);
 
@@ -317,7 +378,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         {
             Name = layout == WidgetLayout.TickerBar ? Loc.T("Widgets.Bar") : Loc.F("Widget.DefaultName", Widgets.Count + 1),
             Layout = layout,
-            Coins = Widgets.FirstOrDefault()?.Settings.Coins.ToList() ?? [.. Core.Coins.CoinCatalog.Defaults],
+            Coins = Widgets.FirstOrDefault()?.Settings.Coins.ToList() ?? [.. CoinCatalog.Defaults],
         };
         Settings.Widgets.Add(cfg);
         var vm = new WidgetViewModel(this, cfg);
@@ -396,7 +457,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         foreach (var v in values)
         {
             var symbol = v;
-            TrayCoinOptions.Add(new ChoiceOption(v, () => symbol.Length == 0 ? Loc.T("Tray.Logo") : symbol, o => TrayCoin = o.Value)
+            TrayCoinOptions.Add(new ChoiceOption(v, () => symbol.Length == 0 ? Loc.T("Tray.Logo") : CoinCatalog.DisplaySymbol(symbol), o => TrayCoin = o.Value)
             {
                 IsSelected = v == TrayCoin,
             });
@@ -418,16 +479,21 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
     {
         var quote = Settings.QuoteCurrency;
         RebuildTrayCoinOptions();
-        var symbols = Widgets
+        var keys = Widgets
             .SelectMany(w => w.Settings.Coins)
             .Concat(Alerts.WatchedSymbols)
             .Concat(Portfolio.WatchedSymbols)
+            .Concat(_watched.Keys)
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(c => new MarketSymbol(c, quote))
             .ToList();
-        _subscribed = new(symbols.Select(m => m.Base), StringComparer.OrdinalIgnoreCase);
+        // Exchange coins stream from Binance, Coinbase or Kraken; DEX tokens are polled from DexScreener.
+        var symbols = keys.Where(k => !CoinKey.IsDex(k)).Select(c => new MarketSymbol(c, quote)).ToList();
+        var tokens = keys.Select(CoinCatalog.GetToken).OfType<DexToken>().ToList();
+        _subscribed = new(keys, StringComparer.OrdinalIgnoreCase);
         Portfolio.Recalculate(force: true); // widget rows may have been rebuilt
+        _dexOnly = symbols.Count == 0 && tokens.Count > 0;
         _market.Start(symbols, Settings.DataSource);
+        _dex.Start(tokens, quote);
     }
 
     // ---- Live data ---------------------------------------------------------------------
@@ -446,6 +512,9 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         Low24h = newer.Low24h ?? older.Low24h,
         Volume24h = newer.Volume24h ?? older.Volume24h,
         ChangePercent24h = newer.ChangePercent24h ?? older.ChangePercent24h,
+        ChangePercent1h = newer.ChangePercent1h ?? older.ChangePercent1h,
+        MarketCap = newer.MarketCap ?? older.MarketCap,
+        Liquidity = newer.Liquidity ?? older.Liquidity,
     };
 
     private void FlushTicks()
@@ -468,9 +537,14 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _lastTickAt = DateTimeOffset.UtcNow;
     }
 
+    /// <summary>Only DEX tokens are shown, so the idle exchange connection shouldn't read as offline.</summary>
+    private bool _dexOnly;
+
     private void OnStatusChanged(FeedStatus status) =>
         _dispatcher.BeginInvoke(() =>
         {
+            if (_dexOnly && status.State == FeedState.Offline)
+                status = new FeedStatus(FeedState.Polling, DexPriceService.SourceName);
             _status = status;
             StatusState = status.State;
             StatusSource = status.State is FeedState.Offline ? "" : status.Source;
@@ -509,7 +583,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         StatusDetail = detail;
 
         var rows = Widgets.SelectMany(w => w.Coins).ToList();
-        if ((rows.FirstOrDefault(r => r.Symbol == TrayCoin) ?? rows.FirstOrDefault()) is { HasPrice: true } first)
+        if ((rows.FirstOrDefault(r => r.Key == TrayCoin) ?? rows.FirstOrDefault()) is { HasPrice: true } first)
             TrayToolTip = $"PricePin · {first.Symbol} {first.PriceText} {first.ChangeText}"
                           + (Portfolio.Summary is { } summary ? "\n" + summary : "");
     }
@@ -529,7 +603,7 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
                 continue;
             try
             {
-                row.Logo = await Logos.GetAsync(row.Symbol, _lifetime.Token);
+                row.Logo = await Logos.GetAsync(row.Key, _lifetime.Token);
             }
             catch (OperationCanceledException)
             {
@@ -538,24 +612,27 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         }
     }
 
-    internal async Task LoadHistoryAsync(IReadOnlyList<CoinRowViewModel> rows, bool forceRefresh = false)
+    internal async Task LoadHistoryAsync(IReadOnlyList<CoinRowViewModel> rows, ChangePeriod period, bool forceRefresh = false)
     {
         var quote = Settings.QuoteCurrency;
+        // The last hour moves fast; refresh it more often than the day or week.
+        var maxAge = period == ChangePeriod.Hour ? TimeSpan.FromMinutes(5) : HistoryRefreshInterval;
         try
         {
             foreach (var row in rows)
             {
-                if (!forceRefresh && _historyCache.TryGetValue(row.Symbol, out var hit) && DateTime.UtcNow - hit.At < HistoryRefreshInterval)
+                var cacheKey = (row.Key, period);
+                if (!forceRefresh && _historyCache.TryGetValue(cacheKey, out var hit) && DateTime.UtcNow - hit.At < maxAge)
                 {
                     row.SetHistory(hit.Closes);
                     continue;
                 }
 
-                var closes = await _history.GetLast24hAsync(new MarketSymbol(row.Symbol, quote), _lifetime.Token);
-                if (closes.Count == 0)
+                var closes = await _history.GetAsync(new MarketSymbol(row.Key, quote), period, _lifetime.Token);
+                if (closes.Count == 0 || quote != Settings.QuoteCurrency)
                     continue;
-                _historyCache[row.Symbol] = (DateTime.UtcNow, closes);
-                foreach (var same in Widgets.SelectMany(w => w.Coins).Where(r => r.Symbol == row.Symbol))
+                _historyCache[cacheKey] = (DateTime.UtcNow, closes);
+                foreach (var same in Widgets.SelectMany(w => w.Coins).Where(r => r.Key == row.Key && r.Period == period))
                     same.SetHistory(closes);
             }
         }
@@ -571,9 +648,19 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         {
             while (!ct.IsCancellationRequested)
             {
-                await Task.Delay(HistoryRefreshInterval, ct);
-                var unique = Widgets.SelectMany(w => w.Coins).DistinctBy(r => r.Symbol).ToList();
-                await LoadHistoryAsync(unique, forceRefresh: true);
+                await Task.Delay(TimeSpan.FromMinutes(5), ct);
+                var now = DateTime.UtcNow;
+                foreach (var period in Enum.GetValues<ChangePeriod>())
+                {
+                    var maxAge = period == ChangePeriod.Hour ? TimeSpan.FromMinutes(5) : HistoryRefreshInterval;
+                    var due = Widgets.SelectMany(w => w.Coins)
+                        .Where(r => r.Period == period
+                                    && (!_historyCache.TryGetValue((r.Key, period), out var hit) || now - hit.At >= maxAge))
+                        .DistinctBy(r => r.Key)
+                        .ToList();
+                    if (due.Count > 0)
+                        await LoadHistoryAsync(due, period, forceRefresh: true);
+                }
             }
         }
         catch (OperationCanceledException)
@@ -589,6 +676,8 @@ public sealed partial class AppViewModel : ObservableObject, IDisposable
         _restartTimer.Stop();
         _market.TickReceived -= OnTickReceived;
         _market.StatusChanged -= OnStatusChanged;
+        _dex.TickReceived -= OnTickReceived;
+        _ = _dex.DisposeAsync();
         Loc.Changed -= OnLanguageChanged;
     }
 

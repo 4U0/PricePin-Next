@@ -37,6 +37,7 @@ public partial class App : Application
     private TaskbarIcon? _tray;
     private SettingsWindow? _settingsWindow;
     private MarketWindow? _marketWindow;
+    private QuickSearchWindow? _quickSearch;
     private readonly Dictionary<string, CoinDetailWindow> _detailWindows = new(StringComparer.OrdinalIgnoreCase);
     private readonly CandleService _candles = new();
     private readonly MarketOverviewService _overview = new();
@@ -90,6 +91,7 @@ public partial class App : Application
         _vm.Alerts.Triggered += (_, hits) => ShowAlert(hits);
         _vm.CoinDetailRequested += (_, symbol) => ShowCoinDetail(symbol);
         _vm.MarketRequested += (_, _) => ShowMarket();
+        _vm.QuickSearchRequested += (_, _) => ToggleQuickSearch();
         _vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(AppViewModel.TrayIconText) or nameof(AppViewModel.TrayIconUp))
@@ -256,6 +258,22 @@ public partial class App : Application
         _marketWindow.Activate();
     }
 
+    /// <summary>The shortcut opens quick search, or closes it when it is already open.</summary>
+    private void ToggleQuickSearch()
+    {
+        if (_exiting)
+            return;
+        if (_quickSearch is not null)
+        {
+            _quickSearch.Close();
+            return;
+        }
+        _quickSearch = new QuickSearchWindow(new QuickSearchViewModel(_vm!, _catalog!, _logos!));
+        _quickSearch.Closed += (_, _) => _quickSearch = null;
+        _quickSearch.Show();
+        _quickSearch.Activate();
+    }
+
     private ImageSource? _logoIcon;
 
     private void UpdateTrayIcon()
@@ -306,6 +324,8 @@ public partial class App : Application
             failed.Add(_vm.HotkeyToggleClickThrough);
         if (!string.IsNullOrWhiteSpace(_vm.HotkeyTogglePrivacy) && !_hotkeys.Register(_vm.HotkeyTogglePrivacy, _vm.Portfolio.TogglePrivacy))
             failed.Add(_vm.HotkeyTogglePrivacy);
+        if (!string.IsNullOrWhiteSpace(_vm.HotkeyQuickSearch) && !_hotkeys.Register(_vm.HotkeyQuickSearch, ToggleQuickSearch))
+            failed.Add(_vm.HotkeyQuickSearch);
 
         _vm.HotkeyWarning = failed.Count == 0
             ? null

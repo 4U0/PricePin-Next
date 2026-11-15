@@ -18,6 +18,15 @@ public sealed record Ticker
 
     public decimal? ChangePercent24h { get; init; }
 
+    /// <summary>Change over the last hour, when the source reports it (DEX tokens).</summary>
+    public decimal? ChangePercent1h { get; init; }
+
+    /// <summary>Market cap in the quote currency, when the source reports it (DEX tokens).</summary>
+    public decimal? MarketCap { get; init; }
+
+    /// <summary>Pool liquidity in the quote currency (DEX tokens).</summary>
+    public decimal? Liquidity { get; init; }
+
     /// <summary>When the exchange produced the update (UTC), if it says.</summary>
     public DateTimeOffset? ExchangeTime { get; init; }
 

@@ -37,7 +37,6 @@
 
     <!-- Widget -->
     <sys:String x:Key="Widget.Asset">VARLIK</sys:String>
-    <sys:String x:Key="Widget.Change">24S</sys:String>
     <sys:String x:Key="Widget.Price">FİYAT</sys:String>
     <sys:String x:Key="Widget.Empty">Henüz coin yok. Eklemek için Ayarlar'ı açın.</sys:String>
     <sys:String x:Key="Widget.DefaultName">Widget {0}</sys:String>
@@ -166,7 +165,7 @@
     <sys:String x:Key="Coins.Yours">COİNLERİNİZ</sys:String>
     <sys:String x:Key="Coins.DragHint">Sıralamak için sürükleyin. Her widget'ın kendi listesi vardır.</sys:String>
     <sys:String x:Key="Coins.Add">COİN EKLE</sys:String>
-    <sys:String x:Key="Coins.Search">Ad veya sembolle arayın</sys:String>
+    <sys:String x:Key="Coins.Search">Coin arayın veya kontrat adresi yapıştırın</sys:String>
     <sys:String x:Key="Coins.Already">Zaten eklendi</sys:String>
     <sys:String x:Key="Coins.AddAnyway">Yine de {0} ekle</sys:String>
     <sys:String x:Key="Coins.Count">{0} / {1}</sys:String>
@@ -281,4 +280,35 @@
     <sys:String x:Key="Market.Updated">{0} itibarıyla.</sys:String>
     <sys:String x:Key="Market.Sources">Piyasa verileri CoinGecko'dan, Korku ve Açgözlülük Endeksi alternative.me'den.</sys:String>
     <sys:String x:Key="Market.LoadFailed">Piyasa verileri şu an yüklenemedi. Birkaç dakika içinde tekrar denenecek.</sys:String>
+
+    <!-- v1.4: DEX tokens, quick search, change period -->
+    <sys:String x:Key="Coin.Chain">Ağ</sys:String>
+    <sys:String x:Key="Coin.MarketCap">Piyasa değeri</sys:String>
+    <sys:String x:Key="Coin.Liquidity">Likidite</sys:String>
+    <sys:String x:Key="Period.Hour">1s</sys:String>
+    <sys:String x:Key="Period.Day">24s</sys:String>
+    <sys:String x:Key="Period.Week">7g</sys:String>
+    <sys:String x:Key="Period.HourLong">Son 1 saat</sys:String>
+    <sys:String x:Key="Period.DayLong">Son 24 saat</sys:String>
+    <sys:String x:Key="Period.WeekLong">Son 7 gün</sys:String>
+    <sys:String x:Key="Widgets.Change">Değişim süresi</sys:String>
+    <sys:String x:Key="Widgets.ChangeHint">Değişim ve küçük grafik bu süreyi gösterir. Alarmlar ve portföy her zaman 24 saati kullanır.</sys:String>
+    <sys:String x:Key="Menu.ShowChange">Değişim süresi</sys:String>
+    <sys:String x:Key="Menu.QuickSearch">Hızlı arama…</sys:String>
+    <sys:String x:Key="General.QuickSearch">Hızlı aramayı aç</sys:String>
+    <sys:String x:Key="Coins.DexLiquidity">Likidite {0}</sys:String>
+    <sys:String x:Key="Coins.DexSearching">DEX tokenları aranıyor…</sys:String>
+    <sys:String x:Key="Coins.DexFailed">DexScreener'a ulaşılamadı, bu yüzden DEX tokenları şu an gösterilemiyor.</sys:String>
+    <sys:String x:Key="Coins.DexNone">Yeterli likiditeye sahip eşleşen DEX tokenı yok.</sys:String>
+    <sys:String x:Key="Coins.DexHint">Solana, Base, BNB Chain, Ethereum ve diğer ağlardaki tokenlar da çıkar. Kontrat adresi de yapıştırabilirsiniz.</sys:String>
+    <sys:String x:Key="Detail.OpenDex">Bu havuzu DexScreener'da aç</sys:String>
+    <sys:String x:Key="Quick.Title">Hızlı arama</sys:String>
+    <sys:String x:Key="Quick.Placeholder">Herhangi bir coin arayın veya kontrat adresi yapıştırın</sys:String>
+    <sys:String x:Key="Quick.Chart">Grafiği aç</sys:String>
+    <sys:String x:Key="Quick.AddToWidget">Widget'a ekle</sys:String>
+    <sys:String x:Key="Quick.Added">{0} widget'ına eklendi.</sys:String>
+    <sys:String x:Key="Quick.AlreadyIn">Zaten {0} içinde.</sys:String>
+    <sys:String x:Key="Quick.Full">{0} dolu. Önce Ayarlar'dan bir coin kaldırın.</sys:String>
+    <sys:String x:Key="Quick.NothingFound">Hiçbir şey bulunamadı.</sys:String>
+    <sys:String x:Key="Quick.Keys">↑↓ seç · Enter grafik · Ctrl+Enter ekle · Esc kapat</sys:String>
 </ResourceDictionary>

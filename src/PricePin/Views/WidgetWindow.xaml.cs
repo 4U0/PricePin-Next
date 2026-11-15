@@ -121,7 +121,7 @@ public partial class WidgetWindow : Window
         if (e.ClickCount == 2 && CoinUnder(e.OriginalSource) is { } row)
         {
             e.Handled = true;
-            _vm.App.OpenCoinDetail(row.Symbol);
+            _vm.App.OpenCoinDetail(row.Key);
             return;
         }
         if (_vm.LockPosition || e.ButtonState != MouseButtonState.Pressed || e.OriginalSource is ButtonBase)

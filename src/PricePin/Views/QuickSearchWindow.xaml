@@ -1,0 +1,162 @@
+<Window x:Class="PricePin.Views.QuickSearchWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:PricePin.Controls"
+        xmlns:vm="clr-namespace:PricePin.ViewModels"
+        Title="{DynamicResource Quick.Title}"
+        Width="540" SizeToContent="Height"
+        WindowStartupLocation="Manual"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Background="{DynamicResource WindowBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="{StaticResource UiFont}"
+        UseLayoutRounding="True"
+        Icon="/Assets/PricePin.ico">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="0" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <DataTemplate x:Key="Logo">
+            <Grid Width="28" Height="28">
+                <Ellipse Fill="{DynamicResource TrackBrush}" />
+                <TextBlock Text="{Binding Initial}" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <Image Source="{Binding Logo}" RenderOptions.BitmapScalingMode="HighQuality" />
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="ResultItem" TargetType="ListBoxItem">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="8" Padding="8,6" Margin="0,1">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PressedBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ChangeText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource UpBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsUp}" Value="False">
+                    <Setter Property="Foreground" Value="{DynamicResource DownBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Border BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="1" Padding="14,14,14,10">
+        <StackPanel>
+            <TextBox x:Name="SearchBox" Style="{StaticResource SearchBox}" FontSize="15" Tag="{DynamicResource Quick.Placeholder}"
+                     Text="{Binding Query, UpdateSourceTrigger=PropertyChanged, Delay=120}"
+                     PreviewKeyDown="SearchBox_PreviewKeyDown" />
+
+            <!-- The highlighted coin: price, converter and actions -->
+            <Border Style="{StaticResource Card}" Margin="0,10,0,0" Padding="14,12"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <DockPanel>
+                        <ctl:Sparkline DockPanel.Dock="Right" Width="120" Height="40" Values="{Binding Sparkline}" VerticalAlignment="Center">
+                            <ctl:Sparkline.Style>
+                                <Style TargetType="ctl:Sparkline">
+                                    <Setter Property="LineColor" Value="{DynamicResource UpColor}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsUp}" Value="False">
+                                            <Setter Property="LineColor" Value="{DynamicResource DownColor}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ctl:Sparkline.Style>
+                        </ctl:Sparkline>
+                        <ContentPresenter ContentTemplate="{StaticResource Logo}" Content="{Binding Selected}" VerticalAlignment="Center" />
+                        <StackPanel Margin="12,0,8,0" VerticalAlignment="Center">
+                            <TextBlock FontSize="12.5" TextTrimming="CharacterEllipsis">
+                                <Run Text="{Binding Selected.Symbol, Mode=OneWay}" FontWeight="SemiBold" />
+                                <Run Text="{Binding Selected.Name, Mode=OneWay}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </TextBlock>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding PriceText}" FontFamily="{StaticResource DisplayFont}" FontSize="22" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource ChangeText}" Text="{Binding ChangeText}" FontSize="12" FontWeight="SemiBold"
+                                           Margin="10,0,0,3" VerticalAlignment="Bottom" />
+                            </StackPanel>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Converter -->
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <TextBox Style="{StaticResource FieldBox}" Width="130"
+                                 Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged, Delay=200}" />
+                        <TextBlock Text="{Binding Selected.Symbol}" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold"
+                                   MaxWidth="80" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="=" Margin="12,0" VerticalAlignment="Center" Foreground="{DynamicResource TextTertiaryBrush}" />
+                        <TextBox Style="{StaticResource FieldBox}" Width="160"
+                                 Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged, Delay=200}" />
+                        <TextBlock Text="{Binding Quote}" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    </StackPanel>
+
+                    <!-- Actions -->
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button Style="{StaticResource AccentButton}" Content="{DynamicResource Quick.Chart}" Command="{Binding OpenChartCommand}" Margin="0,0,6,4" />
+                        <Button Style="{StaticResource TextButton}" Content="{DynamicResource Quick.AddToWidget}" Command="{Binding AddToWidgetCommand}" Margin="0,0,6,4" />
+                        <Button Style="{StaticResource TextButton}" Content="{DynamicResource Detail.SetAlert}" Command="{Binding SetAlertCommand}" Margin="0,0,6,4" />
+                        <Button Style="{StaticResource TextButton}" Content="{DynamicResource Detail.AddHolding}" Command="{Binding AddHoldingCommand}" Margin="0,0,6,4" />
+                    </WrapPanel>
+                    <TextBlock Text="{Binding Feedback}" FontSize="11.5" Foreground="{DynamicResource AccentBrush}" Margin="2,2,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Results -->
+            <ListBox x:Name="ResultList" Style="{StaticResource PlainList}" ItemContainerStyle="{StaticResource ResultItem}"
+                     ItemsSource="{Binding Results}" SelectedItem="{Binding Selected}" MaxHeight="290" Margin="0,8,0,0"
+                     MouseDoubleClick="ResultList_MouseDoubleClick">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:CatalogItemViewModel}">
+                        <DockPanel Background="Transparent">
+                            <TextBlock x:Name="AddedMark" DockPanel.Dock="Right" Text="&#xE73E;" FontFamily="{StaticResource IconFont}" FontSize="12"
+                                       Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" Visibility="Collapsed"
+                                       ToolTip="{DynamicResource Coins.Already}" />
+                            <ContentPresenter ContentTemplate="{StaticResource Logo}" Content="{Binding}" />
+                            <StackPanel Margin="10,0,8,0" VerticalAlignment="Center">
+                                <TextBlock FontSize="13" TextTrimming="CharacterEllipsis">
+                                    <Run Text="{Binding Symbol, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text="{Binding Name, Mode=OneWay}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </TextBlock>
+                                <TextBlock Text="{Binding Exchanges}" FontSize="10.5" Foreground="{DynamicResource TextTertiaryBrush}"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DockPanel>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsAdded}" Value="True">
+                                <Setter TargetName="AddedMark" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <DockPanel Margin="2,6,2,0">
+                <TextBlock DockPanel.Dock="Right" Style="{StaticResource Hint}" Text="{DynamicResource Quick.Keys}" Margin="0" />
+                <TextBlock Style="{StaticResource Hint}" Text="{Binding StatusText}" Margin="0" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </StackPanel>
+    </Border>
+</Window>
