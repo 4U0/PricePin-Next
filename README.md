@@ -17,7 +17,7 @@ Pin your coins, follow your portfolio, and keep your workspace yours.
 
 **Windows 10 & 11** &nbsp; · &nbsp; **x64 & ARM64** &nbsp; · &nbsp; **English & Türkçe**
 
-[Download](#download) &nbsp; / &nbsp; [Features](#features) &nbsp; / &nbsp; [Get started](#getting-started) &nbsp; / &nbsp; [Shortcuts](#keyboard-and-mouse) &nbsp; / &nbsp; [Build](#build-from-source)
+[Website](https://4u0.github.io/PricePin-Next/) &nbsp; / &nbsp; [Download](#download) &nbsp; / &nbsp; [Features](#features) &nbsp; / &nbsp; [Get started](#getting-started) &nbsp; / &nbsp; [Shortcuts](#keyboard-and-mouse) &nbsp; / &nbsp; [Build](#build-from-source)
 
 </div>
 
@@ -259,6 +259,7 @@ src/PricePin          WPF app: windows, view models, controls, themes, strings
 src/PricePin.Core     Feeds, failover, alerts, portfolio, charts, news, radar, fees, calendar, odds and settings (no UI)
 src/PricePin.StreamDeck  Stream Deck plugin: live prices on keys
 data/events.json      Known event dates the calendar downloads
+site/                 The website at 4u0.github.io/PricePin-Next, published by .github/workflows/pages.yml
 tests/                Unit tests for PricePin.Core, the Stream Deck plugin and the translations
 tools/FeedProbe       Console tool that checks which data sources work from your network
 docs/                 Release guide and images
