@@ -184,7 +184,7 @@
       svg.innerHTML = `<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-opacity=".35"/><stop offset="1" stop-opacity="0"/></linearGradient></defs>
         <path class="fill" fill="url(#${gradId})" stroke="none"/>
         <path class="line draw" fill="none" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-        <circle class="dot" r="4"/><circle class="halo" r="9" opacity=".2"/>`;
+        <path class="halo" stroke-width="18" stroke-linecap="round" opacity=".2" vector-effect="non-scaling-stroke"/><path class="dot" stroke-width="8" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
       // Once drawn in, drop the dash trick so the line stays whole however wide it renders.
       svg.querySelector(".line").addEventListener("animationend", e => e.target.classList.remove("draw"));
     }
@@ -193,7 +193,9 @@
     svg.querySelector(".fill").setAttribute("d", `${line(pts)} L${w} ${h} L0 ${h} Z`);
     ln.setAttribute("d", line(pts));
     ln.setAttribute("stroke", color);
-    for (const c of svg.querySelectorAll("circle")) { c.setAttribute("cx", last[0]); c.setAttribute("cy", last[1]); c.setAttribute("fill", color); }
+    // The end dot is a zero-length round-capped stroke: the chart stretches to fit (no fixed
+    // aspect), and a non-scaling stroke stays a true circle where an SVG circle would squash.
+    for (const d of svg.querySelectorAll(".dot, .halo")) { d.setAttribute("d", `M${last[0]} ${last[1]}h0`); d.setAttribute("stroke", color); }
     if (replay) { ln.classList.remove("draw"); void ln.getBoundingClientRect(); ln.classList.add("draw"); }
   }
 
