@@ -2,6 +2,13 @@
 
 Each release's notes on GitHub come from its section here.
 
+## 1.8.1
+
+- **The whale radar catches whole orders.** A big market order fills against many sellers or buyers at once, and the radar used to see each fill on its own, so even a multi-million-dollar order rarely passed the size you set. It now joins the fills back into the whole order before comparing it with your setting, on Binance, Coinbase and Bybit.
+- **Liquidation totals count everything.** **Longs liquidated** and **Shorts liquidated** now add up every liquidation in the last hour, not only the ones above your list size, so they show how much is being wiped out across the market. The list still shows only the big ones.
+- The line under the radar now says which feeds have actually sent data. If one is blocked on your network or still connecting, it says so instead of naming the exchange. The Bybit connection now pings every 20 seconds, as Bybit asks, so it stays open.
+- Kalshi odds show round strike prices ($100,000, not $99,999.99).
+
 ## 1.8.0
 
 - **Prediction odds.** A new **Odds** tab in **News, whales, fees, calendar & odds** shows what traders on Polymarket and Kalshi, the two biggest prediction markets, give crypto questions: how high or low Bitcoin and Ethereum get this month or year, whether an ETF is approved, which coin ends the year bigger, and more. Each answer shows its chance and how many points it moved today, with the money traded and when the market ends; a click opens it in your browser. Pin markets with the star to keep them at the top, turn on **Show prediction odds** for a widget to keep the first pinned one in view, and get notified when a pinned market moves 10 points or more. You can keep only markets about your coins. Kalshi keeps the tab working in countries where Polymarket is blocked. Very short "up or down in 15 minutes" markets are left out. Odds refresh every five minutes.

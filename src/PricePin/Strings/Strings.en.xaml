@@ -354,6 +354,9 @@
     <sys:String x:Key="Radar.OnlyMyCoins">Only my coins</sys:String>
     <sys:String x:Key="Radar.Notify">Notify me about very large events</sys:String>
     <sys:String x:Key="Radar.Sources">Trades from {0} spot, liquidations from {1} futures.</sys:String>
+    <sys:String x:Key="Radar.Waiting">No data yet from: {0}. Still connecting, or blocked on this network.</sys:String>
+    <sys:String x:Key="Radar.WaitingTrades">trades</sys:String>
+    <sys:String x:Key="Radar.WaitingLiquidations">liquidations</sys:String>
     <sys:String x:Key="Fees.Title">Network fees</sys:String>
     <sys:String x:Key="Fees.Bitcoin">BITCOIN · SAT/VB</sys:String>
     <sys:String x:Key="Fees.Ethereum">ETHEREUM GAS</sys:String>

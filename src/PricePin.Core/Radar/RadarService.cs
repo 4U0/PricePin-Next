@@ -43,7 +43,10 @@ public sealed class RadarService : IAsyncDisposable
 
     public event Action<RadarEvent>? EventReceived;
 
-    /// <summary>Which source each half is using right now, e.g. "Binance" / "Bybit", for the window.</summary>
+    /// <summary>
+    /// Which source each part is getting data from, e.g. "Binance" / "Bybit", for the window;
+    /// null while it is connecting or has dropped.
+    /// </summary>
     public event Action<string, string?>? SourceChanged;
 
     /// <param name="whaleSymbols">Coins to watch for big trades (exchange symbols like "BTC").</param>
@@ -78,13 +81,37 @@ public sealed class RadarService : IAsyncDisposable
 
     // ---- Whale trades ------------------------------------------------------------------
 
-    private Task RunWhalesAsync(IReadOnlyList<string> symbols, decimal min, CancellationToken ct) =>
-        RunWithFailoverAsync("whales", ct,
-            ("Binance", () => WebSocketSession.RunAsync("Binance trades", BinanceTradesUri(symbols), [],
-                span => Emit(ParseBinanceAggTrade(span), min), TimeSpan.FromSeconds(60), TimeSpan.FromHours(23), ct)),
-            ("Coinbase", () => WebSocketSession.RunAsync("Coinbase trades", new Uri("wss://ws-feed.exchange.coinbase.com"),
-                [CoinbaseSubscribe(symbols.Where(CoinbaseProducts.Contains).DefaultIfEmpty("BTC"))],
-                span => Emit(ParseCoinbaseMatch(span), min), TimeSpan.FromSeconds(60), TimeSpan.FromHours(23), ct)));
+    // One market order that sweeps several prices arrives as several fills; they are joined
+    // back into the order, because the order is what a whale placed.
+    private Task RunWhalesAsync(IReadOnlyList<string> symbols, decimal min, CancellationToken ct)
+    {
+        var orders = new FillGrouper();
+        return Task.WhenAll(
+            FlushLoopAsync(orders, min, ct),
+            RunWithFailoverAsync("whales", ct,
+                ("Binance", live => WebSocketSession.RunAsync("Binance trades", BinanceTradesUri(symbols), [],
+                    span =>
+                    {
+                        live();
+                        if (ParseBinanceAggTrade(span) is { } fill)
+                            Emit(orders.Add(fill, SameMomentKey(fill)), min);
+                    }, TimeSpan.FromSeconds(60), TimeSpan.FromHours(23), ct)),
+                ("Coinbase", live => WebSocketSession.RunAsync("Coinbase trades", new Uri("wss://ws-feed.exchange.coinbase.com"),
+                    [CoinbaseSubscribe(symbols.Where(CoinbaseProducts.Contains).DefaultIfEmpty("BTC"))],
+                    span =>
+                    {
+                        live();
+                        if (ParseCoinbaseMatch(span, out var order) is { } fill)
+                            Emit(orders.Add(fill, order ?? SameMomentKey(fill)), min);
+                    }, TimeSpan.FromSeconds(60), TimeSpan.FromHours(23), ct))));
+    }
+
+    /// <summary>
+    /// Fills that share a coin, a side and the same millisecond: Binance stamps every fill of one
+    /// taker order with the same time, and Bybit does the same for one liquidation.
+    /// </summary>
+    internal static string SameMomentKey(RadarEvent fill) =>
+        fill.Time.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture) + (fill.Kind is RadarKind.WhaleBuy or RadarKind.ShortLiquidated ? "B" : "S");
 
     // Coinbase drops the whole subscription when one product does not exist, so only ask for
     // coins it is known to list.
@@ -114,10 +141,14 @@ public sealed class RadarService : IAsyncDisposable
 
     // {"type":"match","product_id":"BTC-USD","size":"1.2","price":"97000","side":"sell","time":"2026-11-15T01:00:00.123Z"}
     // side is the resting (maker) order, so the taker did the opposite.
-    internal static RadarEvent? ParseCoinbaseMatch(ReadOnlySpan<byte> utf8)
+    internal static RadarEvent? ParseCoinbaseMatch(ReadOnlySpan<byte> utf8) => ParseCoinbaseMatch(utf8, out _);
+
+    /// <param name="takerOrder">The order that took liquidity; all its fills share it.</param>
+    internal static RadarEvent? ParseCoinbaseMatch(ReadOnlySpan<byte> utf8, out string? takerOrder)
     {
         using var doc = JsonDocument.Parse(utf8.ToArray());
         var d = doc.RootElement;
+        takerOrder = Json.String(d, "taker_order_id");
         if (Json.String(d, "type") is not ("match" or "last_match") || Json.String(d, "product_id") is not { } product)
             return null;
         if (Json.Decimal(d, "price") is not { } p || Json.Decimal(d, "size") is not { } q)
@@ -138,19 +169,33 @@ public sealed class RadarService : IAsyncDisposable
     // Both exchanges run at once: they are different markets, so together they show more of
     // what is being wiped out. Binance futures can also connect and stay silent where it is
     // not offered, so Bybit cannot wait for Binance to fail first.
-    private Task RunLiquidationsAsync(decimal min, CancellationToken ct) =>
-        Task.WhenAll(
+    // Binance sends at most one liquidation per coin each second, already whole. Bybit sends
+    // every fill, so fills of one liquidation are joined like whale orders.
+    private Task RunLiquidationsAsync(decimal min, CancellationToken ct)
+    {
+        var bybitOrders = new FillGrouper();
+        return Task.WhenAll(
+            FlushLoopAsync(bybitOrders, min, ct),
             RunWithFailoverAsync("liquidations:Binance", ct,
-                ("Binance", () => WebSocketSession.RunAsync("Binance liquidations", new Uri("wss://fstream.binance.com/ws/!forceOrder@arr"), [],
-                    span => Emit(ParseBinanceForceOrder(span), min), TimeSpan.FromMinutes(10), TimeSpan.FromHours(23), ct))),
+                ("Binance", live => WebSocketSession.RunAsync("Binance liquidations", new Uri("wss://fstream.binance.com/ws/!forceOrder@arr"), [],
+                    span =>
+                    {
+                        live();
+                        Emit(ParseBinanceForceOrder(span), min);
+                    }, TimeSpan.FromMinutes(10), TimeSpan.FromHours(23), ct))),
             RunWithFailoverAsync("liquidations:Bybit", ct,
-                ("Bybit", () => WebSocketSession.RunAsync("Bybit liquidations", new Uri("wss://stream.bybit.com/v5/public/linear"),
+                ("Bybit", live => WebSocketSession.RunAsync("Bybit liquidations", new Uri("wss://stream.bybit.com/v5/public/linear"),
                     [BybitSubscribe(BybitSymbols)],
                     span =>
                     {
-                        foreach (var e in ParseBybitLiquidations(span))
-                            Emit(e, min);
-                    }, TimeSpan.FromMinutes(10), TimeSpan.FromHours(23), ct))));
+                        live();
+                        foreach (var fill in ParseBybitLiquidations(span))
+                            Emit(bybitOrders.Add(fill, SameMomentKey(fill)), min);
+                    }, TimeSpan.FromMinutes(2), TimeSpan.FromHours(23), ct, BybitPing, TimeSpan.FromSeconds(20)))));
+    }
+
+    /// <summary>Bybit hangs up on a connection that does not ping; it answers each one.</summary>
+    internal const string BybitPing = """{"op":"ping"}""";
 
     internal static string BybitSubscribe(IEnumerable<string> symbols) =>
         JsonSerializer.Serialize(new { op = "subscribe", args = symbols.Select(s => $"allLiquidation.{s}USDT").ToArray() });
@@ -205,22 +250,46 @@ public sealed class RadarService : IAsyncDisposable
             EventReceived?.Invoke(e);
     }
 
+    /// <summary>Hands on orders whose last fill came a moment ago, so a lone order is not held back.</summary>
+    private async Task FlushLoopAsync(FillGrouper orders, decimal min, CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            {
+                foreach (var e in orders.Flush(Environment.TickCount64))
+                    Emit(e, min);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
     /// <summary>
     /// Runs the first source, reconnecting after drops; moves to the next one when a source is
-    /// blocked or keeps failing, and comes back to the first after a while.
+    /// blocked or keeps failing, and comes back to the first after a while. A source counts as
+    /// connected (<see cref="SourceChanged"/>) only once its first message arrives; each source
+    /// calls the action it is given on every message.
     /// </summary>
-    private async Task RunWithFailoverAsync(string part, CancellationToken ct, params (string Name, Func<Task> Run)[] sources)
+    private async Task RunWithFailoverAsync(string part, CancellationToken ct, params (string Name, Func<Action, Task> Run)[] sources)
     {
         var index = 0;
         var failures = 0;
         while (!ct.IsCancellationRequested)
         {
             var (name, run) = sources[index];
-            SourceChanged?.Invoke(part, name);
+            var live = 0;
+            void Live()
+            {
+                if (Interlocked.Exchange(ref live, 1) == 0)
+                    SourceChanged?.Invoke(part, name);
+            }
             var started = DateTime.UtcNow;
             try
             {
-                await run().ConfigureAwait(false);
+                await run(Live).ConfigureAwait(false);
                 return; // cancelled
             }
             catch (FeedException ex)
@@ -279,4 +348,53 @@ public sealed class RadarService : IAsyncDisposable
     internal static string FormatUsd(decimal v) => "$" + (v >= 1_000_000m
         ? (v / 1_000_000m).ToString("0.##", CultureInfo.InvariantCulture) + "M"
         : (v / 1_000m).ToString("0", CultureInfo.InvariantCulture) + "K");
+}
+
+/// <summary>
+/// Joins the fills of one order into a single event. Fills of one order arrive one after
+/// another for the same coin, so an order is finished when a fill of another order arrives
+/// for that coin, or when no fill has come for a moment. Thread-safe.
+/// </summary>
+internal sealed class FillGrouper(long quietMs = 1000)
+{
+    private readonly object _gate = new();
+    private readonly Dictionary<string, (RadarEvent Order, string Key, long Seen)> _open = new(StringComparer.Ordinal);
+
+    /// <returns>The coin's previous order when this fill starts a new one, else null.</returns>
+    public RadarEvent? Add(RadarEvent fill, string orderKey, long now = -1)
+    {
+        if (now < 0)
+            now = Environment.TickCount64;
+        var coin = fill.Exchange + ":" + fill.Symbol;
+        lock (_gate)
+        {
+            if (_open.TryGetValue(coin, out var open) && open.Key == orderKey && open.Order.Kind == fill.Kind)
+            {
+                var quantity = open.Order.Quantity + fill.Quantity;
+                var value = open.Order.ValueUsd + fill.ValueUsd;
+                // The price shown is the average the order paid across its fills.
+                _open[coin] = (open.Order with { Quantity = quantity, ValueUsd = value, Price = quantity > 0 ? value / quantity : fill.Price }, orderKey, now);
+                return null;
+            }
+            _open[coin] = (fill, orderKey, now);
+            return open.Order;
+        }
+    }
+
+    /// <summary>Takes out the orders that have had no fill for a moment.</summary>
+    public List<RadarEvent> Flush(long now)
+    {
+        var done = new List<RadarEvent>();
+        lock (_gate)
+        {
+            foreach (var (coin, open) in _open)
+            {
+                if (now - open.Seen >= quietMs)
+                    done.Add(open.Order);
+            }
+            foreach (var e in done)
+                _open.Remove(e.Exchange + ":" + e.Symbol);
+        }
+        return done;
+    }
 }

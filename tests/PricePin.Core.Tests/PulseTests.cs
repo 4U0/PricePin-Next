@@ -166,6 +166,62 @@ public class PulseTests
     }
 
     [Fact]
+    public void Joins_the_fills_of_one_order()
+    {
+        RadarEvent Fill(RadarKind kind, string symbol, decimal price, decimal qty, long ms) =>
+            new(kind, symbol, "Binance", price, qty, price * qty, DateTimeOffset.FromUnixTimeMilliseconds(ms));
+
+        var orders = new FillGrouper(quietMs: 1000);
+        var a = Fill(RadarKind.WhaleBuy, "BTC", 65_000m, 3m, 1000);
+        var b = Fill(RadarKind.WhaleBuy, "BTC", 65_010m, 4m, 1000);
+        var eth = Fill(RadarKind.WhaleBuy, "ETH", 1_800m, 1m, 1000);
+        var next = Fill(RadarKind.WhaleSell, "BTC", 65_000m, 1m, 1000); // same moment, other side
+
+        Assert.Null(orders.Add(a, RadarService.SameMomentKey(a), now: 0));
+        Assert.Null(orders.Add(b, RadarService.SameMomentKey(b), now: 10));
+        Assert.Null(orders.Add(eth, RadarService.SameMomentKey(eth), now: 10)); // another coin keeps its own order
+        var whole = orders.Add(next, RadarService.SameMomentKey(next), now: 20)!;
+        Assert.Equal(7m, whole.Quantity);
+        Assert.Equal(65_000m * 3 + 65_010m * 4, whole.ValueUsd);
+        Assert.Equal(whole.ValueUsd / 7m, whole.Price);
+        Assert.Equal(RadarKind.WhaleBuy, whole.Kind);
+
+        Assert.Empty(orders.Flush(now: 500));
+        var rest = orders.Flush(now: 1100);
+        Assert.Equal(["BTC", "ETH"], rest.Select(e => e.Symbol).Order());
+        Assert.Empty(orders.Flush(now: 5000));
+    }
+
+    [Fact]
+    public void Reads_the_coinbase_taker_order()
+    {
+        var e = RadarService.ParseCoinbaseMatch(U("""{"type":"match","product_id":"BTC-USD","size":"2","price":"65000","side":"buy","taker_order_id":"abc","time":"2026-11-15T01:00:00Z"}"""), out var order);
+        Assert.Equal(RadarKind.WhaleSell, e!.Kind);
+        Assert.Equal("abc", order);
+    }
+
+    [Fact]
+    public void Tallies_every_liquidation_for_the_last_hour()
+    {
+        var now = new DateTimeOffset(2026, 11, 16, 0, 0, 30, TimeSpan.Zero);
+        RadarEvent Liq(RadarKind kind, string symbol, decimal usd, TimeSpan ago) => new(kind, symbol, "Bybit", 1m, usd, usd, now - ago);
+
+        var tally = new LiquidationTally();
+        tally.Add(Liq(RadarKind.LongLiquidated, "BTC", 1_500m, TimeSpan.FromMinutes(1)));
+        tally.Add(Liq(RadarKind.LongLiquidated, "ETH", 250m, TimeSpan.FromMinutes(30)));
+        tally.Add(Liq(RadarKind.ShortLiquidated, "BTC", 40_000m, TimeSpan.Zero));
+        tally.Add(Liq(RadarKind.ShortLiquidated, "BTC", 9_000m, TimeSpan.FromMinutes(61))); // too old
+        tally.Add(new RadarEvent(RadarKind.WhaleBuy, "BTC", "Binance", 1m, 1m, 1_000_000m, now)); // not a liquidation
+
+        Assert.Equal((1_750m, 40_000m), tally.LastHour(now));
+        Assert.Equal((250m, 0m), tally.LastHour(now, s => s == "ETH"));
+    }
+
+    [Fact]
+    public void Pings_bybit_in_its_own_format() =>
+        Assert.Equal("ping", JsonDocument.Parse(RadarService.BybitPing).RootElement.GetProperty("op").GetString());
+
+    [Fact]
     public void Builds_stream_urls_and_formats_sizes()
     {
         Assert.Equal("wss://stream.binance.com:9443/stream?streams=btcusdt@aggTrade/ethusdt@aggTrade",
